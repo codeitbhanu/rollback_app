@@ -3,22 +3,27 @@
     "version": "0.1.1",
     "private": true,
     "dependencies": {
+        "@craco/craco": "^6.3.0",
         "@types/jest": "24.0.14",
         "@types/node": "12.0.8",
         "@types/react": "16.8.20",
         "@types/react-dom": "16.8.4",
+        "autoprefixer": "9",
+        "postcss": "7",
         "react": "^16.8.6",
         "react-dom": "^16.8.6",
-        "react-scripts": "^3.4.1",
+        "react-scripts": "^4.0.3",
+        "tailwindcss": "npm:@tailwindcss/postcss7-compat",
         "typescript": "3.4.5"
     },
     "scripts": {
-        "start": "react-scripts start",
-        "dev:js": "react-scripts start",
+        "start": "craco start",
+        "dev:js": "craco start",
         "dev:py": "python eel_CRA.py true",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
+        "build": "craco build",
+        "package": "craco build && python -m eel eel_CRA.py --onefile --icon=icon.ico",
+        "test": "craco test",
+        "eject": "craco eject"
     },
     "eslintConfig": {
         "extends": "react-app"

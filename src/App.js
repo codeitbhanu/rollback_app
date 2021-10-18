@@ -41,7 +41,10 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
+                <div class="border-8 border-indigo-600">
+                    <img src={logo} className="App-logo" alt="logo" />
+                </div>
+
                 <p>{state.message}</p>
                 <button className="App-button" onClick={pickFile}>
                     Pick Random File From `{state.path}`
