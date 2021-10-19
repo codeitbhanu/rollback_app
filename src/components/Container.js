@@ -52,7 +52,7 @@ function Container() {
     console.log(fake_data);
 
     return (
-        <div className="absolute flex flex-col w-full border-0 border-red-600 h-1/2 top-24">
+        <div className="absolute flex flex-col w-full mt-4 border-0 border-red-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex ml-8 border-0 border-blue-700 border-double form-control">
                     <div className="flex flex-col">

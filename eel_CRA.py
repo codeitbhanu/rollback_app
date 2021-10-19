@@ -1,11 +1,57 @@
 """Main Python application file for the EEL-CRA demo."""
 
+# imports
 import os
 import platform
 import random
 import sys
-
 import eel
+import pyodbc
+import time
+import pandas as pd
+from tqdm.notebook import tqdm
+
+
+class Server:
+    conn = None
+    cursor = None
+
+    def __init__(self):
+        # default config
+        self.driver = "{ODBC Driver 17 for SQL Server}"
+        self.server = "172.20.10.149\\PRODUCTION"
+        self.database = "stb_production"
+        self.username = "Neo.Tech"
+        self.password = "Password357"
+
+    def __del__(self):
+        print(f'Server {self.server} instance destroyed')
+        if(self.conn):
+            self.conn.close()
+        else:
+            print(
+                f'Server {self.server} has no connection established earlier')
+
+    def connect(self, driver='', server='', database='', username='', password=''):
+        if(server == ''):
+            self.conn = pyodbc.connect("DRIVER=" + self.driver
+                                       + ";SERVER=" + self.server
+                                       + ";DATABASE=" + self.database
+                                       + ";UID=" + self.username
+                                       + ";PWD=" + self.password)
+        else:
+            self.server = server
+            self.conn = pyodbc.connect("DRIVER=" + driver
+                                       + ";SERVER=" + server
+                                       + ";DATABASE=" + database
+                                       + ";UID=" + username
+                                       + ";PWD=" + password)
+        if(self.conn):
+            self.cursor = self.conn.cursor()
+            print(f'Connection established with server {self.server}')
+        else:
+            print(f'Error: Server {self.server} could not be connected!')
+
 
 # Use latest version of Eel from parent directory
 sys.path.insert(1, '../../')
@@ -38,6 +84,12 @@ def pick_file(folder):
         return choice
     else:
         return '{} is not a valid folder'.format(folder)
+#  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
+
+
+def connect_db(path):
+    """Returns connection status if connected, else connects to the production server"""
+    pass
 
 
 def start_eel(develop):
@@ -79,6 +131,9 @@ def start_eel(develop):
 
 if __name__ == '__main__':
     import sys
+
+    server = Server()
+    server.connect()
 
     # Pass any second argument to enable debugging
     print(f'{sys.argv}')
