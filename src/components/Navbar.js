@@ -6,8 +6,10 @@ function Navbar({ eel, params, setParams }) {
     const connect_db = (path) => {
         if (eel) {
             if (params.session.server.status === false) {
-                eel.connect_db((path = ""))((message) => {
-                    console.log(`[PY]: ${message}`);
+                eel.connect_db((path = ""))((response) => {
+                    console.log(`[PY]: ${JSON.stringify(message)}`);
+                    let data = response.data;
+                    let message = response.message;
                     if (message.startsWith("SUCCESS")) {
                         setParams({
                             ...params,
@@ -23,8 +25,10 @@ function Navbar({ eel, params, setParams }) {
                 });
             } else {
                 // alert("Server is already connected");
-                eel.disconnect_db()((message) => {
-                    console.log(`[PY]: ${message}`);
+                eel.disconnect_db()((response) => {
+                    console.log(`[PY]: ${JSON.stringify(response)}`);
+                    let data = response.data;
+                    let message = response.message;
                     if (message.startsWith("SUCCESS")) {
                         setParams({
                             ...params,
@@ -67,8 +71,8 @@ function Navbar({ eel, params, setParams }) {
                 <span className="text-4xl font-bold">Rollback Kiosk</span>
             </div>
             <div className="flex justify-end flex-1 px-2 ">
-                <div className="flex flex-col w-auto h-10 shadow stats">
-                    <div className="flex align-middle bg-gray-200 stat">
+                <div className="flex flex-col w-auto shadow stats ">
+                    <div className="flex align-middle bg-gray-200 rounded-full h-18">
                         <div className="flex stat-figure text-primary">
                             {/* <svg
                                 xmlns="http://www.w3.org/2000/svg"

@@ -9,6 +9,7 @@ const defPath = "~";
 function Container({ eel }) {
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
+    const INSTANT_MODE_STATUS_ID = "-1";
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         message: `Click button to choose a random file from the user's system`,
@@ -24,18 +25,42 @@ function Container({ eel }) {
         setState({ ...state, mode: MODE_MANUAL });
     };
 
-    const pickFile = () => {
-        eel.pick_file(defPath)((message) => {
-            console.log(`message: ${message}`);
-            setState({ ...state, message });
-        });
-    };
+    // const pickFile = () => {
+    //     eel.pick_file(defPath)((response) => {
+    //         console.log(`message: ${response}`);
+    //         setState({ ...state, response });
+    //     });
+    // };
 
     const handleBoxInput = (event) => {
         const pcb_sn = event.target.value.trim();
-        alert(`___${pcb_sn}___`);
+        // alert(`___${pcb_sn}___`);
+        eel.rollback(
+            pcb_sn,
+            state.mode,
+            INSTANT_MODE_STATUS_ID
+        )((response) => {
+            console.log(`[PY]: ${JSON.stringify(response)}`);
+            let data = response.data.metadata;
+            let message = response.message;
+            if (message.startsWith("SUCCESS")) {
+                // TODO: add small alerts
+                alert(`SUCCESS ${message} data: ${data}`);
+                // alert(`ROLLBACK SUCCESS: ${message}`);
+            } else {
+                // TODO: handle when status change is not allowed as per rule matrix
+                alert(`FAILURE ${message} data: ${data}`);
+                // alert(`ROLLBACK ERROR: ${message}`);
+            }
 
+            console.log(data);
+            // TODO: Status out of data
+        });
         event.target.value = "";
+    };
+
+    const handleManualRollback = (event) => {
+        alert(event.target.value);
     };
 
     // console.log(status_map);
@@ -108,9 +133,9 @@ function Container({ eel }) {
                             <div className="flex flex-col h-48 mt-8">
                                 <button
                                     className="h-32 text-3xl btn btn-accent btn-active"
-                                    onClick={pickFile}
+                                    onClick={handleManualRollback}
                                 >
-                                    Rollback `{state.path}`
+                                    Rollback `{/** state.path */}`
                                 </button>
 
                                 <p>{state.message}</p>
