@@ -7,9 +7,9 @@ import random
 import sys
 import eel
 import pyodbc
-import time
-import pandas as pd
-from tqdm.notebook import tqdm
+# import time
+# import pandas as pd
+# from tqdm.notebook import tqdm
 
 
 class Server:
@@ -19,38 +19,86 @@ class Server:
     def __init__(self):
         # default config
         self.driver = "{ODBC Driver 17 for SQL Server}"
-        self.server = "172.20.10.149\\PRODUCTION"
         self.database = "stb_production"
-        self.username = "Neo.Tech"
-        self.password = "Password357"
+        # self.server = "172.20.10.149\\PRODUCTION"
+        # self.username = "Neo.Tech"
+        # self.password = "Password357"
+        self.server = "HOMEPC\\SQLEXPRESS"
+        self.username = "Bhanu.Pratap"
+        self.password = "Password123"
 
     def __del__(self):
         print(f'Server {self.server} instance destroyed')
         if(self.conn):
-            self.conn.close()
+            try:
+                self.conn.close()
+            except Exception as e:
+                print(
+                    f'Server {self.server} has no connection established earlier' + str(e))
         else:
             print(
                 f'Server {self.server} has no connection established earlier')
 
     def connect(self, driver='', server='', database='', username='', password=''):
-        if(server == ''):
-            self.conn = pyodbc.connect("DRIVER=" + self.driver
-                                       + ";SERVER=" + self.server
-                                       + ";DATABASE=" + self.database
-                                       + ";UID=" + self.username
-                                       + ";PWD=" + self.password)
-        else:
-            self.server = server
-            self.conn = pyodbc.connect("DRIVER=" + driver
-                                       + ";SERVER=" + server
-                                       + ";DATABASE=" + database
-                                       + ";UID=" + username
-                                       + ";PWD=" + password)
-        if(self.conn):
-            self.cursor = self.conn.cursor()
-            print(f'Connection established with server {self.server}')
-        else:
-            print(f'Error: Server {self.server} could not be connected!')
+        connection_status = 'FAILURE: '
+        try:
+            if(server == ''):
+                self.conn = pyodbc.connect("DRIVER=" + self.driver
+                                           + ";SERVER=" + self.server
+                                           + ";DATABASE=" + self.database
+                                           + ";UID=" + self.username
+                                           + ";PWD=" + self.password)
+            else:
+                self.server = server
+                self.conn = pyodbc.connect("DRIVER=" + driver
+                                           + ";SERVER=" + server
+                                           + ";DATABASE=" + database
+                                           + ";UID=" + username
+                                           + ";PWD=" + password)
+            if(self.conn):
+                self.cursor = self.conn.cursor()
+                print(f'Connection established with server {self.server}')
+                connection_status = "SUCCESS"
+            else:
+                print(f'Error: Server {self.server} could not be connected!')
+                connection_status = connection_status + "unable to establish server connection"
+        except Exception as e:
+            connection_status = connection_status + str(e)
+            print(
+                f'Error: Server {self.server} could not be connected! \n {connection_status}')
+        return connection_status
+
+    def disconnect(self):
+        connection_status = "SUCCESS"
+        # connection_status = "SUCCESS"
+        # print(
+        #             connection_status=connection_status + "unable to establish server connection"
+        #             f'Server {self.server} has no connection established earlier')
+        # connection_status = connection_status + str(e)
+        # print(
+        #         f'Error: Server {self.server} could not be connected! \n {connection_status}')
+        try:
+            if(self.conn):
+                self.cursor.close()
+            else:
+                connection_status = connection_status = 'FAILURE: ' + 'No active connection'
+                print(
+                    connection_status=connection_status + "unable to establish server connection"
+                    f'Server {self.server} has no connection established earlier')
+        except Exception as e:
+            print('SERVER: cursor close error: ' + str(e))
+            connection_status = 'FAILURE: ' + str(e)
+
+        try:
+            self.conn.close()
+        except Exception as e:
+            print('SERVER: connection close error: ' + str(e))
+            connection_status = 'FAILURE: ' + str(e)
+
+        return connection_status
+
+
+serverinstance = None
 
 
 # Use latest version of Eel from parent directory
@@ -87,9 +135,37 @@ def pick_file(folder):
 #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
 
 
+@eel.expose
 def connect_db(path):
     """Returns connection status if connected, else connects to the production server"""
-    pass
+    print(f'[APP] requested connect_db {path}')
+    global serverinstance
+    serverinstance = Server()
+    return serverinstance.connect()
+    # if(serverinstance):
+    #     return "Success"
+    # else:
+    #     return "Unable to connect"
+    # pass
+
+
+@eel.expose
+def disconnect_db():
+    """Returns connection status if connected, else connects to the production server"""
+    print('[APP] requested disconnect_db')
+    global serverinstance
+    if serverinstance:
+        serverinstance = serverinstance.disconnect()
+
+        return serverinstance
+    else:
+        return "FAILURE: No server instance available"
+
+    # if(serverinstance):
+    #     return "Success"
+    # else:
+    #     return "Unable to connect"
+    # pass
 
 
 def start_eel(develop):
@@ -131,9 +207,6 @@ def start_eel(develop):
 
 if __name__ == '__main__':
     import sys
-
-    server = Server()
-    server.connect()
 
     # Pass any second argument to enable debugging
     print(f'{sys.argv}')
