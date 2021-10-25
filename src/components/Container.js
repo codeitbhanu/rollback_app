@@ -7,11 +7,22 @@ import status_map from "../datajson/statusmap";
 const defPath = "~";
 
 function Container({ eel }) {
+    const MODE_MANUAL = "manual";
+    const MODE_INSTANT = "instant";
     const [state, setState] = useState({
+        mode: MODE_INSTANT,
         message: `Click button to choose a random file from the user's system`,
         path: defPath,
         data: fake_data,
     });
+
+    const modeInstant = () => {
+        setState({ ...state, mode: MODE_INSTANT });
+    };
+
+    const modeManual = () => {
+        setState({ ...state, mode: MODE_MANUAL });
+    };
 
     const pickFile = () => {
         eel.pick_file(defPath)((message) => {
@@ -19,13 +30,45 @@ function Container({ eel }) {
             setState({ ...state, message });
         });
     };
-    console.log(status_map);
-    console.log(fake_data);
+
+    const handleBoxInput = (event) => {
+        const pcb_sn = event.target.value.trim();
+        alert(`___${pcb_sn}___`);
+
+        event.target.value = "";
+    };
+
+    // console.log(status_map);
+    // console.log(fake_data);
 
     return (
-        <div className="absolute flex flex-col w-full mt-4 border-0 border-red-600 h-1/2">
-            <div className="flex border-0 border-green-400 border-dashed">
-                <div className="flex ml-8 border-0 border-blue-700 border-double form-control">
+        <div className="absolute flex flex-col w-full mt-4 border-2 border-red-600 h-1/2">
+            <div className="flex border-2 border-green-400 border-dashed">
+                <div className="flex ml-8 border-2 border-blue-700 border-double form-control">
+                    <div className="bg-white">
+                        <nav className="flex flex-col sm:flex-row">
+                            <button
+                                className={`flex-1 block px-6 py-4 text-3xl font-bold  border-b-2 border-blue-500 hover:text-blue-500 focus:outline-none ${
+                                    state.mode === MODE_INSTANT
+                                        ? "text-blue-600 underline"
+                                        : "text-gray-500"
+                                }`}
+                                onClick={modeInstant}
+                            >
+                                Instant
+                            </button>
+                            <button
+                                className={`flex-1 block px-6 py-4 text-3xl font-bold  border-b-2 border-blue-500 hover:text-blue-500 focus:outline-none ${
+                                    state.mode === MODE_MANUAL
+                                        ? "text-blue-600 underline"
+                                        : "text-gray-500"
+                                }`}
+                                onClick={modeManual}
+                            >
+                                Manual
+                            </button>
+                        </nav>
+                    </div>
                     <div className="flex flex-col">
                         <label className="text-black label">
                             <span className="text-black label-text">
@@ -36,39 +79,46 @@ function Container({ eel }) {
                             type="text"
                             placeholder="Enter PCB_Num / STB_Num"
                             className="input input-primary input-bordered"
+                            onKeyDown={(e) =>
+                                e.key === "Enter" && handleBoxInput(e)
+                            }
                         />
                     </div>
-                    <div className="flex flex-col mt-8 border-0 border-red-600">
-                        <label className="text-black label">
-                            <span className="text-black label-text">
-                                Select Target Status
-                            </span>
-                        </label>
-                        <select className="flex min-w-full select select-bordered select-primary">
-                            {status_map.map((status) => (
-                                <option
-                                    disabled={status.id_status === -1}
-                                    selected={status.id_status === -1}
-                                    key={status.id_status}
-                                    id={status.id_status}
+                    {state.mode === MODE_MANUAL && (
+                        <div>
+                            <div className="flex flex-col mt-8 border-2 border-red-600">
+                                <label className="text-black label">
+                                    <span className="text-black label-text">
+                                        Select Target Status
+                                    </span>
+                                </label>
+                                <select className="flex min-w-full select select-bordered select-primary">
+                                    {status_map.map((status) => (
+                                        <option
+                                            disabled={status.id_status === -1}
+                                            selected={status.id_status === -1}
+                                            key={status.id_status}
+                                            id={status.id_status}
+                                        >
+                                            {status.status_desc}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex flex-col h-48 mt-8">
+                                <button
+                                    className="h-32 text-3xl btn btn-accent btn-active"
+                                    onClick={pickFile}
                                 >
-                                    {status.status_desc}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex flex-col h-48 mt-8">
-                        <button
-                            className="h-32 text-3xl btn btn-accent btn-active"
-                            onClick={pickFile}
-                        >
-                            Rollback `{state.path}`
-                        </button>
+                                    Rollback `{state.path}`
+                                </button>
 
-                        <p>{state.message}</p>
-                    </div>
+                                <p>{state.message}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div className="bottom-0 flex flex-1 px-8 border-0 border-red-500 pt-9 h-tableheight">
+                <div className="bottom-0 flex flex-1 px-8 border-2 border-red-500 pt-9 h-tableheight">
                     <div className="flex flex-1 overflow-y-scroll">
                         <table className="flex table w-full table-compact">
                             <thead className="">
