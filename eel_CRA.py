@@ -20,6 +20,10 @@ ROLLBACK_INDEX = ROLLBACK_STEP - 1
 
 MODE_MANUAL = "manual"
 MODE_INSTANT = "instant"
+CONST_SUCCESS = "SUCCESS"
+CONST_FAILURE = "FAILURE"
+INSTANT_MODE_STATUS_ID = "-1"
+
 status_desc_for_id_status = {
     0: 'False',
     1: 'True',
@@ -149,73 +153,39 @@ def rollback_instant(conn, cursor, pcb_sn, id_user):
     else:
         results = None
         try:
-            try:
-                select_sql = f'''
-                SELECT pe.id_status, status_desc FROM stb_production.dbo.production_event pe
-                INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
-                WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
-                print(f'[SQL] {select_sql}')
-                conn.autocommit = False
-                results = cursor.execute(select_sql).fetchall()
-                response_data = {
-                    "select_query": select_sql,
-                    "select_count": len(results),
-                }
-                print(f'[SQL_SELECT_RESULTS] {results}')
-            except pyodbc.DatabaseError as e:
-                print(
-                    f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
-                cursor.rollback()
-                raise e
-            except pyodbc.ProgrammingError as pe:
-                cursor.rollback()
-                print(
-                    f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-                raise pe
-            except KeyError as ke:
-                print(
-                    f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
-                raise ke
-            else:
-                cursor.commit()
-            finally:
-                conn.autocommit = True
-                if len(results) == 0:
-                    raise ValueError("Error: record not found")
-
-        except Exception as e:
-            print('Error on line {}'.format(
-                sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-            raise e
-
-            # row = results # HACK
-            # if row in results:
-
-        print(f'[SQL_SELECT_RESULTS] {results}')
-        for row in results:
-            # print(f'[{pcb_sn}] >> {type(row)}')
-
-            try:
+            if type(id_user) == int:
                 try:
-                    # Find and update the target_status
-                    target_status = rollback_rules_matrix[
-                        row.id_status][ROLLBACK_INDEX]
-                    update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
-                                    SET id_status={target_status}, [timestamp] = CAST(GETDATE() AS VARCHAR), id_user={id_user if id_user != '' else 'null'}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
-                    print(f'[SQL] {update_sql}')
+                    select_sql = f'''
+                    SELECT pe.id_status, status_desc FROM stb_production.dbo.production_event pe
+                    INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
+                    WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
+                    print(f'[SELECT-SQL] {select_sql}')
                     conn.autocommit = False
-                    update_count = cursor.execute(update_sql)
+                    results = cursor.execute(select_sql).fetchall()
                     response_data = {
-                        **response_data,
-                        "update_query": update_sql,
-                        "update_count": update_count,
+                        "select_query": select_sql,
+                        "select_count": len(results),
                     }
+                    if len(results) == 1:
+                        row = results[0]
+                        response_data = {
+                            "select_query": select_sql,
+                            "select_count": len(results),
+                        }
+                    else:
+                        return {
+                            "data": {
+                                "metadata": len(results)
+                            },
+                            "message": "PCB not found or search result not unique",
+                            "status": CONST_FAILURE,
+                        }
+                    print(f'[SELECT-SQL-RESULTS] {results}')
                 except pyodbc.DatabaseError as e:
                     print(
                         f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
                     cursor.rollback()
                     raise e
-
                 except pyodbc.ProgrammingError as pe:
                     cursor.rollback()
                     print(
@@ -227,26 +197,130 @@ def rollback_instant(conn, cursor, pcb_sn, id_user):
                     raise ke
                 else:
                     cursor.commit()
+                finally:
+                    conn.autocommit = True
+                    if len(results) == 0:
+                        raise ValueError("Error: record not found")
+            else:
+                raise ValueError((id_user, "Cannot be other than int"))
+
+        except Exception as e:
+            print('Error on line {}'.format(
+                sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+
+            # raise e
+            message = type(e).__name__ + ': ' + str(e)
+            if type(e).__name__ == 'KeyError':
+                message = "Rollback not allowed to target station"
+            return {
+                "data": {"metadata": response_data},
+                "message": message,
+                "status": CONST_FAILURE,
+            }
+            # row = results # HACK
+            # if row in results:
+
+        # print(f'[SQL_SELECT_RESULTS] {results}')
+        if len(results) == 1:
+            row = results[0]
+            target_status = -1
+            print(f'[{pcb_sn}] >> {type(row)} >> {row}')
+
+            try:
+                try:
+                    # Find and update the target_status
+                    response_data = {
+                        **response_data,
+                        "current_status": row.id_status,
+                        "target_status": target_status,
+                    }
+                    print(f"--1 {row.id_status} {ROLLBACK_INDEX}")
+                    target_status = rollback_rules_matrix[
+                        row.id_status][ROLLBACK_INDEX]
+
+                    print("--2")
+                    if target_status != -1:
+                        update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
+                                    SET id_status={target_status}, [timestamp] = CAST(GETDATE() AS VARCHAR), id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
+                    else:
+                        raise ValueError("Incorrect target_status")
+
+                    print("--3")
+                    print(f'[UPDATE-SQL] {update_sql}')
+                    print("--4")
+                    conn.autocommit = False
+                    update_count = cursor.execute(update_sql)
+                    print("--5")
+                    response_data = {
+                        **response_data,
+                        "update_query": update_sql,
+                        "update_count": update_count,
+                        "current_status": row.id_status,
+                        "target_status": target_status,
+                    }
+                    print("--6")
+                except pyodbc.DatabaseError as e:
+                    print(
+                        f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+                    cursor.rollback()
+                    raise e
+
+                except pyodbc.ProgrammingError as pe:
+                    cursor.rollback()
+                    print(
+                        f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+                    raise pe
+                except KeyError as e:
+                    print(f"--7 {type(e).__name__ + ': ' + str(e)}")
+                    print(
+                        f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
+                    raise e
+                else:
+                    cursor.commit()
 
                 finally:
+                    print("--8")
                     conn.autocommit = True
 
             except Exception as e:
+                print("--9")
+                print(
+                    f'>>>>>>> {type(e).__name__} type_of_e: {type(e.args)}')
                 print('Error on line {}'.format(
                     sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-                return {
-                    "data": response_data,
-                    "message": str(e),
-                    "status": "FAILURE",
-                }
 
+                # raise e
+                message = type(e).__name__ + ': ' + str(e)
+
+                if type(e).__name__ == "KeyError" and len(e.args) and type(e.args[0]) == int:
+                    print(f"--10 {e.args[0]}")
+                    message = f"Rollback not allowed from {status_desc_for_id_status[e.args[0]]}"
+                    print(f"--11 {message}\n{response_data}")
+                return {
+                    "data": {"metadata": response_data},
+                    "message": message,
+                    "status": CONST_FAILURE,
+                }
+            print("--12")
             temp_row = [pcb_sn, row.id_status, row.status_desc, '>>>',
                         target_status, status_desc_for_id_status[target_status]]
+            print("--13")
             print(f'<<< {temp_row}')
             return {
-                "data": response_data,
+                "data": {
+                    "metadata": temp_row
+                },
                 "message": temp_row,
-                "status": "SUCCESS",
+                "status": CONST_SUCCESS,
+            }
+        else:
+            print("--14")
+            return {
+                "data": {
+                    "metadata": len(results)
+                },
+                "message": "PCB not found or search result not unique",
+                "status": CONST_FAILURE,
             }
 
 
@@ -255,15 +329,26 @@ class Server:
     cursor = None
 
     def __init__(self):
-        # default config
+        # DEVELOPMENT CONFIG
         self.driver = "{ODBC Driver 17 for SQL Server}"
         self.database = "stb_production"
-        # self.server = "172.20.10.149\\PRODUCTION"
-        # self.username = "Neo.Tech"
-        # self.password = "Password357"
-        self.server = "HOMEPC\\SQLEXPRESS"
-        self.username = "Bhanu.Pratap"
-        self.password = "Password123"
+        self.server = "172.20.10.149\\PRODUCTION"
+        self.username = "Neo.Tech"
+        self.password = "Password357"
+        # LOCAL FOR TESTING
+        # self.server = "HOMEPC\\SQLEXPRESS"
+        # self.username = "Bhanu.Pratap"
+        # self.password = "Password123"
+
+    def getInstanceStatus(self):
+        connection_status = CONST_FAILURE
+        message = CONST_FAILURE
+        if (self.conn and self.cursor):
+            connection_status = CONST_SUCCESS
+            connection_status = 'Server Already Connected'
+        else:
+            message += "Instance is null"
+        return {"data": {"metadata": None}, "message": message, "status": connection_status}
 
     def __del__(self):
         print(f'Server {self.server} instance destroyed')
@@ -272,7 +357,7 @@ class Server:
                 self.conn.close()
             except Exception as e:
                 print(
-                    f'Server {self.server} has no connection established earlier' + str(e))
+                    f'Server {self.server} has no connection established earlier' + type(e).__name__ + ': ' + str(e))
         else:
             print(
                 f'Server {self.server} has no connection established earlier')
@@ -296,26 +381,27 @@ class Server:
             if(self.conn):
                 self.cursor = self.conn.cursor()
                 print(f'Connection established with server {self.server}')
-                connection_status = "SUCCESS"
+                connection_status = CONST_SUCCESS
             else:
                 print(f'Error: Server {self.server} could not be connected!')
                 connection_status = connection_status + "unable to establish server connection"
         except Exception as e:
-            connection_status = connection_status + str(e)
+            connection_status = connection_status + \
+                type(e).__name__ + ': ' + str(e)
             print(
                 f'Error: Server {self.server} could not be connected! \n {connection_status}')
-        if(connection_status.startswith("SUCCESS")):
-            return {"data": {"metadata": connection_status}, "message": connection_status, "status": "SUCCESS"}
+        if(connection_status.startswith(CONST_SUCCESS)):
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_SUCCESS}
         else:
-            return {"data": {"metadata": connection_status}, "message": connection_status, "status": "FAILURE"}
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_FAILURE}
 
     def disconnect(self):
-        connection_status = "SUCCESS"
-        # connection_status = "SUCCESS"
+        connection_status = CONST_SUCCESS
+        # connection_status = CONST_SUCCESS
         # print(
         #             connection_status=connection_status + "unable to establish server connection"
         #             f'Server {self.server} has no connection established earlier')
-        # connection_status = connection_status + str(e)
+        # connection_status = connection_status + type(e).__name__ + ': '+ str(e)
         # print(
         #         f'Error: Server {self.server} could not be connected! \n {connection_status}')
         try:
@@ -327,19 +413,19 @@ class Server:
                     connection_status=connection_status + "unable to establish server connection"
                     f'Server {self.server} has no connection established earlier')
         except Exception as e:
-            print('SERVER: cursor close error: ' + str(e))
-            connection_status = 'FAILURE: ' + str(e)
+            connection_status = 'FAILURE: ' + type(e).__name__ + ': ' + str(e)
+            print('SERVER: cursor close error: ' + connection_status)
 
         try:
             self.conn.close()
         except Exception as e:
-            print('SERVER: connection close error: ' + str(e))
-            connection_status = 'FAILURE: ' + str(e)
+            connection_status = 'FAILURE: ' + type(e).__name__ + ': ' + str(e)
+            print('SERVER: connection close error: ' + connection_status)
 
-        if(connection_status.startswith("SUCCESS")):
-            return {"data": {"metadata": connection_status}, "message": connection_status, "status": "SUCCESS"}
+        if(connection_status.startswith(CONST_SUCCESS)):
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_SUCCESS}
         else:
-            return {"data": {"metadata": connection_status}, "message": connection_status, "status": "FAILURE"}
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_FAILURE}
 
 
 serverinstance = None
@@ -384,8 +470,11 @@ def connect_db(path):
     """Returns connection status if connected, else connects to the production server"""
     print(f'[APP] requested connect_db {path}')
     global serverinstance
-    serverinstance = Server()
-    return {"data": {"metadata": serverinstance.connect()}, "message": "Server Connected", "status": "SUCCESS"}
+    if serverinstance:
+        return serverinstance.getInstanceStatus()
+    else:
+        serverinstance = Server()
+        return serverinstance.connect()
     # if(serverinstance):
     #     return "Success"
     # else:
@@ -401,9 +490,9 @@ def disconnect_db():
     if serverinstance:
         serverinstance = serverinstance.disconnect()
 
-        return {"data": {"metadata": None}, "message": "Server Connected", "status": "SUCCESS"}
+        return {"data": {"metadata": None}, "message": "Server Connected", "status": CONST_SUCCESS}
     else:
-        return {"data": {"metadata": None}, "message": "FAILURE: No server instance available", "status": "FAILURE"}
+        return {"data": {"metadata": None}, "message": "FAILURE: No server instance available", "status": CONST_FAILURE}
 
     # if(serverinstance):
     #     return "Success"
@@ -413,43 +502,54 @@ def disconnect_db():
 
 
 @eel.expose
-def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id="-1", id_user=''):
+def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_ID, id_user=''):
     print(
         f'''[APP] requested rollback \npcb_num:{pcb_sn} mode:{mode} rollback done to target_status_id:{target_status_id}''')
     global serverinstance
-    rollback_status = 'FAILURE '
-    response_data = None
+    # rollback_status = CONST_FAILURE
+    # response_data = None
+    help_message = ''
+    ret = {
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
 
     if not serverinstance:
-        return {"data": {"metadata": None}, "message": rollback_status + 'Server not connected', "status": "FAILURE"}
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
         try:
             if(mode == MODE_INSTANT):
                 # HANDLE INSTANT ROLLBACK
-                response_data = rollback_instant(serverinstance.conn,
-                                                 serverinstance.cursor, pcb_sn, id_user)
-                rollback_status = f'''SUCCESS {pcb_sn} {mode} rollback done to {target_status_id}'''
-
+                ret = rollback_instant(serverinstance.conn,
+                                       serverinstance.cursor, pcb_sn, id_user)
+                # rollback_status = f'''{ret.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
             elif(mode == MODE_MANUAL):
                 # HANDLE MANUAL ROLLBACK
-                rollback_status = f'''SUCCESS {pcb_sn} {mode} rollback done to {target_status_id}'''
-
+                help_message = f'''{CONST_FAILURE} {pcb_sn} {mode} rollback done to {target_status_id}'''
+                ret = {
+                    **ret,
+                    "message": help_message
+                }
             else:
                 # ELSE
-                rollback_status = rollback_status + \
-                    f'''[ERROR] {pcb_sn} not allowed target status {target_status_id} in {mode} '''
+                help_message = f'''{CONST_FAILURE} {pcb_sn} not allowed target status {target_status_id} in {mode} '''
+                ret = {
+                    **ret,
+                    "message": help_message
+                }
 
         except Exception as e:
-            rollback_status = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status_id} Message: {str(e)}'''
+            help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status_id} Message: {type(e).__name__ + ': '+ str(e)}'''
+            ret = {
+                **ret,
+                "message": help_message
+            }
 
-    print(rollback_status)
-    return {
-        "data": {
-            "metadata": response_data
-        },
-        "message": rollback_status,
-        "status": "FAILURE"
-    }
+    print(f'''HELP> {help_message}''')
+    return ret
     # return {"data": 'hello', 'repsonse': 'world'}
 
 

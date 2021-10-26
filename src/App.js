@@ -42,7 +42,8 @@ function App() {
             server: {
                 status: false, // true: connected, false: disconnected
                 host: `HOMEPC\\SQLEXPRESS`,
-                username: `Bhanu.Pratap`,
+                username: `bhanu.pratap`,
+                id_user: 127,
                 password: `Password123`,
             },
         },

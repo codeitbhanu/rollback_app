@@ -1,0 +1,37 @@
+[APP] requested rollback 
+pcb_num:309735090630 mode:instant rollback done to target_status_id:-1
+rollback_instant called
+[SELECT-SQL]
+                SELECT pe.id_status, status_desc FROM stb_production.dbo.production_event pe
+                INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
+                WHERE pcb_num  = '309735090630' OR stb_num = '309735090630'
+[SELECT-SQL-RESULTS] [(58, 'Duplicate PCB Label Printed')]
+[309735090630] >> <class 'pyodbc.Row'> >> (58, 'Duplicate PCB Label Printed')
+--1 58 0
+--2
+--3
+[UPDATE-SQL] SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
+                                    SET id_status=15, [timestamp] = CAST(GETDATE() AS VARCHAR), id_user=bhanu.pratap  WHERE pcb_num=N'309735090630' OR stb_num=N'309735090630'; SET NOCOUNT OFF;
+--4
+[ERROR: pyodbc.ProgrammingError - ('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The multi-part 
+identifier "bhanu.pratap" could not be bound. (4104) (SQLExecDirectW)'), will skip this invalid cell value
+--8
+--9
+>>>>>>> ProgrammingError type_of_e: <class 'tuple'>
+Error on line 263 ProgrammingError ('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The multi-part identifier "bhanu.pratap" could not be bound. (4104) (SQLExecDirectW)')
+HELP>
+
+
+
+[PY]: {
+  "data": {
+    "metadata": {
+      "select_query": "\n                SELECT pe.id_status, status_desc FROM stb_production.dbo.production_event pe\n                INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status\n                WHERE pcb_num  = '309735090630' OR stb_num = '309735090630'",
+      "select_count": 1,
+      "current_status": 58,
+      "target_status": -1
+    }
+  },
+  "message": "('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The multi-part identifier \"bhanu.pratap\" could not be bound. (4104) (SQLExecDirectW)')",
+  "status": "FAILURE"
+}

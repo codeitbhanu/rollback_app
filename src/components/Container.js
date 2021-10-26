@@ -6,7 +6,7 @@ import status_map from "../datajson/statusmap";
 
 const defPath = "~";
 
-function Container({ eel }) {
+function Container({ eel, params, setParams }) {
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
     const INSTANT_MODE_STATUS_ID = "-1";
@@ -38,18 +38,19 @@ function Container({ eel }) {
         eel.rollback(
             pcb_sn,
             state.mode,
-            INSTANT_MODE_STATUS_ID
+            INSTANT_MODE_STATUS_ID,
+            params.session.server.id_user
         )((response) => {
-            console.log(`[PY]: ${JSON.stringify(response)}`);
+            console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
             let data = response.data.metadata;
-            let message = response.message;
-            if (message.startsWith("SUCCESS")) {
+            let status = response.status;
+            if (status.startsWith("SUCCESS")) {
                 // TODO: add small alerts
-                alert(`SUCCESS ${message} data: ${data}`);
+                alert(`SUCCESS ${response.message} data: ${data.select_count}`);
                 // alert(`ROLLBACK SUCCESS: ${message}`);
             } else {
                 // TODO: handle when status change is not allowed as per rule matrix
-                alert(`FAILURE ${message} data: ${data}`);
+                alert(`FAILURE ${response.message} data: ${data.select_count}`);
                 // alert(`ROLLBACK ERROR: ${message}`);
             }
 

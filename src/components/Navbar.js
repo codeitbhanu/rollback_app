@@ -7,10 +7,12 @@ function Navbar({ eel, params, setParams }) {
         if (eel) {
             if (params.session.server.status === false) {
                 eel.connect_db((path = ""))((response) => {
-                    console.log(`[PY]: ${JSON.stringify(message)}`);
+                    console.log(`[PY]: ${JSON.stringify(response.data)}`);
+                    console.log(`[PY]: ${JSON.stringify(response.message)}`);
+                    console.log(`[PY]: ${JSON.stringify(response.status)}`);
                     let data = response.data;
-                    let message = response.message;
-                    if (message.startsWith("SUCCESS")) {
+                    let status = response.status;
+                    if (status.startsWith("SUCCESS")) {
                         setParams({
                             ...params,
                             session: {
@@ -28,8 +30,8 @@ function Navbar({ eel, params, setParams }) {
                 eel.disconnect_db()((response) => {
                     console.log(`[PY]: ${JSON.stringify(response)}`);
                     let data = response.data;
-                    let message = response.message;
-                    if (message.startsWith("SUCCESS")) {
+                    let status = response.status;
+                    if (status.startsWith("SUCCESS")) {
                         setParams({
                             ...params,
                             session: {
@@ -71,42 +73,54 @@ function Navbar({ eel, params, setParams }) {
                 <span className="text-4xl font-bold">Rollback Kiosk</span>
             </div>
             <div className="flex justify-end flex-1 px-2 ">
-                <div className="flex flex-col w-auto shadow stats ">
-                    <div className="flex align-middle bg-gray-200 rounded-full h-18">
-                        <div className="flex stat-figure text-primary">
-                            {/* <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-5 h-5"
-                                viewBox="0 0 20 20"
-                                fill="#0f0"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clipRule="evenodd"
-                                />
-                            </svg> */}
-                        </div>
-                        {/* <div className="stat-title">Total Likes</div> */}
-                        <div>
+                <div className="flex flex-col p-5 bg-gray-200 border-4 border-gray-600 rounded-full shadow w-72 h-36">
+                    <div className="flex justify-between align-middle border-0 border-red-600">
+                        <div className="flex align-middle border-0 border-red-600 flex-start text-primary">
+                            {/* <div className="stat-title">Total Likes</div> */}
                             <input
                                 type="checkbox"
                                 checked={params.session.server.status}
-                                className="toggle toggle-accent cursor"
+                                className="flex my-auto align-middle toggle toggle-accent cursor"
                                 onChange={() => connect_db()}
                             />
                         </div>
-                        <div className="text-xl stat-value text">SERVER: </div>
+                        <div
+                            className={`flex text-xl border-0  ${
+                                params.session.server.status
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                            }`}
+                        >
+                            {params.session.server.status
+                                ? "SERVER OK"
+                                : "SERVER NOT_OK"}
+                        </div>
 
-                        {params.session.server.status ? (
-                            <div className="text-xl stat-value text-success">
-                                OK
+                        {/* <div className="flex justify-center">
+                            <div
+                                className={`flex-1 w-12 h-6 transition duration-200 ease-linear rounded ${
+                                    params.session.server.status
+                                        ? "bg-green-400"
+                                        : "bg-gray-400"
+                                }`}
+                            >
+                                <label
+                                    className={`left-0 w-16 h-6 mb-2 transition duration-100 ease-linear transform bg-white border-0 rounded cursor-pointer ${
+                                        params.session.server.status
+                                            ? "translate-x-full border-green-400"
+                                            : "translate-x-0 border-gray-400"
+                                    }`}
+                                />
+                                <input
+                                    type="checkbox"
+                                    id="toggle"
+                                    name="toggle"
+                                    className="w-1/2 h-full appearance-none focus:outline-none"
+                                    onChange={() => connect_db()}
+                                />
                             </div>
-                        ) : (
-                            <div className="text-xl font-bold text-red-600">
-                                NOT-OK
-                            </div>
-                        )}
+                        </div> */}
+
                         {/* <div className="stat-desc">
                             21% more than last month
                         </div> */}
@@ -121,7 +135,10 @@ function Navbar({ eel, params, setParams }) {
                     /> */}
                 </div>
                 <div className="divider divider-vertical"></div>
-                <p>bhanu.pratap</p>
+                <p>
+                    {params.session.server.username}(
+                    {params.session.server.id_user})
+                </p>
 
                 <div className="flex items-stretch">
                     <div className="dropdown dropdown-end">
