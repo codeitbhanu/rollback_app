@@ -49,7 +49,7 @@ function App() {
         },
     });
     return (
-        <div className="border-2 border-yellow-600 App">
+        <div className="border-0 border-yellow-600 App">
             <header className="w-full h-22">
                 <Navbar eel={eel} params={appState} setParams={setAppState} />
             </header>

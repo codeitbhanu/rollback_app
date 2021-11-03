@@ -140,7 +140,7 @@ rollback_rules_matrix = {
 }
 
 
-def rollback_instant(conn, cursor, pcb_sn, id_user):
+def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
     print("""rollback_instant called""")
     response_data = {}
     if(pcb_sn == ''):
@@ -156,31 +156,36 @@ def rollback_instant(conn, cursor, pcb_sn, id_user):
             if type(id_user) == int:
                 try:
                     select_sql = f'''
-                    SELECT pe.id_status, status_desc FROM stb_production.dbo.production_event pe
+                    SELECT pe.id_status, pro.prod_id, pro.prod_desc, status_desc FROM stb_production.dbo.production_event pe
                     INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
+                    INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
                     WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
                     print(f'[SELECT-SQL] {select_sql}')
                     conn.autocommit = False
                     results = cursor.execute(select_sql).fetchall()
-                    response_data = {
-                        "select_query": select_sql,
-                        "select_count": len(results),
-                    }
+                    print(f'[SELECT-SQL-RESULTS] {results}')
+
                     if len(results) == 1:
                         row = results[0]
                         response_data = {
+                            "pcb_sn": pcb_sn,
+                            "prod_id": row.prod_id,
+                            "prod_desc": row.prod_desc,
                             "select_query": select_sql,
                             "select_count": len(results),
                         }
                     else:
                         return {
                             "data": {
-                                "metadata": len(results)
+                                "metadata": {
+                                    "pcb_sn": pcb_sn,
+                                    "select_query": select_sql,
+                                    "select_count": len(results),
+                                }
                             },
                             "message": "PCB not found or search result not unique",
                             "status": CONST_FAILURE,
                         }
-                    print(f'[SELECT-SQL-RESULTS] {results}')
                 except pyodbc.DatabaseError as e:
                     print(
                         f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
@@ -223,7 +228,7 @@ def rollback_instant(conn, cursor, pcb_sn, id_user):
         # print(f'[SQL_SELECT_RESULTS] {results}')
         if len(results) == 1:
             row = results[0]
-            target_status = -1
+            target_status = target_status_id
             print(f'[{pcb_sn}] >> {type(row)} >> {row}')
 
             try:
@@ -238,7 +243,7 @@ def rollback_instant(conn, cursor, pcb_sn, id_user):
                     target_status = rollback_rules_matrix[
                         row.id_status][ROLLBACK_INDEX]
 
-                    print("--2")
+                    print(f"--2 {target_status}")
                     if target_status != -1:
                         update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
                                     SET id_status={target_status}, [timestamp] = CAST(GETDATE() AS VARCHAR), id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
@@ -524,7 +529,7 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
             if(mode == MODE_INSTANT):
                 # HANDLE INSTANT ROLLBACK
                 ret = rollback_instant(serverinstance.conn,
-                                       serverinstance.cursor, pcb_sn, id_user)
+                                       serverinstance.cursor, pcb_sn, target_status_id, id_user)
                 # rollback_status = f'''{ret.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
             elif(mode == MODE_MANUAL):
                 # HANDLE MANUAL ROLLBACK

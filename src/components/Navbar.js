@@ -63,7 +63,7 @@ function Navbar({ eel, params, setParams }) {
 
     // const server_status = false;
     return (
-        <div className="flex content-center p-4 mb-2 shadow-lg navbar bg-neutral text-neutral-content">
+        <div className="flex content-center p-0 mb-2 shadow-lg navbar bg-neutral text-neutral-content">
             <div className="flex-none">
                 <button className="btn btn-square btn-ghost">
                     <img src={logo} className="w-full h-full" alt="logo" />
@@ -72,9 +72,9 @@ function Navbar({ eel, params, setParams }) {
             <div className="flex-1 px-2 mx-2">
                 <span className="text-4xl font-bold">Rollback Kiosk</span>
             </div>
-            <div className="flex justify-end flex-1 px-2 ">
-                <div className="flex flex-col p-5 bg-gray-200 border-4 border-gray-600 rounded-full shadow w-72 h-36">
-                    <div className="flex justify-between align-middle border-0 border-red-600">
+            <div className="flex justify-end flex-1 py-2 border-0 border-red-300">
+                <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-blue-600 rounded-full shadow p-auto max-h-12">
+                    <div className="flex justify-between m-3 align-middle border-0 border-red-600">
                         <div className="flex align-middle border-0 border-red-600 flex-start text-primary">
                             {/* <div className="stat-title">Total Likes</div> */}
                             <input

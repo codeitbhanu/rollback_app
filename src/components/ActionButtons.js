@@ -1,9 +1,9 @@
 import React from "react";
 
-function ActionButtons({ warn }) {
+function ActionButtons({ pcb_sn, removeItem }) {
     return (
         <div className="flex">
-            <button className="hover:bg-gray-300">
+            {/* <button className="hover:bg-gray-300">
                 <span className="text-green-500 fill-current">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -20,8 +20,11 @@ function ActionButtons({ warn }) {
                         />
                     </svg>
                 </span>
-            </button>
-            <button className="hover:bg-gray-300">
+            </button> */}
+            <button
+                className="hover:bg-gray-300"
+                onClick={(pcb_sn) => removeItem(pcb_sn)}
+            >
                 <span className="text-red-500 fill-current">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -39,7 +42,7 @@ function ActionButtons({ warn }) {
                     </svg>
                 </span>
             </button>
-            <button className="hover:bg-gray-300" disabled={!warn}>
+            {/* <button className="hover:bg-gray-300" disabled={!warn}>
                 <span
                     className={
                         warn
@@ -62,7 +65,7 @@ function ActionButtons({ warn }) {
                         />
                     </svg>
                 </span>
-            </button>
+            </button> */}
         </div>
     );
 }
