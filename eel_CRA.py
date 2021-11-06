@@ -207,7 +207,8 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                     if len(results) == 0:
                         raise ValueError("Error: record not found")
             else:
-                raise ValueError((id_user, "Cannot be other than int"))
+                raise ValueError(
+                    (id_user, "id_user cannot be other than int type"))
 
         except Exception as e:
             print('Error on line {}'.format(
@@ -313,7 +314,7 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
             print(f'<<< {temp_row}')
             return {
                 "data": {
-                    "metadata": temp_row
+                    "metadata": response_data
                 },
                 "message": temp_row,
                 "status": CONST_SUCCESS,

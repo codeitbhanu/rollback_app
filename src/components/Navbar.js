@@ -10,7 +10,7 @@ function Navbar({ eel, params, setParams }) {
                     console.log(`[PY]: ${JSON.stringify(response.data)}`);
                     console.log(`[PY]: ${JSON.stringify(response.message)}`);
                     console.log(`[PY]: ${JSON.stringify(response.status)}`);
-                    let data = response.data;
+                    // let data = response.data;
                     let status = response.status;
                     if (status.startsWith("SUCCESS")) {
                         setParams({
@@ -29,7 +29,7 @@ function Navbar({ eel, params, setParams }) {
                 // alert("Server is already connected");
                 eel.disconnect_db()((response) => {
                     console.log(`[PY]: ${JSON.stringify(response)}`);
-                    let data = response.data;
+                    // let data = response.data;
                     let status = response.status;
                     if (status.startsWith("SUCCESS")) {
                         setParams({
@@ -72,10 +72,10 @@ function Navbar({ eel, params, setParams }) {
             <div className="flex-1 px-2 mx-2">
                 <span className="text-4xl font-bold">Rollback Kiosk</span>
             </div>
-            <div className="flex justify-end flex-1 py-2 border-0 border-red-300">
-                <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-blue-600 rounded-full shadow p-auto max-h-12">
-                    <div className="flex justify-between m-3 align-middle border-0 border-red-600">
-                        <div className="flex align-middle border-0 border-red-600 flex-start text-primary">
+            <div className="flex justify-end flex-1 border-0 border-red-300">
+                <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-gray-300 rounded-full shadow max-h-12">
+                    <div className="flex justify-between px-2 py-1 align-middle border-0 border-red-600">
+                        <div className="flex pr-2 align-middle border-0 border-green-600 flex-start text-primary">
                             {/* <div className="stat-title">Total Likes</div> */}
                             <input
                                 type="checkbox"

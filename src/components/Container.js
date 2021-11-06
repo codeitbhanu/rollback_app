@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import ActionButtons from "./ActionButtons";
 
-import fake_data from "../datajson/data";
+// import fake_data from "../datajson/data";
 import status_map from "../datajson/statusmap";
 import reasons_map from "../datajson/reasonsmap";
 
-const defPath = "~";
+// const defPath = "~";
 
 function Container({ eel, params, setParams }) {
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
     const INSTANT_MODE_STATUS_ID = "-1";
+    const CONST_SUCCESS = "SUCCESS";
+    const CONST_FAILURE = "FAILURE";
+
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         manual_status: -1,
@@ -48,14 +51,15 @@ function Container({ eel, params, setParams }) {
             )((response) => {
                 console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                 let data = response.data.metadata;
-                let status = response.status;
+                // let status = response.status;
+                let status = CONST_SUCCESS ? true : false;
 
                 // Extract Metadata
                 let pcb_sn = data.pcb_sn;
                 // let prod_id = data.prod_id;
                 let prod_desc = data.prod_desc;
-                let current_status = data.current_status;
-                let target_status = data.target_status;
+                let current_status = parseInt(data.current_status);
+                let target_status = parseInt(data.target_status);
                 setState({
                     ...state,
                     data: [
@@ -72,24 +76,14 @@ function Container({ eel, params, setParams }) {
                     ],
                 });
 
-                if (status.startsWith("SUCCESS")) {
-                    // TODO: add small alerts
-                    setTimeout(() => {
-                        alert(
-                            `SUCCESS ${response.message} data: ${data.select_count}`
-                        );
-                    }, 200);
-                    // alert(`ROLLBACK SUCCESS: ${message}`);
-                } else {
-                    // TODO: handle when status change is not allowed as per rule matrix
-                    setTimeout(() => {
-                        alert(
-                            `FAILURE ${response.message} data: ${data.select_count}`
-                        );
-                    }, 200);
-                    // alert(`ROLLBACK ERROR: ${message}`);
-                }
-                console.log(data);
+                // setTimeout(() => {
+                //     alert(
+                //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
+                //             response.message
+                //         } data: ${data.select_count}`
+                //     );
+                // }, 200);
+                console.log(JSON.stringify(data));
                 // TODO: Status out of data
             });
         } else {
@@ -243,7 +237,17 @@ function Container({ eel, params, setParams }) {
                                         <td>{data.curr_status}</td>
                                         <td>{data.target_status}</td>
                                         <td>{data.user}</td>
-                                        <td>{data.isDone}</td>
+                                        <td
+                                            className={
+                                                data.isDone
+                                                    ? `bg-yellow-200 text-green-500`
+                                                    : `bg-yellow-200 text-red-500`
+                                            }
+                                        >
+                                            {data.isDone
+                                                ? CONST_SUCCESS
+                                                : CONST_FAILURE}
+                                        </td>
                                         <td>
                                             <ActionButtons warn={true} />
                                         </td>
