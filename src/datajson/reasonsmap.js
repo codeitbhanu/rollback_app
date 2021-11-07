@@ -54,6 +54,11 @@ const status = [
         id_status: 9,
         status_desc: "TV Test Failure",
     },
+    // KEEP THIS AT THE END
+    {
+        id_status: 9999,
+        status_desc: "Other - Enter Manually",
+    },
 ];
 
 export default status;

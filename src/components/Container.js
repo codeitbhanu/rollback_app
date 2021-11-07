@@ -19,6 +19,7 @@ function Container({ eel, params, setParams }) {
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         manual_status: -1,
+        reason_other: false,
         data: [], //fake_data,
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -116,7 +117,12 @@ function Container({ eel, params, setParams }) {
 
     const handleSelectReasonDropdown = (event) => {
         console.log("handleSelectReasonDropdown called ");
-        alert(JSON.stringify(event.target.id));
+        // alert(JSON.stringify(event.target.value));
+        const reason = event.target.value;
+        setState({
+            ...state,
+            reason_other: reason.startsWith("Other"),
+        });
     };
 
     const handleRemoveItem = (id, serial) => {
@@ -161,7 +167,42 @@ function Container({ eel, params, setParams }) {
                             </button>
                         </nav>
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col mt-2 border-0 border-red-600">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Select Reason Of Rollback
+                            </span>
+                        </label>
+                        <select
+                            className="flex min-w-full select select-bordered select-primary"
+                            disabled=""
+                            onChange={(e) => handleSelectReasonDropdown(e)}
+                        >
+                            {reasons_map.map((reason) => (
+                                <option
+                                    disabled={reason.id_status === -1}
+                                    selected={reason.id_status === -1}
+                                    key={reason.id_status}
+                                    id={reason.id_status}
+                                >
+                                    {reason.status_desc}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {state.reason_other && (
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">Write Reason</span>
+                            </label>
+                            <textarea
+                                class="textarea h-24 textarea-bordered textarea-primary"
+                                placeholder="NCR or Ticket No. with details."
+                            ></textarea>
+                        </div>
+                    )}
+                    <div className="flex flex-col mt-2">
                         <label className="text-black label">
                             <span className="text-black label-text">
                                 Enter PCB_Num / STB_Num
@@ -214,29 +255,6 @@ function Container({ eel, params, setParams }) {
                             </div> */}
                         </div>
                     )}
-                    <div className="flex flex-col mt-8 border-0 border-red-600">
-                        <label className="text-black label">
-                            <span className="text-black label-text">
-                                Select Reason Of Rollback
-                            </span>
-                        </label>
-                        <select
-                            className="flex min-w-full select select-bordered select-primary"
-                            onChange={(e) => handleSelectReasonDropdown(e)}
-                            disabled="disabled"
-                        >
-                            {reasons_map.map((reason) => (
-                                <option
-                                    disabled={reason.id_status === -1}
-                                    selected={reason.id_status === -1}
-                                    key={reason.id_status}
-                                    id={reason.id_status}
-                                >
-                                    {reason.status_desc}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
                 </div>
                 <div className="bottom-0 flex flex-1 px-4 pt-0 border-0 border-red-500">
                     <div className="flex-1 overflow-y-scroll">
