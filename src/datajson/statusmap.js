@@ -1,7 +1,7 @@
 const status = [
     {
         id_status: -1,
-        status_desc: "Choose target status",
+        status_desc: "Unknown",
     },
     {
         id_status: 0,

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+
 import ActionButtons from "./ActionButtons";
 
 // import fake_data from "../datajson/data";
@@ -10,7 +12,7 @@ import reasons_map from "../datajson/reasonsmap";
 function Container({ eel, params, setParams }) {
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
-    const INSTANT_MODE_STATUS_ID = "-1";
+    const INSTANT_MODE_STATUS_ID = -1;
     const CONST_SUCCESS = "SUCCESS";
     const CONST_FAILURE = "FAILURE";
 
@@ -54,19 +56,31 @@ function Container({ eel, params, setParams }) {
                     let status = response.status;
                     let message = response.message;
                     let metadata = response.data.metadata;
+                    let current_status = status_map.filter(
+                        (item) =>
+                            item.id_status === parseInt(metadata.current_status)
+                    )[0];
+                    console.log(
+                        `expected ${metadata.current_status} got: ${current_status}`
+                    );
+                    let target_status = status_map.filter(
+                        (item) =>
+                            item.id_status === parseInt(metadata.target_status)
+                    )[0];
+                    console.log(
+                        `expected ${metadata.target_status} got: ${target_status}`
+                    );
 
                     setState({
                         ...state,
                         data: [
                             ...state.data,
                             {
+                                id: uuidv4(),
                                 serial: metadata.pcb_sn,
                                 product: metadata.prod_desc,
-                                current_status: metadata.current_status,
-                                target_status:
-                                    metadata.target_status === -1
-                                        ? "auto"
-                                        : metadata.target_status,
+                                current_status: current_status,
+                                target_status: target_status,
                                 user: metadata.id_user,
                                 message: message,
                                 status: status,
@@ -81,7 +95,7 @@ function Container({ eel, params, setParams }) {
                     //         } data: ${data.select_count}`
                     //     );
                     // }, 200);
-                    console.log(JSON.stringify(state.data));
+                    // console.log(JSON.stringify(state.data));
                     // TODO: Status out of data
                 } catch (error) {
                     setTimeout(() => {
@@ -105,9 +119,15 @@ function Container({ eel, params, setParams }) {
         alert(JSON.stringify(event.target.id));
     };
 
-    const handleRemoveItem = (event) => {
+    const handleRemoveItem = (id, serial) => {
         console.log("handleSelectReasonDropdown called ");
-        alert(JSON.stringify(event.target.id));
+        if (window.confirm(`Confirm delete ${serial} from below list?`)) {
+            setState((state) => {
+                const list = state.data.filter((item) => item.id !== id);
+                // console.log(`list: ${list}`);
+                return { ...state, data: list };
+            });
+        }
     };
 
     // console.log(status_map);
@@ -235,46 +255,39 @@ function Container({ eel, params, setParams }) {
                             </thead>
                             <tbody className="overflow-y-scroll">
                                 {state.data.map((resp, index) => (
-                                    <>
-                                        <tr
-                                            key={index}
-                                            className="p-0 border-0 border-red-600"
+                                    <tr
+                                        key={resp.id}
+                                        id={resp.id}
+                                        className="p-0 border-0 border-red-600"
+                                    >
+                                        <th>{index + 1}</th>
+                                        <td>{resp.serial}</td>
+                                        <td>{resp.product}</td>
+                                        <td>{`${resp.current_status.id_status} (${resp.current_status.status_desc})`}</td>
+                                        <td>{`${resp.target_status.id_status} (${resp.target_status.status_desc})`}</td>
+                                        <td>{resp.user}</td>
+                                        <td
+                                            className={
+                                                resp.status === CONST_SUCCESS
+                                                    ? `bg-yellow-200 text-green-500`
+                                                    : `bg-yellow-200 text-red-500`
+                                            }
                                         >
-                                            <th>{index + 1}</th>
-                                            <td>{resp.serial}</td>
-                                            <td>{resp.product}</td>
-                                            <td>{resp.current_status}</td>
-                                            <td>{resp.target_status}</td>
-                                            <td>{resp.user}</td>
-                                            <td
-                                                className={
+                                            {resp.status}
+                                        </td>
+                                        <td>
+                                            <ActionButtons
+                                                index={resp.id}
+                                                serial={resp.serial}
+                                                warn={
                                                     resp.status ===
-                                                    CONST_SUCCESS
-                                                        ? `bg-yellow-200 text-green-500`
-                                                        : `bg-yellow-200 text-red-500`
+                                                    CONST_FAILURE
                                                 }
-                                            >
-                                                {resp.status}
-                                            </td>
-                                            <td>
-                                                <ActionButtons
-                                                    warn={
-                                                        resp.status ===
-                                                        CONST_FAILURE
-                                                    }
-                                                    removeItem={
-                                                        handleRemoveItem
-                                                    }
-                                                    message={resp.message}
-                                                />
-                                            </td>
-                                        </tr>
-                                        {/* <tr
-                                            className={`bg-yellow-200 text-red-500`}
-                                        >
-                                            {resp.message}
-                                        </tr> */}
-                                    </>
+                                                removeItem={handleRemoveItem}
+                                                message={resp.message}
+                                            />
+                                        </td>
+                                    </tr>
                                 ))}
 
                                 {/*<tr>

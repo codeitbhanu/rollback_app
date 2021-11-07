@@ -1,6 +1,6 @@
 import React from "react";
 
-function ActionButtons({ pcb_sn, warn, removeItem, message }) {
+function ActionButtons({ index, serial, warn, removeItem, message }) {
     return (
         <div className="flex">
             {/* <button className="hover:bg-gray-300">
@@ -23,7 +23,7 @@ function ActionButtons({ pcb_sn, warn, removeItem, message }) {
             </button> */}
             <button
                 className="hover:bg-gray-300"
-                onClick={(pcb_sn) => removeItem(pcb_sn)}
+                onClick={() => removeItem(index, serial)}
             >
                 <span className="text-red-500 fill-current">
                     <svg
@@ -43,7 +43,7 @@ function ActionButtons({ pcb_sn, warn, removeItem, message }) {
                 </span>
             </button>
             {warn ? (
-                <div data-tip={message} className="tooltip tooltip-left">
+                <div data-tip={message} className="ml-2 tooltip tooltip-left">
                     <button className="hover:bg-gray-300" disabled={!warn}>
                         <span
                             className={
