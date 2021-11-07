@@ -168,9 +168,13 @@ function Container({ eel, params, setParams }) {
         });
     };
 
-    const handleRemoveItem = (id, serial) => {
+    const handleRemoveItem = (id, rownum, serial) => {
         console.log("handleSelectReasonDropdown called ");
-        if (window.confirm(`Confirm delete ${serial} from below list?`)) {
+        if (
+            window.confirm(
+                `Confirm delete Row: ${rownum} - ${serial} from below list?`
+            )
+        ) {
             setState((state) => {
                 const list = state.data.filter((item) => item.id !== id);
                 // console.log(`list: ${list}`);
@@ -341,6 +345,7 @@ function Container({ eel, params, setParams }) {
                                         <td>
                                             <ActionButtons
                                                 index={resp.id}
+                                                rowNum={index + 1}
                                                 serial={resp.pcb_sn}
                                                 warn={
                                                     resp.status ===

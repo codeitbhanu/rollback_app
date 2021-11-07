@@ -1,6 +1,6 @@
 import React from "react";
 
-function ActionButtons({ index, serial, warn, removeItem, message }) {
+function ActionButtons({ index, rowNum, serial, warn, removeItem, message }) {
     return (
         <div className="flex">
             {/* <button className="hover:bg-gray-300">
@@ -23,7 +23,7 @@ function ActionButtons({ index, serial, warn, removeItem, message }) {
             </button> */}
             <button
                 className="hover:bg-gray-300"
-                onClick={() => removeItem(index, serial)}
+                onClick={() => removeItem(index, rowNum, serial)}
             >
                 <span className="text-red-500 fill-current">
                     <svg
