@@ -1,5 +1,4 @@
-{
-    /* <option selected="selected" value="Select a Reason">Select a Reason</option>
+/* <option selected="selected" value="Select a Reason">Select a Reason</option>
 <option value="Repairs BGA/Flash Replace">Repairs BGA/Flash Replace</option>
 <option value="Barcode Misprint at Mechanical">Barcode Misprint at Mechanical</option>
 <option value="Barcode Misprint at Base Panel">Barcode Misprint at Base Panel</option>
@@ -9,7 +8,6 @@
 <option value="Supplier Reject">Supplier Reject</option>
 <option value="On Line Reject">On Line Reject</option>
 <option value="TV Test Failure">TV Test Failure</option> */
-}
 
 const status = [
     {

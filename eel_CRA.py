@@ -22,7 +22,7 @@ MODE_MANUAL = "manual"
 MODE_INSTANT = "instant"
 CONST_SUCCESS = "SUCCESS"
 CONST_FAILURE = "FAILURE"
-INSTANT_MODE_STATUS_ID = "-1"
+INSTANT_MODE_STATUS_ID = -1
 
 status_desc_for_id_status = {
     0: 'False',
@@ -181,6 +181,7 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                                     "pcb_sn": pcb_sn,
                                     "select_query": select_sql,
                                     "select_count": len(results),
+                                    "id_user": id_user
                                 }
                             },
                             "message": "PCB not found or search result not unique",
@@ -239,6 +240,7 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                         **response_data,
                         "current_status": row.id_status,
                         "target_status": target_status,
+                        "id_user": id_user
                     }
                     print(f"--1 {row.id_status} {ROLLBACK_INDEX}")
                     target_status = rollback_rules_matrix[
@@ -263,6 +265,7 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                         "update_count": update_count,
                         "current_status": row.id_status,
                         "target_status": target_status,
+                        "id_user": id_user
                     }
                     print("--6")
                 except pyodbc.DatabaseError as e:

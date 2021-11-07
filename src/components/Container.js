@@ -50,41 +50,44 @@ function Container({ eel, params, setParams }) {
                 params.session.server.id_user
             )((response) => {
                 console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
-                let data = response.data.metadata;
-                // let status = response.status;
-                let status = CONST_SUCCESS ? true : false;
+                try {
+                    let status = response.status;
+                    let message = response.message;
+                    let metadata = response.data.metadata;
 
-                // Extract Metadata
-                let pcb_sn = data.pcb_sn;
-                // let prod_id = data.prod_id;
-                let prod_desc = data.prod_desc;
-                let current_status = parseInt(data.current_status);
-                let target_status = parseInt(data.target_status);
-                setState({
-                    ...state,
-                    data: [
-                        ...state.data,
-                        {
-                            serial: pcb_sn,
-                            product: prod_desc,
-                            curr_status: current_status,
-                            target_status:
-                                target_status === -1 ? "auto" : target_status,
-                            user: params.session.server.username,
-                            isDone: status,
-                        },
-                    ],
-                });
+                    setState({
+                        ...state,
+                        data: [
+                            ...state.data,
+                            {
+                                serial: metadata.pcb_sn,
+                                product: metadata.prod_desc,
+                                current_status: metadata.current_status,
+                                target_status:
+                                    metadata.target_status === -1
+                                        ? "auto"
+                                        : metadata.target_status,
+                                user: metadata.id_user,
+                                message: message,
+                                status: status,
+                            },
+                        ],
+                    });
 
-                // setTimeout(() => {
-                //     alert(
-                //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
-                //             response.message
-                //         } data: ${data.select_count}`
-                //     );
-                // }, 200);
-                console.log(JSON.stringify(data));
-                // TODO: Status out of data
+                    // setTimeout(() => {
+                    //     alert(
+                    //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
+                    //             response.message
+                    //         } data: ${data.select_count}`
+                    //     );
+                    // }, 200);
+                    console.log(JSON.stringify(state.data));
+                    // TODO: Status out of data
+                } catch (error) {
+                    setTimeout(() => {
+                        alert(`PARSE ERROR: ${error}`);
+                    }, 200);
+                }
             });
         } else {
             alert(`FAILURE Connect the server first`);
@@ -98,6 +101,11 @@ function Container({ eel, params, setParams }) {
     };
 
     const handleSelectReasonDropdown = (event) => {
+        console.log("handleSelectReasonDropdown called ");
+        alert(JSON.stringify(event.target.id));
+    };
+
+    const handleRemoveItem = (event) => {
         console.log("handleSelectReasonDropdown called ");
         alert(JSON.stringify(event.target.id));
     };
@@ -226,32 +234,47 @@ function Container({ eel, params, setParams }) {
                                 </tr>
                             </thead>
                             <tbody className="overflow-y-scroll">
-                                {state.data.map((data, index) => (
-                                    <tr
-                                        key={index}
-                                        className="p-0 border-0 border-red-600"
-                                    >
-                                        <th>{index + 1}</th>
-                                        <td>{data.serial}</td>
-                                        <td>{data.product}</td>
-                                        <td>{data.curr_status}</td>
-                                        <td>{data.target_status}</td>
-                                        <td>{data.user}</td>
-                                        <td
-                                            className={
-                                                data.isDone
-                                                    ? `bg-yellow-200 text-green-500`
-                                                    : `bg-yellow-200 text-red-500`
-                                            }
+                                {state.data.map((resp, index) => (
+                                    <>
+                                        <tr
+                                            key={index}
+                                            className="p-0 border-0 border-red-600"
                                         >
-                                            {data.isDone
-                                                ? CONST_SUCCESS
-                                                : CONST_FAILURE}
-                                        </td>
-                                        <td>
-                                            <ActionButtons warn={true} />
-                                        </td>
-                                    </tr>
+                                            <th>{index + 1}</th>
+                                            <td>{resp.serial}</td>
+                                            <td>{resp.product}</td>
+                                            <td>{resp.current_status}</td>
+                                            <td>{resp.target_status}</td>
+                                            <td>{resp.user}</td>
+                                            <td
+                                                className={
+                                                    resp.status ===
+                                                    CONST_SUCCESS
+                                                        ? `bg-yellow-200 text-green-500`
+                                                        : `bg-yellow-200 text-red-500`
+                                                }
+                                            >
+                                                {resp.status}
+                                            </td>
+                                            <td>
+                                                <ActionButtons
+                                                    warn={
+                                                        resp.status ===
+                                                        CONST_FAILURE
+                                                    }
+                                                    removeItem={
+                                                        handleRemoveItem
+                                                    }
+                                                    message={resp.message}
+                                                />
+                                            </td>
+                                        </tr>
+                                        {/* <tr
+                                            className={`bg-yellow-200 text-red-500`}
+                                        >
+                                            {resp.message}
+                                        </tr> */}
+                                    </>
                                 ))}
 
                                 {/*<tr>
