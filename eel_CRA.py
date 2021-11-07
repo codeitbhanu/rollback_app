@@ -147,7 +147,7 @@ def get_current_time():
     return now.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]
 
 
-def rollback_instant(conn, cursor, pcb_sn, target_status_id, reason_desc, id_user):
+def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, id_user):
     print("""rollback_instant called""")
     response_data = {}
     current_time = get_current_time()
@@ -186,6 +186,8 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, reason_desc, id_use
                             "select_count": len(results),
                             "prod_id": row.prod_id,
                             "prod_desc": row.prod_desc,
+                            "current_status": row.id_status,
+                            "current_status_desc": row.status_desc,
                         }
                     else:
                         return {
@@ -250,16 +252,18 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, reason_desc, id_use
                     # Find and update the target_status
                     response_data = {
                         **response_data,
-                        "current_status": row.id_status,
                         "target_status": target_status,
                         "id_user": id_user
                     }
                     print(f"--1 {row.id_status} {ROLLBACK_INDEX}")
-                    target_status = rollback_rules_matrix[
-                        row.id_status][ROLLBACK_INDEX]
+                    if mode == MODE_INSTANT:
+                        target_status = rollback_rules_matrix[row.id_status][ROLLBACK_INDEX]
+                    elif mode == MODE_MANUAL:
+                        allowed = target_status in rollback_rules_matrix[row.id_status]
+                        print(f'allowed target status? {allowed}')
 
                     print(f"--2 {target_status}")
-                    if target_status != -1:
+                    if target_status in rollback_rules_matrix[row.id_status] and target_status != -1:
                         update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
                                     SET id_status={target_status}, [timestamp] = N\'{current_time}\', id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
                     else:
@@ -576,18 +580,18 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
         try:
-            if(mode == MODE_INSTANT):
+            if(mode == MODE_INSTANT or mode == MODE_MANUAL):
                 # HANDLE INSTANT ROLLBACK
-                ret = rollback_instant(serverinstance.conn,
+                ret = rollback_instant(mode, serverinstance.conn,
                                        serverinstance.cursor, pcb_sn, target_status_id, reason_desc, id_user)
                 # rollback_status = f'''{ret.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
-            elif(mode == MODE_MANUAL):
-                # HANDLE MANUAL ROLLBACK
-                help_message = f'''{CONST_FAILURE} {pcb_sn} {mode} rollback done to {target_status_id}'''
-                ret = {
-                    **ret,
-                    "message": help_message
-                }
+            # elif(mode == MODE_MANUAL):
+            #     # HANDLE MANUAL ROLLBACK
+            #     help_message = f'''{CONST_FAILURE} {pcb_sn} {mode} rollback done to {target_status_id}'''
+            #     ret = {
+            #         **ret,
+            #         "message": help_message
+            #     }
             else:
                 # ELSE
                 help_message = f'''{CONST_FAILURE} {pcb_sn} not allowed target status {target_status_id} in {mode} '''

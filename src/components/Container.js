@@ -134,7 +134,18 @@ function Container({ eel, params, setParams }) {
 
     const handleSelectTargetDropdown = (event) => {
         console.log("handleSelectTargetDropdown called ");
-        alert(JSON.stringify(event.target.id));
+        // alert(JSON.stringify(event.target.id));
+        const status = event.target.value;
+        let manual_status = status_map.filter(
+            (item) => item.status_desc === status
+        )[0];
+        console.log(
+            `status: ${status} manual_status: ${JSON.stringify(manual_status)}`
+        );
+        setState({
+            ...state,
+            manual_status: manual_status.id_status,
+        });
     };
 
     const handleSelectReasonDropdown = (event) => {
