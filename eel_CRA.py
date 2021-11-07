@@ -5,6 +5,7 @@ import platform
 import sys
 import eel
 import pyodbc
+import datetime
 # import os
 # import random
 # import time
@@ -22,6 +23,7 @@ MODE_MANUAL = "manual"
 MODE_INSTANT = "instant"
 CONST_SUCCESS = "SUCCESS"
 CONST_FAILURE = "FAILURE"
+CONST_REASON_DEFAULT = "Other - Not specified"
 INSTANT_MODE_STATUS_ID = -1
 
 status_desc_for_id_status = {
@@ -140,9 +142,15 @@ rollback_rules_matrix = {
 }
 
 
-def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
+def get_current_time():
+    now = datetime.datetime.now()
+    return now.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]
+
+
+def rollback_instant(conn, cursor, pcb_sn, target_status_id, reason_desc, id_user):
     print("""rollback_instant called""")
     response_data = {}
+    current_time = get_current_time()
     if(pcb_sn == ''):
         print(
             f'[WARNING: Blank Cell Value - {type(pcb_sn)} ~ {pcb_sn}, will skip this invalid cell value')
@@ -161,6 +169,12 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                     INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
                     WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
                     print(f'[SELECT-SQL] {select_sql}')
+                    response_data = {
+                        **response_data,
+                        "timestamp": current_time,
+                        "pcb_sn": pcb_sn,
+                        "select_query": select_sql,
+                    }
                     conn.autocommit = False
                     results = cursor.execute(select_sql).fetchall()
                     print(f'[SELECT-SQL-RESULTS] {results}')
@@ -168,18 +182,16 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                     if len(results) == 1:
                         row = results[0]
                         response_data = {
-                            "pcb_sn": pcb_sn,
+                            **response_data,
+                            "select_count": len(results),
                             "prod_id": row.prod_id,
                             "prod_desc": row.prod_desc,
-                            "select_query": select_sql,
-                            "select_count": len(results),
                         }
                     else:
                         return {
                             "data": {
                                 "metadata": {
-                                    "pcb_sn": pcb_sn,
-                                    "select_query": select_sql,
+                                    **response_data,
                                     "select_count": len(results),
                                     "id_user": id_user
                                 }
@@ -249,7 +261,7 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                     print(f"--2 {target_status}")
                     if target_status != -1:
                         update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
-                                    SET id_status={target_status}, [timestamp] = CAST(GETDATE() AS VARCHAR), id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
+                                    SET id_status={target_status}, [timestamp] = N\'{current_time}\', id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
                     else:
                         raise ValueError("Incorrect target_status")
 
@@ -331,6 +343,40 @@ def rollback_instant(conn, cursor, pcb_sn, target_status_id, id_user):
                 "message": "PCB not found or search result not unique",
                 "status": CONST_FAILURE,
             }
+
+
+def roll_back_insert_tracking(conn, cursor, pcb_sn, prod_id, target_status_id, reason_desc, id_user, timestamp):
+    print(
+        f'[roll_back_insert_tracking] record updated for {pcb_sn} status: {target_status_id} on {timestamp} with reason: {reason_desc} by {id_user}')
+    try:
+        insert_sql = f'''SET NOCOUNT ON; INSERT INTO stb_production.dbo.roll_back (serial_num, prod_id, ncr_num, id_user, entry_date) VALUES(N\'{pcb_sn}\', {prod_id}, N\'{reason_desc}\', {id_user}, N\'{timestamp}\'); SET NOCOUNT OFF;'''
+        print(f'[INSERT-SQL] {insert_sql}')
+        # return
+        conn.autocommit = False
+        insert_count = cursor.execute(insert_sql)
+        print(f'insert_count: {insert_count}')
+    except pyodbc.DatabaseError as e:
+        print(
+            f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+        cursor.rollback()
+        raise e
+
+    except pyodbc.ProgrammingError as pe:
+        cursor.rollback()
+        print(
+            f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+        raise pe
+    except KeyError as e:
+        print(f"--7 {type(e).__name__ + ': ' + str(e)}")
+        print(
+            f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
+        raise e
+    else:
+        cursor.commit()
+
+    finally:
+        print("--8")
+        conn.autocommit = True
 
 
 class Server:
@@ -511,9 +557,9 @@ def disconnect_db():
 
 
 @eel.expose
-def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_ID, id_user=''):
+def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_ID, reason_desc=CONST_REASON_DEFAULT, id_user=''):
     print(
-        f'''[APP] requested rollback \npcb_num:{pcb_sn} mode:{mode} rollback done to target_status_id:{target_status_id}''')
+        f'''[APP] requested rollback \npcb_num:{pcb_sn} mode:{mode} rollback done to target_status_id:{target_status_id} reason: {reason_desc}''')
     global serverinstance
     # rollback_status = CONST_FAILURE
     # response_data = None
@@ -533,7 +579,7 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
             if(mode == MODE_INSTANT):
                 # HANDLE INSTANT ROLLBACK
                 ret = rollback_instant(serverinstance.conn,
-                                       serverinstance.cursor, pcb_sn, target_status_id, id_user)
+                                       serverinstance.cursor, pcb_sn, target_status_id, reason_desc, id_user)
                 # rollback_status = f'''{ret.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
             elif(mode == MODE_MANUAL):
                 # HANDLE MANUAL ROLLBACK
@@ -556,8 +602,24 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
                 **ret,
                 "message": help_message
             }
+        if ret['status'] == CONST_SUCCESS:
+            # Update roll_back table for tracking
+            try:
+                prod_id = ret['data']['metadata']['prod_id']
+                timestamp = ret['data']['metadata']['timestamp']
+                target_status = ret['data']['metadata']['target_status']
+                print(ret['data']['metadata']['prod_id'])
+                roll_back_insert_tracking(serverinstance.conn,
+                                          serverinstance.cursor, pcb_sn, prod_id, target_status, reason_desc, id_user, timestamp)
+            except Exception as e:
+                help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status} Message: {type(e).__name__ + ': '+ str(e)}'''
+                ret = {
+                    **ret,
+                    "message": help_message
+                }
 
     print(f'''HELP> {help_message}''')
+
     return ret
     # return {"data": 'hello', 'repsonse': 'world'}
 

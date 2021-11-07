@@ -20,6 +20,8 @@ function Container({ eel, params, setParams }) {
         mode: MODE_INSTANT,
         manual_status: -1,
         reason_other: false,
+        reason_desc: "",
+        reason_manual: "",
         data: [], //fake_data,
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -40,74 +42,94 @@ function Container({ eel, params, setParams }) {
     //     });
     // };
 
-    const handleBoxInput = (event) => {
+    const handleBarcodeInput = (event) => {
         const pcb_sn = event.target.value.trim();
         // alert(`___${pcb_sn}___`);
-        if (params.session.server.status) {
-            eel.rollback(
-                pcb_sn,
-                state.mode,
-                state.mode === MODE_INSTANT
-                    ? INSTANT_MODE_STATUS_ID
-                    : state.manual_status,
-                params.session.server.id_user
-            )((response) => {
-                console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
-                try {
-                    let status = response.status;
-                    let message = response.message;
-                    let metadata = response.data.metadata;
-                    let current_status = status_map.filter(
-                        (item) =>
-                            item.id_status === parseInt(metadata.current_status)
-                    )[0];
-                    console.log(
-                        `expected ${metadata.current_status} got: ${current_status}`
-                    );
-                    let target_status = status_map.filter(
-                        (item) =>
-                            item.id_status === parseInt(metadata.target_status)
-                    )[0];
-                    console.log(
-                        `expected ${metadata.target_status} got: ${target_status}`
-                    );
 
-                    setState({
-                        ...state,
-                        data: [
-                            ...state.data,
-                            {
-                                id: uuidv4(),
-                                serial: metadata.pcb_sn,
-                                product: metadata.prod_desc,
-                                current_status: current_status,
-                                target_status: target_status,
-                                user: metadata.id_user,
-                                message: message,
-                                status: status,
-                            },
-                        ],
-                    });
+        try {
+            if (params.session.server.status) {
+                eel.rollback(
+                    pcb_sn,
+                    state.mode,
+                    state.mode === MODE_INSTANT
+                        ? INSTANT_MODE_STATUS_ID
+                        : state.manual_status,
+                    state.reason_other
+                        ? state.reason_manual
+                        : state.reason_desc,
+                    params.session.server.id_user
+                )((response) => {
+                    console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                    try {
+                        let status = response.status;
+                        let message = response.message;
+                        let metadata = response.data.metadata;
+                        let current_status = status_map.filter(
+                            (item) =>
+                                item.id_status ===
+                                parseInt(metadata.current_status)
+                        )[0];
+                        console.log(
+                            `expected ${metadata.current_status} got: ${current_status}`
+                        );
+                        let target_status = status_map.filter(
+                            (item) =>
+                                item.id_status ===
+                                parseInt(metadata.target_status)
+                        )[0];
+                        console.log(
+                            `expected ${metadata.target_status} got: ${target_status}`
+                        );
 
-                    // setTimeout(() => {
-                    //     alert(
-                    //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
-                    //             response.message
-                    //         } data: ${data.select_count}`
-                    //     );
-                    // }, 200);
-                    // console.log(JSON.stringify(state.data));
-                    // TODO: Status out of data
-                } catch (error) {
-                    setTimeout(() => {
-                        alert(`PARSE ERROR: ${error}`);
-                    }, 200);
-                }
-            });
-        } else {
-            alert(`FAILURE Connect the server first`);
+                        setState({
+                            ...state,
+                            data: [
+                                ...state.data,
+                                {
+                                    id: uuidv4(),
+                                    pcb_sn: metadata.pcb_sn,
+                                    prod_desc: metadata.prod_desc
+                                        ? metadata.prod_desc
+                                        : "Not found",
+                                    current_status:
+                                        current_status !== undefined
+                                            ? current_status
+                                            : -1,
+                                    target_status:
+                                        target_status !== undefined
+                                            ? target_status
+                                            : -1,
+                                    user: metadata.id_user
+                                        ? metadata.id_user
+                                        : "Unknown",
+                                    message: message,
+                                    status: status,
+                                },
+                            ],
+                        });
+
+                        // setTimeout(() => {
+                        //     alert(
+                        //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
+                        //             response.message
+                        //         } data: ${data.select_count}`
+                        //     );
+                        // }, 200);
+                        // console.log(JSON.stringify(state.data));
+                        // TODO: Status out of data
+                    } catch (error) {
+                        setTimeout(() => {
+                            alert(`PARSE ERROR: ${error}`);
+                        }, 200);
+                    }
+                });
+            } else {
+                throw Error(`Connect the server first`);
+            }
+            event.target.value = "";
+        } catch (error) {
+            alert(`ERROR: ${error}`);
         }
-        event.target.value = "";
     };
 
     const handleSelectTargetDropdown = (event) => {
@@ -119,9 +141,19 @@ function Container({ eel, params, setParams }) {
         console.log("handleSelectReasonDropdown called ");
         // alert(JSON.stringify(event.target.value));
         const reason = event.target.value;
+        const isOther = reason.startsWith("Other");
         setState({
             ...state,
-            reason_other: reason.startsWith("Other"),
+            reason_other: isOther,
+            reason_desc: isOther ? state.reason_manual : reason,
+        });
+    };
+
+    const handleChangeTextBox = (event) => {
+        console.log("handleSelectReasonDropdown called " + event.target.value);
+        setState({
+            ...state,
+            reason_manual: event.target.value,
         });
     };
 
@@ -180,8 +212,8 @@ function Container({ eel, params, setParams }) {
                         >
                             {reasons_map.map((reason) => (
                                 <option
-                                    disabled={reason.id_status === -1}
-                                    selected={reason.id_status === -1}
+                                    disabled={reason.id_status === 0}
+                                    selected={reason.id_status === 0}
                                     key={reason.id_status}
                                     id={reason.id_status}
                                 >
@@ -192,34 +224,21 @@ function Container({ eel, params, setParams }) {
                     </div>
 
                     {state.reason_other && (
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Write Reason</span>
+                        <div className="form-control">
+                            <label className="label">
+                                <span className="label-text">Write Reason</span>
                             </label>
                             <textarea
-                                class="textarea h-24 textarea-bordered textarea-primary"
+                                className="h-24 textarea textarea-bordered textarea-primary"
                                 placeholder="NCR or Ticket No. with details."
+                                onChange={(e) => handleChangeTextBox(e)}
+                                value={state.reason_manual}
                             ></textarea>
                         </div>
                     )}
-                    <div className="flex flex-col mt-2">
-                        <label className="text-black label">
-                            <span className="text-black label-text">
-                                Enter PCB_Num / STB_Num
-                            </span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Enter PCB_Num / STB_Num"
-                            className="input input-primary input-bordered"
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && handleBoxInput(e)
-                            }
-                        />
-                    </div>
                     {state.mode === MODE_MANUAL && (
                         <div className="border-0 border-red-600">
-                            <div className="flex flex-col mt-8 border-0 border-red-600">
+                            <div className="flex flex-col mt-2 border-0 border-red-600">
                                 <label className="text-black label">
                                     <span className="text-black label-text">
                                         Select Target Status
@@ -255,6 +274,21 @@ function Container({ eel, params, setParams }) {
                             </div> */}
                         </div>
                     )}
+                    <div className="flex flex-col mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Enter PCB_Num / STB_Num
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Enter PCB_Num / STB_Num"
+                            className="border-double input input-primary input-bordered"
+                            onKeyDown={(e) =>
+                                e.key === "Enter" && handleBarcodeInput(e)
+                            }
+                        />
+                    </div>
                 </div>
                 <div className="bottom-0 flex flex-1 px-4 pt-0 border-0 border-red-500">
                     <div className="flex-1 overflow-y-scroll">
@@ -279,10 +313,10 @@ function Container({ eel, params, setParams }) {
                                         className="p-0 border-0 border-red-600"
                                     >
                                         <th>{index + 1}</th>
-                                        <td>{resp.serial}</td>
-                                        <td>{resp.product}</td>
-                                        <td>{`${resp.current_status.id_status} (${resp.current_status.status_desc})`}</td>
-                                        <td>{`${resp.target_status.id_status} (${resp.target_status.status_desc})`}</td>
+                                        <td>{resp.pcb_sn}</td>
+                                        <td>{resp.prod_desc}</td>
+                                        <td>{`${resp?.current_status?.id_status} (${resp?.current_status?.status_desc})`}</td>
+                                        <td>{`${resp?.target_status?.id_status} (${resp?.target_status?.status_desc})`}</td>
                                         <td>{resp.user}</td>
                                         <td
                                             className={
@@ -296,7 +330,7 @@ function Container({ eel, params, setParams }) {
                                         <td>
                                             <ActionButtons
                                                 index={resp.id}
-                                                serial={resp.serial}
+                                                serial={resp.pcb_sn}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE

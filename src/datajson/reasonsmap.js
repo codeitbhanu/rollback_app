@@ -11,10 +11,6 @@
 
 const status = [
     {
-        id_status: -1,
-        status_desc: "Choose reason",
-    },
-    {
         id_status: 0,
         status_desc: "Select a Reason",
     },
