@@ -39,5 +39,5 @@
     ],
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
-    "default_server": "172.20.10.149\\PRODUCTION"
+    "default_server": "172.20.10.103\\PRODUCTION"
 }

@@ -391,7 +391,7 @@ class Server:
         # DEVELOPMENT CONFIG
         self.driver = "{ODBC Driver 17 for SQL Server}"
         self.database = "stb_production"
-        self.server = "172.20.10.149\\PRODUCTION"
+        self.server = "172.20.10.103\\PRODUCTION"
         self.username = "Neo.Tech"
         self.password = "Password357"
         # LOCAL FOR TESTING
