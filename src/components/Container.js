@@ -47,7 +47,11 @@ function Container({ eel, params, setParams }) {
         // alert(`___${pcb_sn}___`);
 
         try {
-            if (params.session.server.status) {
+            if (params.session.active === false) {
+                alert("Session not active, Please login first");
+                return;
+            }
+            if (params.server.status) {
                 eel.rollback(
                     pcb_sn,
                     state.mode,
@@ -57,7 +61,7 @@ function Container({ eel, params, setParams }) {
                     state.reason_other
                         ? state.reason_manual
                         : state.reason_desc,
-                    params.session.server.id_user
+                    params.session.userdata.id_user
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {

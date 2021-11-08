@@ -4,6 +4,7 @@ import "./App.css";
 
 import Navbar from "./components/Navbar";
 import Container from "./components/Container";
+import config_data from "./datajson/config.json";
 
 // Point Eel web socket to the instance
 export const eel = window.eel;
@@ -35,26 +36,42 @@ const eel_load = () => {
 eel_load();
 
 function App() {
+    console.log(JSON.stringify(config_data.users[1]));
+    // let userdata = config_data.users[1];
+
     const [appState, setAppState] = useState({
+        server: {
+            status: false, // true: connected, false: disconnected
+            driver: config_data.default_driver,
+            host: config_data.default_server,
+            database: config_data.default_database,
+            // username: userdata.user_desc,
+            // password: userdata.password,
+            // id_user: userdata.id_user,
+        },
         session: {
-            user: "bhanu.pratap",
+            userdata: {},
+            active: false,
             timeout: 60,
-            server: {
-                status: false, // true: connected, false: disconnected
-                host: `HOMEPC\\SQLEXPRESS`,
-                username: `bhanu.pratap`,
-                id_user: 127,
-                password: `Password123`,
-            },
         },
     });
     return (
         <div className="border-0 border-yellow-600 App">
             <header className="w-full h-22">
-                <Navbar eel={eel} params={appState} setParams={setAppState} />
+                <Navbar
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
             </header>
             {/* Code here */}
-            <Container eel={eel} params={appState} setParams={setAppState} />
+            <Container
+                eel={eel}
+                params={appState}
+                setParams={setAppState}
+                config_data={config_data}
+            />
         </div>
     );
 }

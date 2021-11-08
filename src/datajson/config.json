@@ -1,0 +1,43 @@
+{
+    "users": [
+        {
+            "id_user": 1,
+            "user_desc": "mike.sishi",
+            "id_title": 2,
+            "id_department": 8,
+            "email": "mike.sishi@uec.co.za",
+            "id_status": 5,
+            "password": "Password123"
+        },
+        {
+            "id_user": 127,
+            "user_desc": "bhanu.pratap",
+            "id_title": 5,
+            "id_department": 9,
+            "email": "bhanu.choudhary@neo-tech.co.in",
+            "id_status": 4,
+            "password": "Password123"
+        },
+        {
+            "id_user": 116,
+            "user_desc": "desigan.kalappa",
+            "id_title": 5,
+            "id_department": 4,
+            "email": "desigan.kalappa@myskyworth.com",
+            "id_status": 4,
+            "password": "Password123"
+        },
+        {
+            "id_user": 116,
+            "user_desc": "desigan.kalappa",
+            "id_title": 5,
+            "id_department": 4,
+            "email": "desigan.kalappa@myskyworth.com",
+            "id_status": 4,
+            "password": "Password123"
+        }
+    ],
+    "default_database": "stb_production",
+    "default_driver": "{ODBC Driver 17 for SQL Server}",
+    "default_server": "172.20.10.149\\PRODUCTION"
+}

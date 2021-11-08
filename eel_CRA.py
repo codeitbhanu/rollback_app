@@ -387,7 +387,7 @@ class Server:
     conn = None
     cursor = None
 
-    def __init__(self):
+    def __init__(self, driver="", host="", database="", username="", password=""):
         # DEVELOPMENT CONFIG
         self.driver = "{ODBC Driver 17 for SQL Server}"
         self.database = "stb_production"
@@ -421,22 +421,22 @@ class Server:
             print(
                 f'Server {self.server} has no connection established earlier')
 
-    def connect(self, driver='', server='', database='', username='', password=''):
+    # def connect(self, driver='', server='', database='', username='', password=''):
+    def connect(self):
         connection_status = 'FAILURE: '
+        print(
+            f'connect to driver={self.driver}, server={self.server}, database={self.database}, username={self.username}, password={self.password}')
         try:
-            if(server == ''):
-                self.conn = pyodbc.connect("DRIVER=" + self.driver
-                                           + ";SERVER=" + self.server
-                                           + ";DATABASE=" + self.database
-                                           + ";UID=" + self.username
-                                           + ";PWD=" + self.password)
-            else:
-                self.server = server
-                self.conn = pyodbc.connect("DRIVER=" + driver
-                                           + ";SERVER=" + server
-                                           + ";DATABASE=" + database
-                                           + ";UID=" + username
-                                           + ";PWD=" + password)
+            # if(server == ''):
+            # conn_str = f'''DRIVER=\"{self.driver}\";SERVER=\"{self.server}\";DATABASE=\"{self.database}\";UID=\"{self.username}\";PWD=\"{self.password}\";'''
+            # print(f'[CONNECTION-STRING] {conn_str}')
+            # self.conn = pyodbc.connect(conn_str)
+            # else:
+            self.conn = pyodbc.connect("DRIVER=" + self.driver
+                                       + ";SERVER=" + self.server
+                                       + ";DATABASE=" + self.database
+                                       + ";UID=" + self.username
+                                       + ";PWD=" + self.password)
             if(self.conn):
                 self.cursor = self.conn.cursor()
                 print(f'Connection established with server {self.server}')
@@ -449,7 +449,7 @@ class Server:
                 type(e).__name__ + ': ' + str(e)
             print(
                 f'Error: Server {self.server} could not be connected! \n {connection_status}')
-        if(connection_status.startswith(CONST_SUCCESS)):
+        if(connection_status == CONST_SUCCESS):
             return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_SUCCESS}
         else:
             return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_FAILURE}
@@ -525,14 +525,16 @@ def say_hello_py(x):
 
 
 @eel.expose
-def connect_db(path):
+def connect_db(driver="", server="", database="", username="", password=""):
     """Returns connection status if connected, else connects to the production server"""
-    print(f'[APP] requested connect_db {path}')
+    print(
+        f'[APP] requested connect_db driver={driver}, server={server}, database={database}, username={username}, password={password}')
     global serverinstance
     if serverinstance:
         return serverinstance.getInstanceStatus()
     else:
         serverinstance = Server()
+        # serverinstance = Server(driver, server, database, username, password)
         return serverinstance.connect()
     # if(serverinstance):
     #     return "Success"
@@ -548,8 +550,8 @@ def disconnect_db():
     global serverinstance
     if serverinstance:
         serverinstance = serverinstance.disconnect()
-
-        return {"data": {"metadata": None}, "message": "Server Connected", "status": CONST_SUCCESS}
+        serverinstance = None
+        return {"data": {"metadata": None}, "message": "Server Disonnected", "status": CONST_SUCCESS}
     else:
         return {"data": {"metadata": None}, "message": "FAILURE: No server instance available", "status": CONST_FAILURE}
 

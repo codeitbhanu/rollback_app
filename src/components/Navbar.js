@@ -1,51 +1,111 @@
-import React from "react";
+import { useState } from "react";
 import logo from "../logo.svg";
 
-function Navbar({ eel, params, setParams }) {
-    console.log("params" + JSON.stringify(params));
-    const connect_db = (path) => {
+function Navbar({ eel, params, setParams, config_data }) {
+    // console.log("params" + JSON.stringify(params.server.driver));
+
+    const [state, setState] = useState({
+        openLogin: false,
+        user_desc: "",
+        password: "",
+    });
+
+    const onChangeUsername = (e) => {
+        console.log("user_desc: " + e.target.value);
+        setState({ ...state, user_desc: e.target.value.trim() });
+    };
+
+    const onChangePassword = (e) => {
+        console.log("password: " + e.target.value);
+        setState({ ...state, password: e.target.value.trim() });
+    };
+
+    const validateLogin = () => {
+        if (state.user_desc === "") {
+            alert("Please enter user_desc");
+            return false;
+        }
+        if (state.password === "") {
+            alert("Please enter password");
+            return false;
+        }
+        const result_list = config_data.users.filter((user) => {
+            // console.log(user);
+            if (
+                user.user_desc === state.user_desc &&
+                user.password === state.password
+            ) {
+                return true;
+            }
+            return false;
+        });
+        console.log("result_list" + JSON.stringify(result_list));
+        if (result_list.length === 0) {
+            alert("Invalid user_desc or password");
+            return false;
+        } else {
+            setParams({
+                ...params,
+                session: {
+                    ...params.session,
+                    userdata: result_list[0],
+                    active: true,
+                },
+            });
+            setState({ ...state, openLogin: false });
+            return true;
+        }
+    };
+
+    const connect_db = () => {
         if (eel) {
-            if (params.session.server.status === false) {
-                eel.connect_db((path = ""))((response) => {
-                    console.log(`[PY]: ${JSON.stringify(response.data)}`);
-                    console.log(`[PY]: ${JSON.stringify(response.message)}`);
-                    console.log(`[PY]: ${JSON.stringify(response.status)}`);
-                    // let data = response.data;
-                    let status = response.status;
-                    if (status.startsWith("SUCCESS")) {
-                        setParams({
-                            ...params,
-                            session: {
-                                ...params.session,
+            try {
+                if (params.server.status === false) {
+                    eel
+                        .connect_db
+                        // params.server.driver,
+                        // params.server.host,
+                        // params.server.database,
+                        // params.session.userdata.user_desc,
+                        // params.session.userdata.password
+                        ()((response) => {
+                        console.log(`[PY]: ${JSON.stringify(response.data)}`);
+                        console.log(
+                            `[PY]: ${JSON.stringify(response.message)}`
+                        );
+                        console.log(`[PY]: ${JSON.stringify(response.status)}`);
+                        // let data = response.data;
+                        let status = response.status;
+                        if (status.startsWith("SUCCESS")) {
+                            setParams({
+                                ...params,
                                 server: {
-                                    ...params.session.server,
+                                    ...params.server,
                                     status: true,
                                 },
-                            },
-                        });
-                    }
-                });
-            } else {
-                // alert("Server is already connected");
-                eel.disconnect_db()((response) => {
-                    console.log(`[PY]: ${JSON.stringify(response)}`);
-                    // let data = response.data;
-                    let status = response.status;
-                    if (status.startsWith("SUCCESS")) {
-                        setParams({
-                            ...params,
-                            session: {
-                                ...params.session,
+                            });
+                        }
+                    });
+                } else {
+                    // alert("Server is already connected");
+                    eel.disconnect_db()((response) => {
+                        console.log(`[PY]: ${JSON.stringify(response)}`);
+                        // let data = response.data;
+                        let status = response.status;
+                        if (status.startsWith("SUCCESS")) {
+                            setParams({
+                                ...params,
                                 server: {
-                                    ...params.session.server,
+                                    ...params.server,
                                     status: false,
                                 },
-                            },
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                alert(error);
             }
-            return;
         } else {
             alert("Unable to get instance of `Eel`");
         }
@@ -54,13 +114,29 @@ function Navbar({ eel, params, setParams }) {
             session: {
                 ...params.session,
                 server: {
-                    ...params.session.server,
+                    ...params.server,
                     status: false,
                 },
             },
         });
     };
 
+    const handleLogin = () => {
+        console.log("handleLogin called");
+        setState({ ...state, openLogin: !state.openLogin });
+    };
+
+    const handleLogout = () => {
+        console.log("handleLogout called");
+        setParams({
+            ...params,
+            session: { ...params.session, userdata: {}, active: false },
+        });
+    };
+
+    // console.log(`
+    //     [JS]: ${JSON.stringify(params)}
+    // `);
     // const server_status = false;
     return (
         <div className="flex content-center p-0 mb-2 shadow-lg navbar bg-neutral text-neutral-content">
@@ -79,19 +155,19 @@ function Navbar({ eel, params, setParams }) {
                             {/* <div className="stat-title">Total Likes</div> */}
                             <input
                                 type="checkbox"
-                                checked={params.session.server.status}
+                                checked={params.server.status}
                                 className="flex my-auto align-middle toggle toggle-accent cursor"
                                 onChange={() => connect_db()}
                             />
                         </div>
                         <div
                             className={`flex text-xl border-0  ${
-                                params.session.server.status
+                                params.server.status
                                     ? "text-green-600"
                                     : "text-red-600"
                             }`}
                         >
-                            {params.session.server.status
+                            {params.server.status
                                 ? "SERVER OK"
                                 : "SERVER NOT_OK"}
                         </div>
@@ -99,14 +175,14 @@ function Navbar({ eel, params, setParams }) {
                         {/* <div className="flex justify-center">
                             <div
                                 className={`flex-1 w-12 h-6 transition duration-200 ease-linear rounded ${
-                                    params.session.server.status
+                                    params.server.status
                                         ? "bg-green-400"
                                         : "bg-gray-400"
                                 }`}
                             >
                                 <label
                                     className={`left-0 w-16 h-6 mb-2 transition duration-100 ease-linear transform bg-white border-0 rounded cursor-pointer ${
-                                        params.session.server.status
+                                        params.server.status
                                             ? "translate-x-full border-green-400"
                                             : "translate-x-0 border-gray-400"
                                     }`}
@@ -126,18 +202,22 @@ function Navbar({ eel, params, setParams }) {
                         </div> */}
                     </div>
 
-                    {/* <p className="">{`server: ${params.session.server.status}`}</p>
+                    {/* <p className="">{`server: ${params.server.status}`}</p>
                     <input
                         type="checkbox"
-                        checked={params.session.server.status}
+                        checked={params.server.status}
                         className="toggle toggle-primary cursor"
                         onChange={() => connect_db()}
                     /> */}
                 </div>
                 <div className="divider divider-vertical"></div>
                 <p>
-                    {params.session.server.username}(
-                    {params.session.server.id_user})
+                    {`${
+                        params.session.userdata.user_desc
+                            ? params.session.userdata.user_desc +
+                              ` (${params.session.userdata.id_user})`
+                            : "Please Login"
+                    }`}
                 </p>
 
                 <div className="flex items-stretch">
@@ -162,16 +242,75 @@ function Navbar({ eel, params, setParams }) {
                             tabIndex={0}
                             className="p-2 text-gray-600 shadow menu dropdown-content bg-base-100 rounded-box w-52"
                         >
-                            <li>
-                                <button className="text-gray-600 bg-transparent border-none btn hover:text-gray-200">
-                                    Login
-                                </button>
-                            </li>
-                            <li>
-                                <button className="text-gray-600 bg-transparent border-none btn hover:text-gray-200">
-                                    Logout
-                                </button>
-                            </li>
+                            {params.session.active === false ? (
+                                <li>
+                                    <button
+                                        className="text-gray-600 bg-transparent border-none btn hover:text-gray-200"
+                                        onClick={handleLogin}
+                                    >
+                                        Login
+                                    </button>
+                                    {state.openLogin ? (
+                                        <div className="form-control">
+                                            <div className="flex flex-col">
+                                                <label className="py-2 input-group input-group-xs">
+                                                    <span>@</span>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="username"
+                                                        className="ml-2 input input-bordered input-xs"
+                                                        onChange={
+                                                            onChangeUsername
+                                                        }
+                                                    />
+                                                </label>
+                                                <label className="py-2 input-group input-group-xs">
+                                                    <span>$</span>
+                                                    <input
+                                                        type="password"
+                                                        placeholder="password"
+                                                        className="ml-2 input input-bordered input-xs"
+                                                        onChange={
+                                                            onChangePassword
+                                                        }
+                                                    />
+                                                </label>
+
+                                                <button
+                                                    className="py-2 btn btn-primary"
+                                                    onClick={validateLogin}
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="w-6 h-6"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        ""
+                                    )}
+                                </li>
+                            ) : (
+                                <li>
+                                    <button
+                                        className="text-gray-600 bg-transparent border-none btn hover:text-gray-200"
+                                        onClick={handleLogout}
+                                    >
+                                        Logout
+                                    </button>
+                                </li>
+                            )}
                         </ul>
                     </div>
                 </div>
