@@ -261,6 +261,11 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
                     elif mode == MODE_MANUAL:
                         allowed = target_status in rollback_rules_matrix[row.id_status]
                         print(f'allowed target status? {allowed}')
+                        if allowed is False:
+                            response_data = {
+                                **response_data,
+                                "allowed_target_status": rollback_rules_matrix[row.id_status]
+                            }
 
                     print(f"--2 {target_status}")
                     if target_status in rollback_rules_matrix[row.id_status] and target_status != -1:
@@ -387,11 +392,11 @@ class Server:
     conn = None
     cursor = None
 
-    def __init__(self, driver="", host="", database="", username="", password=""):
+    def __init__(self, host="", driver="", database="", username="", password=""):
         # DEVELOPMENT CONFIG
         self.driver = "{ODBC Driver 17 for SQL Server}"
         self.database = "stb_production"
-        self.server = "172.20.10.103\\PRODUCTION"
+        self.server = host  # "172.20.10.103\\PRODUCTION"
         self.username = "Neo.Tech"
         self.password = "Password357"
         # LOCAL FOR TESTING
@@ -525,15 +530,15 @@ def say_hello_py(x):
 
 
 @eel.expose
-def connect_db(driver="", server="", database="", username="", password=""):
+def connect_db(host="", driver="", database="", username="", password=""):
     """Returns connection status if connected, else connects to the production server"""
     print(
-        f'[APP] requested connect_db driver={driver}, server={server}, database={database}, username={username}, password={password}')
+        f'[APP] requested connect_db driver={driver}, host={host}, database={database}, username={username}, password={password}')
     global serverinstance
     if serverinstance:
         return serverinstance.getInstanceStatus()
     else:
-        serverinstance = Server()
+        serverinstance = Server(host)
         # serverinstance = Server(driver, server, database, username, password)
         return serverinstance.connect()
     # if(serverinstance):

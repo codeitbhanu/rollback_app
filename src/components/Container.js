@@ -108,17 +108,39 @@ function Container({ eel, params, setParams }) {
                                         : "Unknown",
                                     message: message,
                                     status: status,
+                                    allowed_target_status:
+                                        metadata?.allowed_target_status,
                                 },
                             ],
                         });
 
-                        // setTimeout(() => {
-                        //     alert(
-                        //         `${status ? CONST_SUCCESS : CONST_FAILURE} ${
-                        //             response.message
-                        //         } data: ${data.select_count}`
-                        //     );
-                        // }, 200);
+                        if (
+                            status === CONST_FAILURE &&
+                            metadata?.allowed_target_status
+                        ) {
+                            setTimeout(() => {
+                                const ret_list =
+                                    metadata.allowed_target_status.map(
+                                        (item) => {
+                                            console.log(`${item}`);
+                                            return `${item} - ${
+                                                status_map.filter(
+                                                    (status) =>
+                                                        status.id_status ===
+                                                        item
+                                                )[0].status_desc
+                                            }`;
+                                        }
+                                    );
+                                alert(
+                                    `Error: [${
+                                        metadata.pcb_sn
+                                    }] can only have below target statuses:\n ${ret_list.join(
+                                        "\n"
+                                    )}`
+                                );
+                            }, 200);
+                        }
                         // console.log(JSON.stringify(state.data));
                         // TODO: Status out of data
                     } catch (error) {

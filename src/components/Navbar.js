@@ -61,14 +61,14 @@ function Navbar({ eel, params, setParams, config_data }) {
         if (eel) {
             try {
                 if (params.server.status === false) {
-                    eel
-                        .connect_db
+                    eel.connect_db(
                         // params.server.driver,
                         // params.server.host,
                         // params.server.database,
                         // params.session.userdata.user_desc,
                         // params.session.userdata.password
-                        ()((response) => {
+                        params.server.host
+                    )((response) => {
                         console.log(`[PY]: ${JSON.stringify(response.data)}`);
                         console.log(
                             `[PY]: ${JSON.stringify(response.message)}`

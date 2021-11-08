@@ -42,8 +42,8 @@ function App() {
     const [appState, setAppState] = useState({
         server: {
             status: false, // true: connected, false: disconnected
+            host: config_data.default_host,
             driver: config_data.default_driver,
-            host: config_data.default_server,
             database: config_data.default_database,
             // username: userdata.user_desc,
             // password: userdata.password,
