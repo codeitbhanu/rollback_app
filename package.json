@@ -22,9 +22,9 @@
     "scripts": {
         "start": "craco start",
         "dev:js": "craco start",
-        "dev:py": "python eel_CRA.py true",
+        "dev:py": "python Supervisor_Toolbox.py true",
         "build": "craco build",
-        "package": "craco build && python -m eel eel_CRA.py --onefile --icon=icon.ico",
+        "package": "craco build && python -m eel Supervisor_Toolbox.py build --onefile --noconsole --icon=icon.ico",
         "test": "craco test",
         "eject": "craco eject"
     },
