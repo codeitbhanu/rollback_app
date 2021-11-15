@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import ActionButtons from "../ActionButtons";
@@ -23,9 +23,53 @@ function FractionPallet({ eel, params, setParams }) {
         reason_desc: "",
         reason_manual: "",
         data: [], //fake_data,
+        printer_list: [],
+        last_pallet: "",
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
+
+    useEffect(() => {
+        try {
+            // if (params.session.active === false) {
+            //     alert("Session not active, Please login first");
+            //     return;
+            // }
+            if (true || params.server.status) {
+                eel.get_printer_list()((response) => {
+                    console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                    try {
+                        let status = response.status;
+                        let message = response.message;
+                        let metadata = response.data.metadata;
+
+                        if (status === CONST_SUCCESS) {
+                            setState((prevState) => ({
+                                ...prevState,
+                                printer_list: metadata.printers,
+                            }));
+                        } else {
+                            setTimeout(() => {
+                                alert(`RESPONSE ERROR: ${message}`);
+                            }, 200);
+                        }
+                    } catch (error) {
+                        setTimeout(() => {
+                            alert(`PARSE ERROR: ${error}`);
+                        }, 200);
+                    }
+                });
+            } else {
+                throw Error(`Connect the server first`);
+            }
+        } catch (error) {
+            alert(`ERROR: ${error}`);
+        }
+
+        // return () => {
+        //     cleanup
+        // }
+    }, []);
 
     const modeInstant = () => {
         setState({ ...state, mode: MODE_INSTANT });
@@ -44,9 +88,41 @@ function FractionPallet({ eel, params, setParams }) {
 
     const handleBarcodeInput = (event) => {
         const pallet_num = event.target.value.trim();
-        alert(`${eel}___${pallet_num}___`);
+        console.log(`${eel}___${pallet_num}___`);
 
         try {
+            // if (params.session.active === false) {
+            //     alert("Session not active, Please login first");
+            //     return;
+            // }
+            if (true || params.server.status) {
+                let prod_id = 115;
+                eel.get_last_pallet(prod_id)((response) => {
+                    console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                    try {
+                        let status = response.status;
+                        let message = response.message;
+                        let metadata = response.data.metadata;
+
+                        if (status === CONST_SUCCESS) {
+                            setState((prevState) => ({
+                                ...prevState,
+                                printer_list: metadata.printers,
+                            }));
+                        } else {
+                            setTimeout(() => {
+                                alert(`RESPONSE ERROR: ${message}`);
+                            }, 200);
+                        }
+                    } catch (error) {
+                        setTimeout(() => {
+                            alert(`PARSE ERROR: ${error}`);
+                        }, 200);
+                    }
+                });
+            } else {
+                throw Error(`Connect the server first`);
+            }
         } catch (error) {
             alert(`ERROR: ${error}`);
         }
@@ -54,7 +130,7 @@ function FractionPallet({ eel, params, setParams }) {
 
     const handleWeight = (event) => {
         const pallet_num = event.target.value.trim();
-        alert(`${eel}___${pallet_num}___`);
+        console.log(`${eel}___${pallet_num}___`);
 
         try {
         } catch (error) {
@@ -133,14 +209,14 @@ function FractionPallet({ eel, params, setParams }) {
                             disabled=""
                             onChange={(e) => handleSelectReasonDropdown(e)}
                         >
-                            {state?.printer_list?.map((printer) => (
+                            {state?.printer_list?.map((printer, index) => (
                                 <option
-                                    disabled={printer.id_status === 0}
-                                    selected={printer.id_status === 0}
-                                    key={printer.id_status}
-                                    id={printer.id_status}
+                                    // disabled={printer.index === 0}
+                                    selected={printer.index === 0}
+                                    key={printer.index}
+                                    id={printer.index}
                                 >
-                                    {printer.name}
+                                    {printer}
                                 </option>
                             ))}
                         </select>
@@ -190,41 +266,10 @@ function FractionPallet({ eel, params, setParams }) {
                     <div className="flex flex-col mt-2">
                         <label className="text-black label">
                             <span className="text-black label-text">
-                                Enter Fraction Pallet
-                            </span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Enter Fraction Pallet"
-                            className="border-double input input-primary input-bordered"
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && handleBarcodeInput(e)
-                            }
-                        />
-                    </div>
-                    <div className="flex flex-col mt-2">
-                        <label className="text-black label">
-                            <span className="text-black label-text">
-                                Weight (in Kgs.)
-                            </span>
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Weight (eg. 9.12)"
-                            className="border-double input input-primary input-bordered"
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && handleWeight(e)
-                            }
-                        />
-                        <span>kg.</span>
-                    </div>
-                    <div className="flex flex-col mt-2">
-                        <label className="text-black label">
-                            <span className="text-black label-text">
                                 Choose Qty
                             </span>
                         </label>
-                        <div class="btn-group">
+                        <div className="w-full btn-group">
                             <input
                                 type="radio"
                                 name="options"
@@ -295,24 +340,54 @@ function FractionPallet({ eel, params, setParams }) {
                             placeholder="Enter PCB_Num / STB_Num"
                             className="border-double input input-primary input-bordered"
                             onKeyDown={(e) =>
+                                e.key === "Enter" && handleBarcodeInput(e)
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Weight (in Kgs.)
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Decimal eg. 9.12"
+                            className="border-double input input-primary input-bordered"
+                            onKeyDown={(e) =>
                                 e.key === "Enter" && handleWeight(e)
                             }
                         />
                     </div>
+                    <div className="flex flex-col mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Edit Fraction Pallet (if incorrect)
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Enter Fraction Pallet"
+                            className="border-double input input-primary input-bordered"
+                            onKeyDown={(e) =>
+                                e.key === "Enter" && handleBarcodeInput(e)
+                            }
+                        />
+                    </div>
                     <div className="flex flex-col mt-4">
-                        <button class="btn btn-lg">
+                        <button className="btn btn-lg">
                             <div className="w-8 h-8 mr-2">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    classname="w-6 h-6"
+                                    className="w-6 h-6"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
                                 >
                                     <path
-                                        strokelinecap="round"
-                                        strokelinejoin="round"
-                                        strokewidth="{2}"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="{2}"
                                         d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                                     />
                                 </svg>

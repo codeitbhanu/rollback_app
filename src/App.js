@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import "./App.css";
 
 import Navbar from "./components/Navbar";
 import UnitRollbackContainer from "./components/containers/UnitRollback";
+import PalletRollbackContainer from "./components/containers/PalletRollback";
+import FractionPalletContainer from "./components/containers/FractionPallet";
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
 
@@ -56,31 +58,23 @@ function App() {
         },
     });
     // fraction_pallet;
-    const defaultMenu = "rollback_units";
+    const defaultMenu = "unit_rollback";
     const defaultTitle = "Unit Rollback";
     const defaultIcon = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="w-5 h-5"
+            className="w-5 h-5"
             fill="#8AE9FF"
             viewBox="0 0 24 24"
             stroke="#343434"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
             />
         </svg>
-    );
-    const defaultContainer = (
-        <UnitRollbackContainer
-            eel={eel}
-            params={appState}
-            setParams={setAppState}
-            config_data={config_data}
-        />
     );
 
     const [menuState, setMenuState] = useState({
@@ -88,7 +82,6 @@ function App() {
         selectedMenu: defaultMenu,
         title: defaultTitle,
         icon: defaultIcon,
-        container: defaultContainer,
     });
 
     const onToggleMenu = (selected = false) => {
@@ -99,8 +92,7 @@ function App() {
     const onSelectMenu = (
         selected = "_blank",
         title = "_blank",
-        icon = defaultIcon,
-        Container = defaultContainer
+        icon = defaultIcon
     ) => {
         console.log("onToggleMenu selected: " + selected);
         setMenuState({
@@ -109,14 +101,6 @@ function App() {
             selectedMenu: selected,
             title: title,
             icon: icon,
-            container: (
-                <Container
-                    eel={eel}
-                    params={appState}
-                    setParams={setAppState}
-                    config_data={config_data}
-                />
-            ),
         });
     };
 
@@ -142,7 +126,30 @@ function App() {
                 />
             </header>
             {/* Code here */}
-            {menuState.container}
+            {menuState.selectedMenu === "unit_rollback" && (
+                <UnitRollbackContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "fraction_pallet" && (
+                <FractionPalletContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "rollback_pallet" && (
+                <FractionPalletContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
         </div>
     );
 }

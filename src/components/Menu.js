@@ -5,15 +5,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="w-5 h-5"
+            className="w-6 h-6"
             fill="#8AE9FF"
             viewBox="0 0 24 24"
             stroke="#343434"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
             />
         </svg>
@@ -21,15 +21,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconFractionPallet = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="w-6 h-6"
+            className="w-6 h-6"
             fill="#8AE9FF"
             viewBox="0 0 24 24"
             stroke="#343434"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
             />
         </svg>
@@ -37,7 +37,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconRollbackPallet = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="w-5 h-5"
+            className="w-6 h-6"
             viewBox="0 0 20 20"
             fill="#8AE9FF"
             stroke="#343434"
@@ -58,15 +58,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        classname="w-full h-full"
+                        className="w-full h-full"
                         fill="#8AE9FF"
                         viewBox="0 0 24 24"
                         // stroke="#343434"
                     >
                         <path
-                            strokelinecap="round"
-                            strokelinejoin="round"
-                            strokewidth="{2}"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="{2}"
                             d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
                         />
                     </svg>
@@ -79,7 +79,9 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li> */}
                 <li
                     className={
-                        menuState.selectedMenu === "unit_rollback" && "bordered"
+                        menuState.selectedMenu === "unit_rollback"
+                            ? "bordered"
+                            : ""
                     }
                 >
                     <a
@@ -92,7 +94,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             )
                         }
                     >
-                        <div className="w-5 h-5 pr-1">{iconUnitRollback}</div>
+                        <div className="w-5 h-5 mr-2">{iconUnitRollback}</div>
                         Unit Rollback
                     </a>
                 </li>
@@ -112,7 +114,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             )
                         }
                     >
-                        <div className="w-5 h-5 pr-1">{iconFractionPallet}</div>
+                        <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
                         Fraction Pallet
                     </a>
                 </li>
@@ -132,7 +134,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             )
                         }
                     >
-                        <div className="w-5 h-5 pr-1">{iconRollbackPallet}</div>
+                        <div className="w-5 h-5 mr-2">{iconRollbackPallet}</div>
                         Rollback Pallet
                         {/* <div className="ml-2 badge success">3</div> */}
                     </a>

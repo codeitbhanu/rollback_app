@@ -10,6 +10,7 @@ import reasons_map from "../../datajson/reasonsmap";
 // const defPath = "~";
 
 function UnitRollback({ eel, params, setParams }) {
+    console.log(params);
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
     const INSTANT_MODE_STATUS_ID = -1;
@@ -45,10 +46,16 @@ function UnitRollback({ eel, params, setParams }) {
     const handleBarcodeInput = (event) => {
         const pcb_sn = event.target.value.trim();
         // alert(`___${pcb_sn}___`);
-
+        console.log(params);
         try {
             if (params.session.active === false) {
                 alert("Session not active, Please login first");
+                return;
+            }
+            if (state.reason_desc === "" || state.reason_desc === reasons_map[0].id_status) {
+                alert(
+                    "Incorrect reason to rollback, Please choose one from the dropdown."
+                );
                 return;
             }
             if (params.server.status) {

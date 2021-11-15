@@ -6,16 +6,95 @@ import sys
 import eel
 import pyodbc
 import datetime
-# import os
-# import random
-# import time
-# import pandas as pd
-# from tqdm.notebook import tqdm
 
-# import rollback_util.rollback_runner
+# ZEBRA ----------------------------------------------------------------
+import re
+from zebra import Zebra
 
-# Rollback_Step
-# One step or more backwards as per rollback_constants.rollback_rules_matrix
+ZEBRA = Zebra()
+
+
+class ZebraPRNPrintException(Exception):
+    pass
+
+
+class MissingVariableException(ZebraPRNPrintException):
+    pass
+
+
+def get_printers():
+    ''' Return a list of available printers, empty if there aren't any
+    '''
+    return ZEBRA.getqueues()
+
+
+def get_default_printer():
+    ''' Return the queue name for the first Zebra printer found, None
+    if no Zebra can be found
+    '''
+    print("get_default_printer called")
+    printers = get_printers()
+    for p in printers:
+        if any(z in p.lower() for z in ('zebra', 'zpl', 'zdesigner')):
+            # print(p)
+            ZEBRA.setqueue(p)
+            return p
+    return None
+
+
+def parse_prn(prn_text):
+    ''' Return a list of variable names in the prn_text input
+    '''
+    m = re.findall('<([a-zA-Z_0-9]+?)>', prn_text)
+    if m is None:
+        return []
+    return list(set(m))
+
+
+def read_variables(fin='variables2.txt'):
+    ''' Read the variables specified in 'fin' and return a dict
+    '''
+    d = {}
+    with open(fin, 'r') as fh:
+        for l in fh:
+            if ',' in l:
+                d.update((l.strip().split(',', 1),))
+    return d
+
+
+def replace_prn_variables(prn_text, variables):
+    ''' Ensure that all required variables for the supplied PRN text
+    are in the variables dict, raising MissingVariableException
+    with a list of missing variable names if not
+    Otherwise replace all variables and return the new PRN text
+    '''
+    expected = parse_prn(prn_text)
+    missing = []
+    for e in expected:
+        v = variables.get(e, None)
+        if v is None:
+            missing.append(e)
+        else:
+            prn_text = prn_text.replace('<%s>' % e, v)
+    if missing:
+        raise MissingVariableException(missing)
+    return prn_text
+
+
+def send_prn(prn_text):
+    ''' Send prn_text to the printer. Only printable chars are sent
+
+    Silently escape errors
+    '''
+    try:
+        ZEBRA.output(''.join(c for c in prn_text if ord(c) < 128))
+    except Exception:
+        return None
+
+
+# ZEBRA-END ----------------------------------------------------------------
+
+
 ROLLBACK_STEP = 1
 ROLLBACK_INDEX = ROLLBACK_STEP - 1
 
@@ -633,6 +712,90 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
 
     return ret
     # return {"data": 'hello', 'repsonse': 'world'}
+
+
+@eel.expose
+def get_last_pallet(prod_id=-1):
+    global serverinstance
+
+    response_data = {
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        print(
+            f'[get_last_pallet] requested last pallet for {prod_id}')
+
+        try:
+            select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
+                        WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
+                        WHERE prod_id = {prod_id} and id_config_param = 25)'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                row = results[0]
+                response_data = {
+                    **response_data,
+                    "metadata": {
+                        "select_count": len(results),
+                        "last_pallet": row[0].cd_data,
+                    },
+                    "status": CONST_SUCCESS,
+                }
+            else:
+                response_data = {
+                    **response_data,
+                    "message": "Enter Manually",
+                    "status": CONST_FAILURE,
+                }
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            if len(results) == 0:
+                raise ValueError("Error: record not found")
+            else:
+                return response_data
+    # return response_data
+
+
+@eel.expose
+def get_printer_list():
+    printers = get_printers()
+    print(type(printers))
+    print(printers)
+    return {"data": {"metadata": {
+        "printers": printers
+    }}, "message": "Printer List", "status": CONST_SUCCESS}
 
 
 def start_eel(develop):
