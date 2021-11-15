@@ -9,7 +9,7 @@
         "@types/react": "16.8.20",
         "@types/react-dom": "16.8.4",
         "autoprefixer": "9",
-        "daisyui": "^1.14.5",
+        "daisyui": "^1.16.2",
         "dotenv": "^10.0.0",
         "postcss": "7",
         "react": "^16.8.6",

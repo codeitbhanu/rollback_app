@@ -164,10 +164,10 @@ function Navbar({
                     </span>
                 </div>
                 <div className="flex-none p-2 ">
-                    <button className="w-10 h-10">
+                    <div className="w-10 h-10">
                         {menuState.icon}
                         {/* <img src={logo} className="w-full h-full" alt="logo" /> */}
-                    </button>
+                    </div>
                 </div>
             </div>
             <div className="flex justify-end flex-1 border-0 border-red-300">

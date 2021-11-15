@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import ActionButtons from "./ActionButtons";
+import ActionButtons from "../ActionButtons";
 
 // import fake_data from "../datajson/data";
-import status_map from "../datajson/statusmap";
-import reasons_map from "../datajson/reasonsmap";
+import status_map from "../../datajson/statusmap";
+import reasons_map from "../../datajson/reasonsmap";
 
 // const defPath = "~";
 
-function Container({ eel, params, setParams }) {
+function PalletRollback({ eel, params, setParams }) {
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
     const INSTANT_MODE_STATUS_ID = -1;
@@ -47,111 +47,6 @@ function Container({ eel, params, setParams }) {
         // alert(`___${pcb_sn}___`);
 
         try {
-            if (params.session.active === false) {
-                alert("Session not active, Please login first");
-                return;
-            }
-            if (params.server.status) {
-                eel.rollback(
-                    pcb_sn,
-                    state.mode,
-                    state.mode === MODE_INSTANT
-                        ? INSTANT_MODE_STATUS_ID
-                        : state.manual_status,
-                    state.reason_other
-                        ? state.reason_manual
-                        : state.reason_desc,
-                    params.session.userdata.id_user
-                )((response) => {
-                    console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
-                    try {
-                        let status = response.status;
-                        let message = response.message;
-                        let metadata = response.data.metadata;
-                        let current_status = status_map.filter(
-                            (item) =>
-                                item.id_status ===
-                                parseInt(metadata.current_status)
-                        )[0];
-                        console.log(
-                            `expected ${metadata.current_status} got: ${current_status}`
-                        );
-                        let target_status = status_map.filter(
-                            (item) =>
-                                item.id_status ===
-                                parseInt(metadata.target_status)
-                        )[0];
-                        console.log(
-                            `expected ${metadata.target_status} got: ${target_status}`
-                        );
-
-                        const updated_data = state.data;
-                        updated_data.unshift({
-                            id: uuidv4(),
-                            pcb_sn: metadata.pcb_sn,
-                            prod_desc: metadata.prod_desc
-                                ? metadata.prod_desc
-                                : "Not found",
-                            current_status:
-                                current_status !== undefined
-                                    ? current_status
-                                    : -1,
-                            target_status:
-                                target_status !== undefined
-                                    ? target_status
-                                    : -1,
-                            user: metadata.id_user
-                                ? metadata.id_user
-                                : "Unknown",
-                            message: message,
-                            status: status,
-                            allowed_target_status:
-                                metadata?.allowed_target_status,
-                        });
-                        setState({
-                            ...state,
-                            data: updated_data,
-                        });
-
-                        if (
-                            status === CONST_FAILURE &&
-                            metadata?.allowed_target_status
-                        ) {
-                            setTimeout(() => {
-                                const ret_list =
-                                    metadata.allowed_target_status.map(
-                                        (item) => {
-                                            console.log(`${item}`);
-                                            return `${item} - ${
-                                                status_map.filter(
-                                                    (status) =>
-                                                        status.id_status ===
-                                                        item
-                                                )[0].status_desc
-                                            }`;
-                                        }
-                                    );
-                                alert(
-                                    `Error: [${
-                                        metadata.pcb_sn
-                                    }] can only have below target statuses:\n ${ret_list.join(
-                                        "\n"
-                                    )}`
-                                );
-                            }, 200);
-                        }
-                        // console.log(JSON.stringify(state.data));
-                        // TODO: Status out of data
-                    } catch (error) {
-                        setTimeout(() => {
-                            alert(`PARSE ERROR: ${error}`);
-                        }, 200);
-                    }
-                });
-            } else {
-                throw Error(`Connect the server first`);
-            }
-            event.target.value = "";
         } catch (error) {
             alert(`ERROR: ${error}`);
         }
@@ -160,37 +55,15 @@ function Container({ eel, params, setParams }) {
     const handleSelectTargetDropdown = (event) => {
         console.log("handleSelectTargetDropdown called ");
         // alert(JSON.stringify(event.target.id));
-        const status = event.target.value;
-        let manual_status = status_map.filter(
-            (item) => item.status_desc === status
-        )[0];
-        console.log(
-            `status: ${status} manual_status: ${JSON.stringify(manual_status)}`
-        );
-        setState({
-            ...state,
-            manual_status: manual_status.id_status,
-        });
     };
 
     const handleSelectReasonDropdown = (event) => {
         console.log("handleSelectReasonDropdown called ");
         // alert(JSON.stringify(event.target.value));
-        const reason = event.target.value;
-        const isOther = reason.startsWith("Other");
-        setState({
-            ...state,
-            reason_other: isOther,
-            reason_desc: isOther ? state.reason_manual : reason,
-        });
     };
 
     const handleChangeTextBox = (event) => {
         console.log("handleSelectReasonDropdown called " + event.target.value);
-        setState({
-            ...state,
-            reason_manual: event.target.value,
-        });
     };
 
     const handleRemoveItem = (id, rownum, serial) => {
@@ -212,11 +85,11 @@ function Container({ eel, params, setParams }) {
     // console.log(fake_data);
 
     return (
-        <div className="absolute flex flex-col w-full mt-4 border-0 border-red-600 h-1/2">
+        <div className="absolute flex flex-col w-full mt-4 border-2 border-green-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
                     <div className="">
-                        <nav className="flex flex-col sm:flex-row">
+                        {/* <nav className="flex flex-col sm:flex-row">
                             <button
                                 className={`flex-1 block px-6 py-4 lg:text-3xl md:text-xl sm:text-md font-bold  border-b-2 border-blue-500 hover:text-blue-500 focus:outline-none ${
                                     state.mode === MODE_INSTANT
@@ -237,9 +110,9 @@ function Container({ eel, params, setParams }) {
                             >
                                 Manual
                             </button>
-                        </nav>
+                        </nav> */}
                     </div>
-                    <div className="flex flex-col mt-2 border-0 border-red-600">
+                    {/* <div className="flex flex-col mt-2 border-0 border-red-600">
                         <label className="text-black label">
                             <span className="text-black label-text">
                                 Select Reason Of Rollback
@@ -275,10 +148,10 @@ function Container({ eel, params, setParams }) {
                                 value={state.reason_manual}
                             ></textarea>
                         </div>
-                    )}
+                    )} */}
                     {state.mode === MODE_MANUAL && (
                         <div className="border-0 border-red-600">
-                            <div className="flex flex-col mt-2 border-0 border-red-600">
+                            {/* <div className="flex flex-col mt-2 border-0 border-red-600">
                                 <label className="text-black label">
                                     <span className="text-black label-text">
                                         Select Target Status
@@ -301,16 +174,6 @@ function Container({ eel, params, setParams }) {
                                         </option>
                                     ))}
                                 </select>
-                            </div>
-                            {/* <div className="flex flex-col h-48 mt-8">
-                                <button
-                                    className="h-32 text-3xl btn btn-accent btn-active"
-                                    onClick={handleSelectTargetDropdown}
-                                >
-                                    Rollback
-                                </button>
-
-                                <p>{state.message}</p>
                             </div> */}
                         </div>
                     )}
@@ -416,4 +279,4 @@ function Container({ eel, params, setParams }) {
     );
 }
 
-export default Container;
+export default PalletRollback;

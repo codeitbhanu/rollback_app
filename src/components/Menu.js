@@ -1,3 +1,6 @@
+import UnitRollbackContainer from "./containers/UnitRollback";
+import PalletRollbackContainer from "./containers/PalletRollback";
+import FractionPalletContainer from "./containers/FractionPallet";
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
         <svg
@@ -43,7 +46,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
         </svg>
     );
     return (
-        <div className="absolute z-50 min-h-screen overflow-y-scroll rounded-none artboard bg-base-200 w-96">
+        <div className="absolute z-50 min-h-screen overflow-hidden rounded-none shadow-lg artboard bg-base-200 w-96">
             <div className="flex justify-between p-4 border-b-2 border-gray-300">
                 <div className="content-start pt-3 text-lg font-bold text-center border-0 border-red-400">
                     Choose an option
@@ -70,7 +73,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </button>
             </div>
 
-            <ul className="py-3 shadow-lg menu bg-base-100">
+            <ul className="py-3 menu bg-base-100">
                 {/* <li>
                     <a>Item without icon</a>
                 </li> */}
@@ -84,12 +87,13 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             onSelectMenu(
                                 "unit_rollback",
                                 "Unit Rollback",
-                                iconUnitRollback
+                                iconUnitRollback,
+                                UnitRollbackContainer
                             )
                         }
                     >
                         <div className="w-5 h-5 pr-1">{iconUnitRollback}</div>
-                        {menuState.title}
+                        Unit Rollback
                     </a>
                 </li>
                 <li
@@ -103,7 +107,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             onSelectMenu(
                                 "fraction_pallet",
                                 "Fraction Pallet",
-                                iconFractionPallet
+                                iconFractionPallet,
+                                FractionPalletContainer
                             )
                         }
                     >
@@ -122,7 +127,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             onSelectMenu(
                                 "rollback_pallet",
                                 "Rollback Pallet",
-                                iconRollbackPallet
+                                iconRollbackPallet,
+                                PalletRollbackContainer
                             )
                         }
                     >

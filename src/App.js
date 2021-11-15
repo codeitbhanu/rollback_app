@@ -3,7 +3,7 @@ import { useState } from "react";
 import "./App.css";
 
 import Navbar from "./components/Navbar";
-import Container from "./components/Container";
+import UnitRollbackContainer from "./components/containers/UnitRollback";
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
 
@@ -39,6 +39,23 @@ eel_load();
 function App() {
     // console.log(JSON.stringify(config_data.users[1]));
     // let userdata = config_data.users[1];
+    const [appState, setAppState] = useState({
+        server: {
+            status: false, // true: connected, false: disconnected
+            host: config_data.default_host,
+            driver: config_data.default_driver,
+            database: config_data.default_database,
+            // username: userdata.user_desc,
+            // password: userdata.password,
+            // id_user: userdata.id_user,
+        },
+        session: {
+            userdata: {},
+            active: false,
+            timeout: 60,
+        },
+    });
+    // fraction_pallet;
     const defaultMenu = "rollback_units";
     const defaultTitle = "Unit Rollback";
     const defaultIcon = (
@@ -57,29 +74,21 @@ function App() {
             />
         </svg>
     );
+    const defaultContainer = (
+        <UnitRollbackContainer
+            eel={eel}
+            params={appState}
+            setParams={setAppState}
+            config_data={config_data}
+        />
+    );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
         selectedMenu: defaultMenu,
         title: defaultTitle,
         icon: defaultIcon,
-    });
-
-    const [appState, setAppState] = useState({
-        server: {
-            status: false, // true: connected, false: disconnected
-            host: config_data.default_host,
-            driver: config_data.default_driver,
-            database: config_data.default_database,
-            // username: userdata.user_desc,
-            // password: userdata.password,
-            // id_user: userdata.id_user,
-        },
-        session: {
-            userdata: {},
-            active: false,
-            timeout: 60,
-        },
+        container: defaultContainer,
     });
 
     const onToggleMenu = (selected = false) => {
@@ -90,7 +99,8 @@ function App() {
     const onSelectMenu = (
         selected = "_blank",
         title = "_blank",
-        icon = defaultIcon
+        icon = defaultIcon,
+        Container = defaultContainer
     ) => {
         console.log("onToggleMenu selected: " + selected);
         setMenuState({
@@ -99,6 +109,14 @@ function App() {
             selectedMenu: selected,
             title: title,
             icon: icon,
+            container: (
+                <Container
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            ),
         });
     };
 
@@ -124,12 +142,7 @@ function App() {
                 />
             </header>
             {/* Code here */}
-            <Container
-                eel={eel}
-                params={appState}
-                setParams={setAppState}
-                config_data={config_data}
-            />
+            {menuState.container}
         </div>
     );
 }
