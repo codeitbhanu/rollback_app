@@ -1,0 +1,81 @@
+"id_status","status_desc"
+0,False
+1,True
+2,Open
+3,Closed
+4,Active
+5,Inactive
+6,Created
+7,Printed
+8,Flash Programming
+9,SFDC Flash Programming
+10,Bottom Side
+11,Top Side
+12,Repairs
+13,PCBA Test Passed
+14,SFDC Test Jigs
+15,AOI Test Passed
+16,Mechanical
+17,Base Label Print
+18,CA Test Passed
+19,Giftbox Pairing
+20,Carton Packaging
+21,Carton Verified
+22,OQC Test Passed
+23,Pallet Check
+24,Dispatch
+28,In Stores
+29,Out Stores
+30,Duplication Process
+31,Return To Stores
+32,HDD Pairing
+33,Voucher Pairing
+34,Voucher Verification
+35,Customer Return File
+36,Locking Test Passed
+38,Loose Label Print
+39,Blacklisted
+40,Shipped
+41,Returned for Rework
+42,Component Changer
+43,Scrapped
+44,Repair Checked Out PCBA
+45,Repair Checked Out Mechanical
+46,Component Changed PCBA
+47,Component Changed Mechanical
+48,PCBA Test Failed
+49,CA Test Failed
+50,OQC Test Failed
+51,Locking Test Failed
+52,Repairs Quarantine
+53,Shipped Erroneously
+54,GDL Reworked
+56,GDL Reworked TSC Generated
+57,Soak Test
+58,Duplicate PCB Label Printed
+59,Special Shipment
+65,AOI Test Failed
+66,Repair Checked Out PCB Label Duplication
+67,Component Changed PCB Label Duplication
+68,Repair Checked Out AOI
+69,Component Changed AOI
+70,SDTV Approved
+71,Submitted for Shipping Approval
+72,Netstar PCBA Retest
+73,Awaiting OQC Test
+74,Awaiting QC Buy-Off PCBA Test
+77,Soak Test Passed
+78,Soak Test Failed
+79,CW Fuse Incorrectly Blown
+80,Giftbox Pairing Verified
+81,Reworked To New Variant
+82,Reverified Pallet
+83,PCB Label Verified
+84,Blacklisted PCB Labels
+85,Assembly Received
+86,Wireless Test Passed
+87,Wireless Test Failed
+88,Key Test Passed
+89,Key Test Failed
+90,Duplicate PCB Label Verified
+91,Reworked for RCU Issues

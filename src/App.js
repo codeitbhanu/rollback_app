@@ -5,6 +5,7 @@ import "./App.css";
 import Navbar from "./components/Navbar";
 import Container from "./components/Container";
 import config_data from "./datajson/config.json";
+import Menu from "./components/Menu";
 
 // Point Eel web socket to the instance
 export const eel = window.eel;
@@ -36,8 +37,33 @@ const eel_load = () => {
 eel_load();
 
 function App() {
-    console.log(JSON.stringify(config_data.users[1]));
+    // console.log(JSON.stringify(config_data.users[1]));
     // let userdata = config_data.users[1];
+    const defaultMenu = "rollback_units";
+    const defaultTitle = "Unit Rollback";
+    const defaultIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="w-5 h-5"
+            fill="#8AE9FF"
+            viewBox="0 0 24 24"
+            stroke="#343434"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                strokewidth="{2}"
+                d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
+            />
+        </svg>
+    );
+
+    const [menuState, setMenuState] = useState({
+        toggleMenu: false,
+        selectedMenu: defaultMenu,
+        title: defaultTitle,
+        icon: defaultIcon,
+    });
 
     const [appState, setAppState] = useState({
         server: {
@@ -55,14 +81,46 @@ function App() {
             timeout: 60,
         },
     });
+
+    const onToggleMenu = (selected = false) => {
+        console.log("onToggleMenu selected: " + selected);
+        setMenuState({ ...menuState, toggleMenu: selected });
+    };
+
+    const onSelectMenu = (
+        selected = "_blank",
+        title = "_blank",
+        icon = defaultIcon
+    ) => {
+        console.log("onToggleMenu selected: " + selected);
+        setMenuState({
+            ...menuState,
+            toggleMenu: false,
+            selectedMenu: selected,
+            title: title,
+            icon: icon,
+        });
+    };
+
     return (
         <div className="border-0 border-yellow-600 App">
+            {menuState.toggleMenu && (
+                <Menu
+                    hideMenu={() => onToggleMenu(false)}
+                    onSelectMenu={onSelectMenu}
+                    menuState={menuState}
+                    setMenuState={setMenuState}
+                />
+            )}
             <header className="w-full h-22">
                 <Navbar
                     eel={eel}
                     params={appState}
                     setParams={setAppState}
                     config_data={config_data}
+                    onToggleMenu={onToggleMenu}
+                    menuState={menuState}
+                    setMenuState={setMenuState}
                 />
             </header>
             {/* Code here */}

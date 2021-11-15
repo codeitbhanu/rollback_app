@@ -1,7 +1,16 @@
 import { useState } from "react";
+import menu from "../menu.svg";
 import logo from "../logo.svg";
 
-function Navbar({ eel, params, setParams, config_data }) {
+function Navbar({
+    eel,
+    params,
+    setParams,
+    config_data,
+    onToggleMenu,
+    menuState,
+    setMenuState,
+}) {
     // console.log("params" + JSON.stringify(params.server.driver));
 
     const [state, setState] = useState({
@@ -140,13 +149,26 @@ function Navbar({ eel, params, setParams, config_data }) {
     // const server_status = false;
     return (
         <div className="flex content-center p-0 mb-2 shadow-lg navbar bg-neutral text-neutral-content">
-            <div className="flex-none">
-                <button className="btn btn-square btn-ghost">
-                    <img src={logo} className="w-full h-full" alt="logo" />
+            <div className="flex-none ml-4">
+                <button
+                    className="px-2 btn btn-square btn-ghost hover:bg-gray-400"
+                    onClick={() => onToggleMenu(true)}
+                >
+                    <img src={menu} className="w-full h-full" alt="menu" />
                 </button>
             </div>
-            <div className="flex-1 px-2 mx-2">
-                <span className="text-4xl font-bold">Rollback Kiosk</span>
+            <div>
+                <div className="flex-1 px-2 mx-2">
+                    <span className="text-4xl font-bold">
+                        {menuState.title}
+                    </span>
+                </div>
+                <div className="flex-none p-2 ">
+                    <button className="w-10 h-10">
+                        {menuState.icon}
+                        {/* <img src={logo} className="w-full h-full" alt="logo" /> */}
+                    </button>
+                </div>
             </div>
             <div className="flex justify-end flex-1 border-0 border-red-300">
                 <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-gray-300 rounded-full shadow max-h-12">

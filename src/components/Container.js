@@ -85,33 +85,32 @@ function Container({ eel, params, setParams }) {
                             `expected ${metadata.target_status} got: ${target_status}`
                         );
 
+                        const updated_data = state.data;
+                        updated_data.unshift({
+                            id: uuidv4(),
+                            pcb_sn: metadata.pcb_sn,
+                            prod_desc: metadata.prod_desc
+                                ? metadata.prod_desc
+                                : "Not found",
+                            current_status:
+                                current_status !== undefined
+                                    ? current_status
+                                    : -1,
+                            target_status:
+                                target_status !== undefined
+                                    ? target_status
+                                    : -1,
+                            user: metadata.id_user
+                                ? metadata.id_user
+                                : "Unknown",
+                            message: message,
+                            status: status,
+                            allowed_target_status:
+                                metadata?.allowed_target_status,
+                        });
                         setState({
                             ...state,
-                            data: [
-                                ...state.data,
-                                {
-                                    id: uuidv4(),
-                                    pcb_sn: metadata.pcb_sn,
-                                    prod_desc: metadata.prod_desc
-                                        ? metadata.prod_desc
-                                        : "Not found",
-                                    current_status:
-                                        current_status !== undefined
-                                            ? current_status
-                                            : -1,
-                                    target_status:
-                                        target_status !== undefined
-                                            ? target_status
-                                            : -1,
-                                    user: metadata.id_user
-                                        ? metadata.id_user
-                                        : "Unknown",
-                                    message: message,
-                                    status: status,
-                                    allowed_target_status:
-                                        metadata?.allowed_target_status,
-                                },
-                            ],
+                            data: updated_data,
                         });
 
                         if (
@@ -353,7 +352,11 @@ function Container({ eel, params, setParams }) {
                                         id={resp.id}
                                         className="p-0 border-0 border-red-600"
                                     >
-                                        <th>{index + 1}</th>
+                                        <th>
+                                            {state.data.length !== 0
+                                                ? state.data.length - index
+                                                : 0}
+                                        </th>
                                         <td>{resp.pcb_sn}</td>
                                         <td>{resp.prod_desc}</td>
                                         <td>{`${resp?.current_status?.id_status} (${resp?.current_status?.status_desc})`}</td>
