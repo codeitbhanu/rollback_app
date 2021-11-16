@@ -102,6 +102,7 @@ MODE_MANUAL = "manual"
 MODE_INSTANT = "instant"
 CONST_SUCCESS = "SUCCESS"
 CONST_FAILURE = "FAILURE"
+CONST_UNKNOWN = "UNKNOWN"
 CONST_REASON_DEFAULT = "Other - Not specified"
 INSTANT_MODE_STATUS_ID = -1
 
@@ -715,7 +716,7 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
 
 
 @eel.expose
-def get_last_pallet(prod_id=-1):
+def get_last_pallet_carton(prod_id=-1, choice="pallet"):
     global serverinstance
 
     response_data = {
@@ -731,13 +732,14 @@ def get_last_pallet(prod_id=-1):
     else:
         cursor = serverinstance.cursor
         conn = serverinstance.conn
+        choice = 25 if choice == "pallet" else 24
         print(
             f'[get_last_pallet] requested last pallet for {prod_id}')
 
         try:
             select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
                         WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
-                        WHERE prod_id = {prod_id} and id_config_param = 25)'''
+                        WHERE prod_id = {prod_id} and id_config_param = {choice})'''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
                 **response_data,
@@ -753,7 +755,7 @@ def get_last_pallet(prod_id=-1):
                     **response_data,
                     "metadata": {
                         "select_count": len(results),
-                        "last_pallet": row[0].cd_data,
+                        "last_pallet_carton": row[0].cd_data,
                     },
                     "status": CONST_SUCCESS,
                 }
@@ -785,6 +787,138 @@ def get_last_pallet(prod_id=-1):
                 raise ValueError("Error: record not found")
             else:
                 return response_data
+    # return response_data
+
+# Verfiying if the scanned barcode exists and has allowed status
+
+
+@eel.expose
+def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
+    global serverinstance
+
+    response_data = {
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        print(
+            f'[is_valid_unit] {application} - {allowed_status} requested for pcb_sn: {pcb_sn}')
+
+        try:
+            select_sql = ""
+            if (is_ott):
+                select_sql = f'''SELECT stb_num, pe.pcb_num, snr.Field2 as cdsn_iuc, pro.prod_id, pro.prod_desc, pe.id_status, status_desc, carton_num, pallet_num
+                                    FROM stb_production.dbo.production_event pe
+                                        INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
+                                        INNER JOIN NEWDB.dbo.SNRecord snr ON snr.SN = pe.stb_num
+                                        INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
+                                        WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
+            else:
+                # TODO: Currently the proudct iuc will be fetched only for 4140, to be made generic
+                select_sql = f'''SELECT stb_num, pe.pcb_num, dsd.cdsn_iuc as cdsn_iuc, pro.prod_id, pro.prod_desc, pe.id_status, status_desc, carton_num, pallet_num
+                                    FROM stb_production.dbo.production_event pe
+                                        INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
+                                        INNER JOIN stb_production.dbo.device_state_dsd_4140 dsd ON dsd.id_production_event = pe.id_production_event
+                                        INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
+                                        WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                row = results[0]
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": row.stb_num,
+                            "pcb_num": row.pcb_num,
+                            "cdsn_iuc": row.cdsn_iuc,
+                            "prod_desc": row.prod_desc,
+                            "current_status": row.id_status,
+                            "status_desc": row.status_desc,
+                            "carton_num": row.carton_num,
+                            "pallet_num": row.pallet_num,
+                            "prod_id": row.prod_id,
+                            "id_status": row.id_status,
+                        }
+                    },
+                }
+                if results[0].id_status in allowed_status:
+                    response_data = {
+                        **response_data,
+                        "message": f'''{pcb_sn} is in {allowed_status} status''',
+                        "status": CONST_SUCCESS,
+                    }
+                else:
+                    response_data = {
+                        **response_data,
+                        "message": f'''{pcb_sn} is not in {allowed_status} allowed status''',
+                        "status": CONST_FAILURE,
+                    }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": f'''Ambiguous results found for {pcb_sn}''',
+                    "status": CONST_FAILURE,
+                }
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            if len(results) == 0:
+                # raise ValueError("Error: record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": pcb_sn,
+                            "pcb_num": pcb_sn,
+                            "cdsn_iuc": CONST_UNKNOWN,
+                            "prod_desc": CONST_UNKNOWN,
+                            "current_status": -1,
+                            "status_desc": CONST_UNKNOWN,
+                            "carton_num": CONST_UNKNOWN,
+                            "pallet_num": CONST_UNKNOWN,
+                            "prod_id": -1,
+                            "id_status": -1,
+                        },
+                    },
+
+                    "message": f'''{pcb_sn} pcb / serial not found in records''',
+                    "status": CONST_FAILURE,
+                }
+            return response_data
     # return response_data
 
 

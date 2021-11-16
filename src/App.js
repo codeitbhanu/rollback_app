@@ -143,7 +143,7 @@ function App() {
                 />
             )}
             {menuState.selectedMenu === "rollback_pallet" && (
-                <FractionPalletContainer
+                <PalletRollbackContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}
