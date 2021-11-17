@@ -30,6 +30,7 @@ function FractionPallet({ eel, params, setParams }) {
         fraction_weight: 0.0,
         validation_fraction_weight: false,
         quantity_group: [],
+        common_prod_id: -1,
         last_pallet: "",
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -114,6 +115,7 @@ function FractionPallet({ eel, params, setParams }) {
     };
 
     useEffect(() => {
+        console.log('useEffect called #1')
         try {
             // if (params.session.active === false) {
             //     alert("Session not active, Please login first");
@@ -124,10 +126,11 @@ function FractionPallet({ eel, params, setParams }) {
                 eel.get_printer_list()((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
-                        let status = response.status;
-                        let message = response.message;
-                        let metadata = response.data.metadata;
-
+                        const function_name = response.function_name
+                        const status = response.status;
+                        const message = response.message;
+                        const metadata = response.data.metadata;
+                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
@@ -154,7 +157,14 @@ function FractionPallet({ eel, params, setParams }) {
         // return () => {
         //     cleanup
         // }
-    }, []);
+    }, [params.server.status]);
+
+    useEffect(() => {
+        console.log('useEffect called #2')
+        if (state.valid_scanned === state.fraction_count) {
+            fetchPalletInput(state.common_prod_id)
+        }
+    }, [state.valid_scanned, state.fraction_count, state.common_prod_id])
 
     const modeInstant = () => {
         setState({ ...state, mode: MODE_INSTANT });
@@ -180,6 +190,7 @@ function FractionPallet({ eel, params, setParams }) {
 
     const handleBarcodeInput = (event) => {
         const pcb_sn = event.target.value.trim();
+        event.target.value = ""
         console.log(`${eel}___${pcb_sn}___`);
 
         try {
@@ -207,6 +218,8 @@ function FractionPallet({ eel, params, setParams }) {
                     );
                 }
                 
+                
+
                 const allowed_target_status = [80, 22];
                 eel.is_valid_unit(
                     "fraction_pallet",
@@ -215,20 +228,29 @@ function FractionPallet({ eel, params, setParams }) {
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
-                        let status = response.status;
-                        let message = response.message;
-                        let metadata = response.data.metadata;
+                        const function_name = response.function_name;
+                        const status = response.status;
+                        const message = response.message;
+                        const metadata = response.data.metadata;
                         // let prod_id = metadata.prod_id;
+                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
+
+                        if (metadata.prod_id !== -1 && state.data.length && state.common_prod_id !== metadata.prod_id) {
+                            console.log(`${metadata.prod_id} conflict with previous scanned product ${state.data[0].prod_id} \nPlease scan similar product`)
+                            throw new Error(
+                                `${metadata.prod_desc} conflict with previous scanned product ${state.data[0].prod_desc} \nPlease scan similar product`
+                            );
+                        }
 
                         let current_status = status_map.filter(
                             (item) =>
                                 item.id_status ===
                                 parseInt(metadata.current_status)
                         )[0];
-                        console.log(`status got: ${JSON.stringify(current_status)}`);
                         const updated_data = state.data;
                         updated_data.unshift({
                             id: uuidv4(),
+                            prod_id: metadata.prod_id,
                             stb_num: metadata.stb_num,
                             pcb_num: metadata.pcb_num,
                             cdsn_iuc: metadata.cdsn_iuc,
@@ -243,6 +265,7 @@ function FractionPallet({ eel, params, setParams }) {
                         setState((prevState) => ({
                             ...prevState,
                             data: updated_data,
+                            common_prod_id: state.valid_scanned === 0 && status === CONST_SUCCESS ? metadata.prod_id : state.common_prod_id,
                             valid_scanned:
                                 status === CONST_SUCCESS
                                     ? state.valid_scanned + 1
@@ -320,14 +343,15 @@ function FractionPallet({ eel, params, setParams }) {
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
-                        let status = response.status;
-                        let message = response.message;
-                        let metadata = response.data.metadata;
-
+                        const function_name = response.function_name;
+                        const status = response.status;
+                        const message = response.message;
+                        const metadata = response.data.metadata;
+                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
-                                printer_list: metadata.printers,
+                                last_pallet: metadata.last_pallet_carton,
                             }));
                         } else {
                             setTimeout(() => {
@@ -439,9 +463,9 @@ function FractionPallet({ eel, params, setParams }) {
                             {state?.printer_list?.map((printer, index) => (
                                 <option
                                     // disabled={printer.index === 0}
-                                    selected={printer.index === 0}
-                                    key={printer.index}
-                                    id={printer.index}
+                                    selected={index === 0}
+                                    key={"printer#" + index}
+                                    id={index}
                                 >
                                     {printer}
                                 </option>
@@ -632,15 +656,15 @@ function FractionPallet({ eel, params, setParams }) {
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         className="w-6 h-6"
-                                                        fill="#efefef"
+                                                        fill="none"
                                                         viewBox="0 0 24 24"
                                                         stroke="green"
                                                     >
                                                         <path
                                                             strokeLinecap="round"
                                                             strokeLinejoin="round"
-                                                            strokeWidth="{2}"
-                                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                            strokeWidth={2}
+                                                            d="M5 13l4 4L19 7"
                                                         />
                                                     </svg>
                                                 </div>
@@ -649,15 +673,15 @@ function FractionPallet({ eel, params, setParams }) {
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         className="w-6 h-6"
-                                                        fill="#efefef"
+                                                        fill="none"
                                                         viewBox="0 0 24 24"
                                                         stroke="red"
                                                     >
                                                         <path
                                                             strokeLinecap="round"
                                                             strokeLinejoin="round"
-                                                            strokeWidth="{2}"
-                                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                            strokeWidth={2}
+                                                            d="M6 18L18 6M6 6l12 12"
                                                         />
                                                     </svg>
                                                 </div>
@@ -666,9 +690,12 @@ function FractionPallet({ eel, params, setParams }) {
                                         <td>
                                             <ActionButtons
                                                 index={resp.id}
-                                                rowNum={state.data.length !== 0
-                                                    ? state.data.length - index
-                                                    : 0}
+                                                rowNum={
+                                                    state.data.length !== 0
+                                                        ? state.data.length -
+                                                          index
+                                                        : 0
+                                                }
                                                 serial={resp.stb_num}
                                                 warn={
                                                     resp.status ===

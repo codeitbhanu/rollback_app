@@ -3,6 +3,7 @@
 # imports
 import platform
 import sys
+import inspect
 import eel
 import pyodbc
 import datetime
@@ -229,7 +230,9 @@ def get_current_time():
 
 def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, id_user):
     print("""rollback_instant called""")
-    response_data = {}
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name
+    }
     current_time = get_current_time()
     if(pcb_sn == ''):
         print(
@@ -720,6 +723,7 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
     global serverinstance
 
     response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
         "data": {
             "metadata": None,
         },
@@ -747,15 +751,18 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
             }
             conn.autocommit = False
             results = cursor.execute(select_sql).fetchall()
-            print(f'[SELECT-SQL-RESULTS] {results}')
+            print(f'[SELECT-SQL-RESULTS] {results} len: {len(results)}')
 
             if len(results) == 1:
                 row = results[0]
                 response_data = {
                     **response_data,
-                    "metadata": {
-                        "select_count": len(results),
-                        "last_pallet_carton": row[0].cd_data,
+                    "message": "Last pallet: {row.cd_data} for prod_id: {prod_id}",
+                    "data": {
+                        "metadata": {
+                            "select_count": len(results),
+                            "last_pallet_carton": row.cd_data,
+                        },
                     },
                     "status": CONST_SUCCESS,
                 }
@@ -797,6 +804,7 @@ def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
     global serverinstance
 
     response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
         "data": {
             "metadata": None,
         },
@@ -927,9 +935,10 @@ def get_printer_list():
     printers = get_printers()
     print(type(printers))
     print(printers)
-    return {"data": {"metadata": {
+    response_data = {"function_name": inspect.currentframe().f_code.co_name, "data": {"metadata": {
         "printers": printers
     }}, "message": "Printer List", "status": CONST_SUCCESS}
+    return response_data
 
 
 def start_eel(develop):

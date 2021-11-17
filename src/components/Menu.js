@@ -100,8 +100,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "fraction_pallet" &&
-                        "bordered"
+                        menuState.selectedMenu === "fraction_pallet" ?
+                        "bordered" : ""
                     }
                 >
                     <a
@@ -120,8 +120,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "rollback_pallet" &&
-                        "bordered"
+                        menuState.selectedMenu === "rollback_pallet" ?
+                        "bordered" : ""
                     }
                 >
                     <a
