@@ -721,7 +721,7 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
 @eel.expose
 def get_last_pallet_carton(prod_id=-1, choice="pallet"):
     global serverinstance
-
+    print(f'[get_last_pallet] requested last pallet for {prod_id}')
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
@@ -736,15 +736,25 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
     else:
         cursor = serverinstance.cursor
         conn = serverinstance.conn
-        choice = 25 if choice == "pallet" else 24
-        print(
-            f'[get_last_pallet] requested last pallet for {prod_id}')
-
-        try:
+        select_sql = ""
+        # choice = 25 if choice == "pallet" else 24
+        choice_carton = 24
+        choice_pallet = 25
+        if (choice == "pallet"):
             select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
                         WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
-                        WHERE prod_id = {prod_id} and id_config_param = {choice})'''
-            print(f'[SELECT-SQL] {select_sql}')
+                        WHERE prod_id = {prod_id} and id_config_param = {choice_pallet})'''
+        elif (choice == "carton"):
+            select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
+                        WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
+                        WHERE prod_id = {prod_id} and id_config_param = {choice_carton})'''
+        else:
+            select_sql = f'''SELECT cd.cd_data FROM stb_production.dbo.config_data cd
+                        WHERE id_config_data IN (SELECT id_config_data FROM stb_production.dbo.prod_config pc
+                        WHERE prod_id = {prod_id} and (id_config_param = {choice_carton} OR id_config_param = {choice_pallet}))'''
+        print(f'[SELECT-SQL] {select_sql}')
+
+        try:
             response_data = {
                 **response_data,
                 "select_query": select_sql,
@@ -755,13 +765,30 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
 
             if len(results) == 1:
                 row = results[0]
+                k = "last_pallet" if choice == "pallet" else "last_carton"
                 response_data = {
                     **response_data,
                     "message": "Last pallet: {row.cd_data} for prod_id: {prod_id}",
                     "data": {
                         "metadata": {
                             "select_count": len(results),
-                            "last_pallet_carton": row.cd_data,
+                            k: row.cd_data,
+                        },
+                    },
+                    "status": CONST_SUCCESS,
+                }
+            elif len(results) == 2:
+                ctn_row = results[0]
+                plt_row = results[1]
+                # k = "last_pallet" if choice == "pallet" else "last_carton"
+                response_data = {
+                    **response_data,
+                    "message": "Last pallet: {row.cd_data} for prod_id: {prod_id}",
+                    "data": {
+                        "metadata": {
+                            "select_count": len(results),
+                            "last_carton": ctn_row.cd_data,
+                            "last_pallet": plt_row.cd_data,
                         },
                     },
                     "status": CONST_SUCCESS,

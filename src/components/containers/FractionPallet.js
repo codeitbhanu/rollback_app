@@ -32,6 +32,7 @@ function FractionPallet({ eel, params, setParams }) {
         quantity_group: [],
         common_prod_id: -1,
         last_pallet: "",
+        last_carton: "",
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -41,13 +42,13 @@ function FractionPallet({ eel, params, setParams }) {
             ...state,
             data: [],
             valid_scanned: 0,
-            printer_list: [],
             fraction_max_count: 8,
             fraction_count: 2,
             fraction_weight: 0.0,
             validation_fraction_weight: false,
             quantity_group: [],
             last_pallet: "",
+            last_carton: ""
         });
     };
 
@@ -60,6 +61,7 @@ function FractionPallet({ eel, params, setParams }) {
             fraction_max_count: 8,
             fraction_count: id,
             last_pallet: "",
+            last_carton: ""
         }));
     };
 
@@ -162,7 +164,7 @@ function FractionPallet({ eel, params, setParams }) {
     useEffect(() => {
         console.log('useEffect called #2')
         if (state.valid_scanned === state.fraction_count) {
-            fetchPalletInput(state.common_prod_id)
+            fetchLastCartonPallet(state.common_prod_id)
         }
     }, [state.valid_scanned, state.fraction_count, state.common_prod_id])
 
@@ -326,7 +328,7 @@ function FractionPallet({ eel, params, setParams }) {
         }));
     };
 
-    const fetchPalletInput = (prod_id) => {
+    const fetchLastCartonPallet = (prod_id, choice = "") => {
         // const pallet_num = event.target.value.trim();
         console.log(`${eel}___${prod_id}___`);
 
@@ -339,7 +341,7 @@ function FractionPallet({ eel, params, setParams }) {
                 // let prod_id = 115;
                 eel.get_last_pallet_carton(
                     prod_id,
-                    "pallet"
+                    choice
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
@@ -351,7 +353,8 @@ function FractionPallet({ eel, params, setParams }) {
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
-                                last_pallet: metadata.last_pallet_carton,
+                                last_pallet: metadata.last_pallet,
+                                last_carton: metadata.last_carton,
                             }));
                         } else {
                             setTimeout(() => {
@@ -581,7 +584,7 @@ function FractionPallet({ eel, params, setParams }) {
                             className="border-double input input-primary input-bordered"
                             value={state.last_pallet}
                             // onKeyDown={(e) =>
-                            //     e.key === "Enter" && fetchPalletInput(e)
+                            //     e.key === "Enter" && fetchLastCartonPallet(e)
                             // }
                             onChange={onChangePalletInput}
                         />
