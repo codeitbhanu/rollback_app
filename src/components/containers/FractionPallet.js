@@ -25,6 +25,7 @@ function FractionPallet({ eel, params, setParams }) {
         data: [],
         valid_scanned: 0,
         printer_list: [],
+        selectedPrinter: "",
         fraction_max_count: 8,
         fraction_count: 2,
         fraction_weight: 0.0,
@@ -46,14 +47,15 @@ function FractionPallet({ eel, params, setParams }) {
             fraction_count: 2,
             fraction_weight: 0.0,
             validation_fraction_weight: false,
-            quantity_group: [],
+            // quantity_group: [],
             last_pallet: "",
             last_carton: ""
         });
     };
 
     const onSelectFractionQty = (id = -1) => {
-        console.log("onSelectFractionQty", id);
+        console.log("prev state.fraction_count: " + state.fraction_count + " and onSelectFractionQty", id);
+        // data: id > state.fraction_count ? state.data : [],
         setState((prevState) => ({
             ...prevState,
             data: [],
@@ -111,9 +113,41 @@ function FractionPallet({ eel, params, setParams }) {
         }));
     };
 
+    const validateInputParams = () => {
+        let return_status = false
+        // Is Weight Valid?
+        if (state.validation_fraction_weight === false) {
+            alert("[ERROR] Please enter valid weight")
+            return return_status
+        }
+        if(state.data.filter(
+            (item) => item.valid === false
+        ).length) {
+            alert("[ERROR] Please remove invalid entries from the list")
+            return return_status
+        }
+        if(state.fraction_count != state.valid_scanned) {
+            alert("[ERROR] fraction_count and valid_scanned items count does not match")
+            return return_status
+        }
+        if(state.selectedPrinter === "") {
+            alert("[ERROR] Please choose a printer before printing")
+            return return_status
+        }
+        return_status = true
+        return return_status;
+        
+        // Are Status Valid for All STBs
+
+    }
+
     const sendPrint = () => {
         console.log(state);
-        resetState();
+        if (validateInputParams()) {
+            const stb_list = state.data.map(item => item.stb_num)
+            console.log(`list of stbs: ${stb_list}`)
+            eel.send_fraction_print(state.selectedPrinter, state.last_pallet, stb_list)
+        }
     };
 
     useEffect(() => {
@@ -136,7 +170,7 @@ function FractionPallet({ eel, params, setParams }) {
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
-                                printer_list: metadata.printers,
+                                printer_list: ["Please Choose a printer", ...metadata.printers],
                             }));
                         } else {
                             setTimeout(() => {
@@ -390,17 +424,22 @@ function FractionPallet({ eel, params, setParams }) {
         // alert(JSON.stringify(event.target.id));
     };
 
-    const handleSelectReasonDropdown = (event) => {
-        console.log("handleSelectReasonDropdown called ");
+    const onSelectPrinter = (event) => {
+        console.log("onSelectPrinter called:" + event.target.value);
+        const printerName = event.target.value
+        setState({
+            ...state,
+            selectedPrinter: printerName
+        });
         // alert(JSON.stringify(event.target.value));
     };
 
     const handleChangeTextBox = (event) => {
-        console.log("handleSelectReasonDropdown called " + event.target.value);
+        console.log("handleChangeTextBox called " + event.target.value);
     };
 
     const handleRemoveItem = (id, rownum, serial) => {
-        console.log("handleSelectReasonDropdown called ");
+        console.log("handleRemoveItem called ");
         if (
             window.confirm(
                 `Confirm delete Row: ${rownum} - ${serial} from below list?`
@@ -461,11 +500,11 @@ function FractionPallet({ eel, params, setParams }) {
                         <select
                             className="flex min-w-full select select-bordered select-primary"
                             disabled=""
-                            onChange={(e) => handleSelectReasonDropdown(e)}
+                            onChange={(e) => onSelectPrinter(e)}
                         >
                             {state?.printer_list?.map((printer, index) => (
                                 <option
-                                    // disabled={printer.index === 0}
+                                    disabled={printer.index === 0}
                                     selected={index === 0}
                                     key={"printer#" + index}
                                     id={index}

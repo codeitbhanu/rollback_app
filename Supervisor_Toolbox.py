@@ -967,6 +967,13 @@ def get_printer_list():
     }}, "message": "Printer List", "status": CONST_SUCCESS}
     return response_data
 
+@eel.expose
+def send_fraction_print(printer_name = "", pallet_num = "", stb_num_list = []):
+    print(f'[SEND-FRACTION-PRINT] printer: {printer_name} pallet: {pallet_num} stbs: {stb_num_list}')
+    response_data = {"function_name": inspect.currentframe().f_code.co_name, "data": {"metadata": {
+        "pallet_num": pallet_num
+    }}, "message": "Fraction Pallet Created", "status": CONST_SUCCESS}
+    return response_data
 
 def start_eel(develop):
     """Start Eel with either production or development configuration."""
