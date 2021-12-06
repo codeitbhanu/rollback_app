@@ -434,7 +434,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
     };
 
     return (
-        <div className="absolute flex flex-col w-full mt-4 border-2 border-gray-600 h-1/2">
+        <div className="absolute flex flex-col w-full mt-4 border-0 border-gray-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
                     <div className="">

@@ -507,7 +507,7 @@ function FractionPallet({ eel, params, setParams }) {
     // console.log(fake_data);
 
     return (
-        <div className="absolute flex flex-col w-full mt-4 border-2 border-gray-600 h-1/2">
+        <div className="absolute flex flex-col w-full mt-4 border-0 border-gray-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
                     <div className="">
@@ -612,7 +612,7 @@ function FractionPallet({ eel, params, setParams }) {
                     <div className="flex flex-col justify-between mt-2">
                         <label className="text-black label">
                             <span className="text-black label-text">
-                                Enter PCB_Num / STB_Num
+                                Scan PCB_Num or STB_Num
                             </span>
                             <span
                                 className={
@@ -624,7 +624,7 @@ function FractionPallet({ eel, params, setParams }) {
                         </label>
                         <input
                             type="text"
-                            placeholder="Enter PCB_Num / STB_Num"
+                            placeholder="Scan PCB_Num or STB_Num"
                             className="border-double input input-primary input-bordered"
                             onKeyDown={(e) =>
                                 e.key === "Enter" && handleBarcodeInput(e)

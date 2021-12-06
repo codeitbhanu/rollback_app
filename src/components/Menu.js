@@ -163,14 +163,14 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         onClick={() =>
                             onSelectMenu(
                                 "rollback_pallet",
-                                "Rollback Pallet",
+                                "Pallet Rollback",
                                 iconRollbackPallet,
                                 PalletRollbackContainer
                             )
                         }
                     >
                         <div className="w-5 h-5 mr-2">{iconRollbackPallet}</div>
-                        Rollback Pallet
+                        Pallet Rollback
 
                     </a>
                 </li>

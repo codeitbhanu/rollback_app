@@ -43,13 +43,13 @@ function ActionButtons({
                     </svg>
                 </span>
             </button> */}
-            {actionList.map((action, index) => {
+            {actionList.map((action, idx) => {
                 let retObj = "";
                 switch (action) {
                     case ACTION_BUTTON_EDIT:
                         retObj = (
                             <button
-                                key={"actionBtn" + index}
+                                key={"actionBtn" + idx}
                                 className="hover:bg-gray-300"
                                 onClick={() => actionEdit(index, rowNum, param, data)}
                             >
@@ -75,7 +75,7 @@ function ActionButtons({
                     case ACTION_BUTTON_SAVE:
                         retObj = (
                             <button
-                                key={"actionBtn" + index}
+                                key={"actionBtn" + idx}
                                 className="hover:bg-gray-300"
                                 onClick={() => actionSave(index, rowNum, param, data)}
                             >
@@ -86,7 +86,7 @@ function ActionButtons({
                     case ACTION_BUTTON_CANCEL:
                             retObj = (
                                 <button
-                                    key={"actionBtn" + index}
+                                    key={"actionBtn" + idx}
                                     className="justify-center hover:bg-gray-300"
                                     onClick={() => actionCancel(index, rowNum, param, data)}
                                 >
@@ -97,7 +97,7 @@ function ActionButtons({
                     default:
                         retObj = (
                             <button
-                            key={"actionBtn" + index}
+                            key={"actionBtn" + idx}
                                 className="hover:bg-gray-300"
                                 onClick={() => actionDelete(index, rowNum, param, data)}
                             >
