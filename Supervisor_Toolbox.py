@@ -1087,29 +1087,32 @@ def get_frequent_params(prod_id, table, param_name, key):
                                 INNER JOIN stb_production.dbo.prod_config pc ON pc.id_config_data = cd.id_config_data
                                 INNER JOIN stb_production.dbo.config_param cp ON cp.id_config_param = pc.id_config_param
                                 WHERE pc.prod_id = {prod_id} and cp.id_config_param = {key}'''
-                print(f'[SELECT-SQL] {select_sql}')
+            if (table == "production_data"):
+                select_sql = f'''SELECT pd.data_name, pd.data_value FROM stb_production.dbo.production_data pd
+                                WHERE prod_id = {prod_id} and data_name = \'{param_name}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+            if len(results) == 1:
+                cp_desc = results[0][0]
+                cd_data = results[0][1]
+                print(f'Results cp_desc: {cp_desc} cd_data: {cd_data}')
                 response_data = {
                     **response_data,
-                    "select_query": select_sql,
+                    "data": {
+                        "metadata": {
+                            "param_desc": cp_desc,
+                            "param_value": cd_data,
+                        }
+                    },
+                    "message": "Retrieved cd_data for parameter",
+                    "status": CONST_SUCCESS,
                 }
-                conn.autocommit = False
-                results = cursor.execute(select_sql).fetchall()
-                print(f'[SELECT-SQL-RESULTS] {results}')
-                if len(results) == 1:
-                    cp_desc = results[0][0]
-                    cd_data = results[0][1]
-                    print(f'cd_data {cd_data}')
-                    response_data = {
-                        **response_data,
-                        "data": {
-                            "metadata": {
-                                "param_desc": cp_desc,
-                                "param_value": cd_data,
-                            }
-                        },
-                        "message": "Retrieved cd_data for parameter",
-                        "status": CONST_SUCCESS,
-                    }
 
         except pyodbc.DatabaseError as e:
             print(
@@ -1172,11 +1175,16 @@ def set_frequent_params(prod_id, table, param_name, key, param_value):
                                     INNER JOIN stb_production.dbo.prod_config pc ON pc.id_config_data = cd.id_config_data
                                     INNER JOIN stb_production.dbo.config_param cp ON cp.id_config_param = pc.id_config_param
                                     WHERE pc.prod_id = {prod_id} and cp.id_config_param = {key}'''
-                    response_data = {
-                        **response_data,
-                        "update_query": update_sql,
-                    }
-                    print(f'[UPDATE-SQL] {update_sql}')
+                if (table == "production_data"):
+                    update_sql = f'''UPDATE pd
+                                    SET pd.data_value = \'{param_value}\'
+                                    FROM stb_production.dbo.production_data pd
+                                    WHERE prod_id = {prod_id} and data_name = \'{param_name}\''''
+                response_data = {
+                    **response_data,
+                    "update_query": update_sql,
+                }
+                print(f'[UPDATE-SQL] {update_sql}')
                 conn.autocommit = False
                 update_count = cursor.execute(update_sql)
                 print(f'[UPDATE-SQL-RESULTS] {vars(update_count)}')
