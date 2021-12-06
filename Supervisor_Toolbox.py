@@ -1090,6 +1090,19 @@ def get_frequent_params(prod_id, table, param_name, key):
             if (table == "production_data"):
                 select_sql = f'''SELECT pd.data_name, pd.data_value FROM stb_production.dbo.production_data pd
                                 WHERE prod_id = {prod_id} and data_name = \'{param_name}\''''
+            if (table == "test_parameter"):
+                target_prod_id = None
+                if (prod_id in [94, 95, 96]):
+                    target_prod_id = 94
+                elif (prod_id in [97, 98, 99, 100, 101, 102, 103]):
+                    target_prod_id = 97
+                elif (prod_id in [105, 106, 107]):
+                    target_prod_id = 105
+                elif (prod_id in [108, 109, 110, 111, 112, 113, 114]):
+                    target_prod_id = 108
+                else:
+                    target_prod_id = prod_id
+                select_sql = f'''SELECT tp.parameter, tp.value FROM stb_production.dbo.test_parameter tp WHERE prod_id = {target_prod_id} and parameter = \'{key}\''''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
                 **response_data,
@@ -1101,7 +1114,7 @@ def get_frequent_params(prod_id, table, param_name, key):
             if len(results) == 1:
                 cp_desc = results[0][0]
                 cd_data = results[0][1]
-                print(f'Results cp_desc: {cp_desc} cd_data: {cd_data}')
+                print(f'Results parameter: {cp_desc} value: {cd_data}')
                 response_data = {
                     **response_data,
                     "data": {
@@ -1139,7 +1152,7 @@ def get_frequent_params(prod_id, table, param_name, key):
                     "data": {
                         "metadata": results,
                     },
-                    "message": "No Active Products Found",
+                    "message": "No matching paramters were found",
                     "status": CONST_FAILURE,
                 }
             return response_data
@@ -1180,6 +1193,19 @@ def set_frequent_params(prod_id, table, param_name, key, param_value):
                                     SET pd.data_value = \'{param_value}\'
                                     FROM stb_production.dbo.production_data pd
                                     WHERE prod_id = {prod_id} and data_name = \'{param_name}\''''
+                if (table == "test_parameter"):
+                    target_prod_id = None
+                    if (prod_id in [94, 95, 96]):
+                        target_prod_id = 94
+                    elif (prod_id in [97, 98, 99, 100, 101, 102, 103]):
+                        target_prod_id = 97
+                    elif (prod_id in [105, 106, 107]):
+                        target_prod_id = 105
+                    elif (prod_id in [108, 109, 110, 111, 112, 113, 114]):
+                        target_prod_id = 108
+                    else:
+                        target_prod_id = prod_id
+                    update_sql = f'''UPDATE tp SET tp.value = \'{param_value}\' FROM stb_production.dbo.test_parameter tp WHERE prod_id = {target_prod_id} and parameter = \'{key}\''''
                 response_data = {
                     **response_data,
                     "update_query": update_sql,

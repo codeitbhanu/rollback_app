@@ -73,6 +73,10 @@ function FrequentParam({ eel, params, setParams, config_data }) {
         // let n = undefined;
         let re = undefined;
         switch (state.param_name) {
+            case "software_version":
+            case "load_sequence_number":
+                re = /[\s\S]+/;
+                break;
             case "min_weight":
             case "max_weight":
                 re = /^[\+\-]?\d*\.?\d+(?:[Ee][\+\-]?\d+)?$/;
@@ -188,6 +192,8 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             case "min_weight":
             case "max_weight":
             case "oqc_counter":
+            case "software_version":
+            case "load_sequence_number":
                 try {
                     const paramObj = state.parameters.filter(
                         (p) => p.param_name === param
@@ -360,65 +366,9 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             case "pallet_qty":
             case "min_weight":
             case "max_weight":
-                try {
-                    const paramObj = state.parameters.filter(
-                        (param) => param.param_name === paramName
-                    )[0];
-                    if (params.server.status) {
-                        eel.get_frequent_params(
-                            state?.prod_id,
-                            paramObj?.table,
-                            paramObj?.param_name,
-                            paramObj?.id_config_param
-                        )((response) => {
-                            console.log(
-                                `[PY]: ${JSON.stringify(response, null, 2)}`
-                            );
-                            try {
-                                const function_name = response.function_name;
-                                const status = response.status;
-                                const message = response.message;
-                                const metadata = response.data.metadata;
-                                console.log(
-                                    `${function_name} message got: ${JSON.stringify(
-                                        message
-                                    )} metadata: ${JSON.stringify(metadata)}`
-                                );
-                                if (status === CONST_SUCCESS) {
-                                    setState((prevState) => ({
-                                        ...prevState,
-                                        param_name: paramName,
-                                        param_desc: metadata.param_desc,
-                                        param_value: metadata.param_value,
-                                        param_edit_mode: false,
-                                        validation_param: true,
-                                        prev_param_value: "",
-                                        status: CONST_SUCCESS,
-                                        action_btns: default_action_btns
-                                    }));
-                                } else {
-                                    setState((prevState) => ({
-                                        ...prevState,
-                                        status: CONST_FAILURE,
-                                    }));
-                                    setTimeout(() => {
-                                        alert(`RESPONSE ERROR: ${message}`);
-                                    }, 200);
-                                }
-                            } catch (error) {
-                                setTimeout(() => {
-                                    alert(`PARSE ${error}`);
-                                }, 200);
-                            }
-                        });
-                    } else {
-                        throw Error(`Connect the server first`);
-                    }
-                } catch (error) {
-                    alert(`${error}`);
-                }
-                break;
             case "oqc_counter":
+            case "software_version":
+            case "load_sequence_number":
                 try {
                     const paramObj = state.parameters.filter(
                         (param) => param.param_name === paramName
@@ -428,7 +378,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                             state?.prod_id,
                             paramObj?.table,
                             paramObj?.param_name,
-                            paramObj?.data_name
+                            paramObj?.id_config_param || paramObj?.data_name || paramObj?.parameter,
                         )((response) => {
                             console.log(
                                 `[PY]: ${JSON.stringify(response, null, 2)}`
@@ -458,7 +408,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                                 } else {
                                     setState((prevState) => ({
                                         ...prevState,
-                                        status: CONST_FAILURE,
+                                        status: CONST_NONE,
                                     }));
                                     setTimeout(() => {
                                         alert(`RESPONSE ERROR: ${message}`);
@@ -591,6 +541,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                                                 }`}
                                                 value={state.param_value}
                                                 onChange={onChangeParamValue}
+                                                onKeyDown={(e) => e.key === "Escape" ? handleCancelItem() : null}
                                             />
                                         </td>
                                     ) : (

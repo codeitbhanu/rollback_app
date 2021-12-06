@@ -123,14 +123,14 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         onClick={() =>
                             onSelectMenu(
                                 "frequent_param",
-                                "Frequent Param",
+                                "Edit Common Params",
                                 iconFrequentParam,
                                 FrequentParamContainer
                             )
                         }
                     >
                         <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
-                        Frequent Param
+                        Edit Common Params
                     </a>
                 </li>
                 <li
