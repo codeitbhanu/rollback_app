@@ -45,13 +45,14 @@ function FractionPallet({ eel, params, setParams }) {
         }
     };
 
+    const default_action_btns = [ACTION_BUTTON_DELETE];
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         manual_status: -1,
         reason_other: false,
         reason_desc: "",
         reason_manual: "",
-        actionBtns: [{"action": ACTION_BUTTON_DELETE, "cb": handleRemoveItem}],
+        action_btns: default_action_btns,
         data: [],
         valid_scanned: 0,
         printer_list: [],
@@ -103,25 +104,26 @@ function FractionPallet({ eel, params, setParams }) {
     };
 
     const onChangeWeight = (event) => {
-        const str = event.target.value.trim();
+        const value = event.target.value.trim();
         let result = false;
-        let n = 0.0;
+        // let n = 0.0;
         try {
-            const re = /^[+-]?(?:\d*\.)?\d+$/;
+            // [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)
+            const re = /^[\+\-]?\d*\.?\d+(?:[Ee][\+\-]?\d+)?$/;
 
-            result = re.exec(str);
-            if (result) {
-                n = parseFloat(result[0]);
-            }
+            result = re.exec(value);
+            console.log(`onChangeParamValue called: ${value} validation_param: ${result}`);
+            // if (result) 
+            //     n = parseFloat(result[0]);
+                
+                setState((prevState) => ({
+                    ...prevState,
+                    fraction_weight: result ? result[0] : undefined,
+                    validation_fraction_weight: result?.length > 0,
+                }));
         } catch (e) {
             console.log("Error: " + e.message);
         }
-        console.log("onChangeWeight: ", n);
-        setState((prevState) => ({
-            ...prevState,
-            fraction_weight: n,
-            validation_fraction_weight: result,
-        }));
     };
 
     const update_fraction_buttons = (active = 2, max = 8) => {
@@ -772,7 +774,7 @@ function FractionPallet({ eel, params, setParams }) {
                                         </td>
                                         <td>
                                             <ActionButtons
-                                                actionList={state.actionBtns}
+                                                actionList={state.action_btns}
                                                 index={resp.id}
                                                 rowNum={
                                                     state.data.length !== 0

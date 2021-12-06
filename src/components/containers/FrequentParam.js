@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
+import swal from "@sweetalert/with-react";
+import { useTable } from 'react-table'
+
 
 import ActionButtons from "../ActionButtons";
 
@@ -11,7 +14,6 @@ import { stat } from "fs";
 // const defPath = "~";
 
 function FrequentParam({ eel, params, setParams, config_data }) {
-    console.log("[params] " + JSON.stringify(params))
     const MODE_MANUAL = "manual";
     const MODE_INSTANT = "instant";
     const INSTANT_MODE_STATUS_ID = -1;
@@ -30,6 +32,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
         prod_id: 0,
         prod_desc: "Please Choose a Product",
     }
+    const default_action_btns = [ACTION_BUTTON_EDIT];
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         manual_status: -1,
@@ -45,7 +48,8 @@ function FrequentParam({ eel, params, setParams, config_data }) {
         param_desc: "",
         param_value: "",
         prev_param_value: "",
-        action_btns: [],
+        validation_param: true,
+        action_btns: default_action_btns,
         valid_scanned: 0,
         active_products: [default_product],
         prod_id: -1,
@@ -63,23 +67,90 @@ function FrequentParam({ eel, params, setParams, config_data }) {
         // path: defPath,
     });
 
-    const onChangeParamValue = (e) => {
-        const value = e.target.value;
-        // console.log("onChangeParamValue called " + value)
-        setState((prevState) => ({
-            ...prevState,
-            param_value: value
-        }))
+    const onChangeParamValue = (event) => {
+        const value = event.target.value.trim();
+        let result = false;
+        // let n = undefined;
+        let re = undefined;
+        switch (state.param_name) {
+            case "min_weight":
+            case "max_weight":
+                re = /^[\+\-]?\d*\.?\d+(?:[Ee][\+\-]?\d+)?$/;
+                break
+            case "pallet_qty":
+            default:
+                re = /^[+-]?(?:\d*)?\d+$/;
+        }
+        
+        try {
+            result = re.exec(value);
+            console.log(`onChangeParamValue called: ${value} validation_param: ${result}`);
+            console.log(result)
+            console.log(typeof(result))
+            setState((prevState) => ({
+                ...prevState,
+                param_value: result ? result[0] : undefined,
+                validation_param: result?.length > 0
+            }))
+        } catch (e) {
+            console.log("Error: " + e.message);
+        } 
     }
 
+    // function handleEditItem(index, rowNum, param, data) {
+    //     console.log(state)
+    //     swal("A wild Pikachu appeared! What do you want to do?", {
+    //         title: "Please edit the parameter",
+    //         buttons: {
+    //           cancel: "Run away!",
+    //           catch: {
+    //             text: "Throw Pokéball!",
+    //             value: "catch",
+    //           },
+    //           defeat: true,
+    //         },
+    //       })
+    //       .then((value) => {
+    //         switch (value) {
+           
+    //           case "defeat":
+    //             swal("Pikachu fainted! You gained 500 XP!");
+    //             break;
+           
+    //           case "catch":
+    //             swal("Gotcha!", "Pikachu was caught!", "success");
+    //             break;
+           
+    //           default:
+    //             swal("Got away safely!");
+    //         }
+    //       });
+    //     return;
+    //     swal(<div>Hello world</div>, "error", {
+    //         buttons: {
+    //             accept: {
+    //                 className:
+    //                     "px-4 py-2 m-3 font-bold text-white bg-blue-500 border-b-4 border-blue-700 rounded min-w-max hover:bg-blue-400 hover:border-blue-500",
+    //             },
+    //             reject: {
+    //                 className:
+    //                     "px-4 py-2 m-3 font-bold text-white bg-red-500 border-b-4 border-red-700 rounded min-w-max hover:bg-red-400 hover:border-red-500",
+    //             },
+    //         },
+    //     }).then((choice) => {
+    //         console.log(`You chose: ${choice}`);
+    //         if (choice === "accept") {
+    //             // handleAcceptCaller(request, localStream);
+                
+    //         } else {
+    //             // handleRejectCaller(request, localStream);
+    //         }
+    //     });
+    // }
+
     const handleEditItem = (id, rownum, param) => {
-        console.log(`handleEditItem called param_name: ${param}`);
         // console.log("params: " + JSON.stringify(params))
-        // console.log("[state-handleEditItem-before]" + JSON.stringify(state))
-        const editModeActionBtns = [
-            { action: ACTION_BUTTON_SAVE, cb: handleSaveItem },
-            { action: ACTION_BUTTON_CANCEL, cb: handleCancelItem },
-        ]
+        const editModeActionBtns = [ACTION_BUTTON_SAVE, ACTION_BUTTON_CANCEL];
         setState((prevState) => ({
             ...prevState,
             param_edit_mode: true,
@@ -87,8 +158,11 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             action_btns: editModeActionBtns,
             status: CONST_UNKNOWN,
         }));
-        console.log("[state-handleEditItem-after]" + JSON.stringify(state))
     };
+
+    const handleDeleteItem = (id, rownum, param) => {
+        console.log(`handleDeleteItem called param_name: ${param}`);
+    }
 
     const handleSaveItem = (id, rownum, param, data) => {
         console.log(`handleSaveItem called param_name: ${param}`);
@@ -103,92 +177,92 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             alert("Please choose a product first");
             return;
         }
+        if (!state.validation_param) {
+            alert("Please enter a valid input");
+            return;
+        }
 
-        setState((prevState) => {
-            // console.log(prevState)
-            let retObj = undefined;
-            switch (param) {
-                case "pallet_qty":
-                case "min_weight":
-                case "max_weight":
-                    try {
-                        const paramObj = state.parameters.filter(
-                            (p) => p.param_name === param
-                        )[0];
-                        console.log(paramObj)
-                        if (params.server.status) {
-                            eel.set_frequent_params(
-                                prevState?.prod_id,
-                                data?.table,
-                                data?.param_name,
-                                data?.id_config_param,
-                                prevState.param_value
-                            )((response) => {
+        // console.log(prevState)
+        switch (param) {
+            case "pallet_qty":
+            case "min_weight":
+            case "max_weight":
+                try {
+                    const paramObj = state.parameters.filter(
+                        (p) => p.param_name === param
+                    )[0];
+                    console.log(paramObj)
+                    if (params.server.status) {
+                        eel.set_frequent_params(
+                            state?.prod_id,
+                            paramObj?.table,
+                            paramObj?.param_name,
+                            paramObj?.id_config_param,
+                            state?.param_value
+                        )((response) => {
+                            console.log(
+                                `[PY]: ${JSON.stringify(response, null, 2)}`
+                            );
+                            try {
+                                const function_name = response.function_name;
+                                const status = response.status;
+                                const message = response.message;
+                                const metadata = response.data.metadata;
                                 console.log(
-                                    `[PY]: ${JSON.stringify(response, null, 2)}`
+                                    `${function_name} message got: ${JSON.stringify(
+                                        message
+                                    )} metadata: ${JSON.stringify(metadata)}`
                                 );
-                                try {
-                                    const function_name = response.function_name;
-                                    const status = response.status;
-                                    const message = response.message;
-                                    const metadata = response.data.metadata;
-                                    console.log(
-                                        `${function_name} message got: ${JSON.stringify(
-                                            message
-                                        )} metadata: ${JSON.stringify(metadata)}`
-                                    );
-                                    if (status === CONST_SUCCESS) {
-                                        retObj = {
-                                            prev_param_value: "",
-                                            status: CONST_SUCCESS,
-                                        }
-                                        return {...prevState, ...retObj}
-                                    } else {
-                                        retObj = {
-                                            status: CONST_FAILURE,
-                                            
-                                        }
-                                        
-                                        setTimeout(() => {
-                                            alert(`RESPONSE ERROR: ${message}`);
-                                        }, 200);
-                                        return {...prevState, ...retObj}
-                                    }
-                                } catch (error) {
+                                if (status === CONST_SUCCESS) {
+                                    setState((prevState) => ({
+                                        ...prevState,
+                                        param_edit_mode: false,
+                                        prev_param_value: "",
+                                        status: CONST_SUCCESS,
+                                    }))
+                                    // This will refresh and display updated value
+                                    onSelectParam(paramObj?.param_name)
+                                } else {
+                                    setState((prevState) => ({
+                                        ...prevState,
+                                        prev_param_value: "",
+                                        status: CONST_FAILURE,
+                                    }))
+                                    
                                     setTimeout(() => {
-                                        alert(`PARSE ${error}`);
+                                        alert(`RESPONSE ERROR: ${message}`);
                                     }, 200);
                                 }
-                            });
-                        } else {
-                            throw Error(`Connect the server first`);
-                        }
-                    } catch (error) {
-                        alert(`${error}`);
+                            } catch (error) {
+                                setTimeout(() => {
+                                    alert(`PARSE ${error}`);
+                                }, 200);
+                            }
+                        });
+                    } else {
+                        throw Error(`Connect the server first`);
                     }
-                    break;
-                default:
-                    alert("[Error] Incorrect Param Selection");
-                    return {...prevState}
-            }
-            
-        });
+                } catch (error) {
+                    alert(`${error}`);
+                }
+                break;
+            default:
+                alert("[Error] Incorrect Param Selection");
+        }
         
         
     };
     const handleCancelItem = (id, rownum, serial) => {
         console.log("handleCancelItem called ");
-        const default_action_btns = { action: ACTION_BUTTON_EDIT, cb: handleEditItem }
         setState((prevState) => ({
             ...prevState,
             param_edit_mode: false,
             param_value: prevState.prev_param_value,
-            action_btns: [default_action_btns],
+            action_btns: default_action_btns,
             status: CONST_SUCCESS,
         }));
     };
 
-    console.log("[state-after] " + JSON.stringify(state))
 
     useEffect(() => {
 
@@ -265,7 +339,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
 
     const onSelectParam = (paramName) => {
         console.log(`onSelectParam called param_name: ${paramName}`);
-        console.log(JSON.stringify(params))
+        // console.log(JSON.stringify(params))
         if (params.session.active === false) {
             alert("Session not active, Please login first");
             return;
@@ -315,9 +389,10 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                                         param_name: paramName,
                                         param_desc: metadata.param_desc,
                                         param_value: metadata.param_value,
+                                        validation_param: true,
                                         prev_param_value: "",
                                         status: CONST_SUCCESS,
-                                        action_btns: [{ action: ACTION_BUTTON_EDIT, cb: handleEditItem }]
+                                        action_btns: default_action_btns
                                     }));
                                 } else {
                                     setState((prevState) => ({
@@ -448,7 +523,11 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                                             <input
                                                 type="text"
                                                 placeholder="param value"
-                                                className="bg-yellow-300 input input-primary input-bordered"
+                                                className={`input input-primary input-bordered ${
+                                                    state.validation_param
+                                                        ? "bg-yellow-300"
+                                                        : "bg-red-300"
+                                                }`}
                                                 value={state.param_value}
                                                 onChange={onChangeParamValue}
                                             />
@@ -524,11 +603,10 @@ function FrequentParam({ eel, params, setParams, config_data }) {
                                             index={0}
                                             rowNum={0}
                                             param={state.param_name}
-                                            data= {
-                                                state.parameters.filter(
-                                                    (p) => p.param_name === state.param_name
-                                                )[0]
-                                            }
+                                            actionEdit={handleEditItem}
+                                            actionDelete={handleDeleteItem}
+                                            actionSave={handleSaveItem}
+                                            actionCancel={handleCancelItem}
                                             warn={
                                                 state.status === CONST_FAILURE
                                             }

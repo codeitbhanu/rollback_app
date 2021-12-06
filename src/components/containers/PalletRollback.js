@@ -23,13 +23,14 @@ function PalletRollback({ eel, params, setParams }) {
     const ACTION_BUTTON_CANCEL = "cancel";
     const ACTION_BUTTON_DELETE = "delete";
 
+    const default_action_btns = [ACTION_BUTTON_DELETE];
     const [state, setState] = useState({
         mode: MODE_INSTANT,
         manual_status: -1,
         reason_other: false,
         reason_desc: "",
         reason_manual: "",
-        actionBtns: [{"action": ACTION_BUTTON_DELETE, "cb": handleRemoveItem}],
+        action_btns: default_action_btns,
         data: [], //fake_data,
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -244,7 +245,7 @@ function PalletRollback({ eel, params, setParams }) {
                                         </td>
                                         <td>
                                             <ActionButtons
-                                                actionList={state.actionBtns}
+                                                actionList={state.action_btns}
                                                 index={resp.id}
                                                 rowNum={index + 1}
                                                 param={resp.pcb_sn}

@@ -1,11 +1,15 @@
 import React from "react";
 
 function ActionButtons({
-    actionList = [],
+    actionList,
     index,
     rowNum,
     param,
     data,
+    actionEdit,
+    actionDelete,
+    actionSave,
+    actionCancel,
     warn,
     message,
 }) {
@@ -41,13 +45,13 @@ function ActionButtons({
             </button> */}
             {actionList.map((action, index) => {
                 let retObj = "";
-                switch (action.action) {
+                switch (action) {
                     case ACTION_BUTTON_EDIT:
                         retObj = (
                             <button
                                 key={"actionBtn" + index}
                                 className="hover:bg-gray-300"
-                                onClick={() => action.cb(index, rowNum, param, data)}
+                                onClick={() => actionEdit(index, rowNum, param, data)}
                             >
                                 <span className="text-red-500 fill-current">
                                     <svg
@@ -73,7 +77,7 @@ function ActionButtons({
                             <button
                                 key={"actionBtn" + index}
                                 className="hover:bg-gray-300"
-                                onClick={() => action.cb(index, rowNum, param, data)}
+                                onClick={() => actionSave(index, rowNum, param, data)}
                             >
                                 <div className="mr-2 badge badge-primary">Save</div>
                             </button>
@@ -84,7 +88,7 @@ function ActionButtons({
                                 <button
                                     key={"actionBtn" + index}
                                     className="justify-center hover:bg-gray-300"
-                                    onClick={() => action.cb(index, rowNum, param, data)}
+                                    onClick={() => actionCancel(index, rowNum, param, data)}
                                 >
                                     <div className="mr-2 badge badge-accent">Cancel</div>
                                 </button>
@@ -95,7 +99,7 @@ function ActionButtons({
                             <button
                             key={"actionBtn" + index}
                                 className="hover:bg-gray-300"
-                                onClick={() => action.cb(index, rowNum, param, data)}
+                                onClick={() => actionDelete(index, rowNum, param, data)}
                             >
                                 <span className="text-red-500 fill-current">
                                     <svg
