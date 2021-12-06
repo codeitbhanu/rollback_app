@@ -1,4 +1,7 @@
 {
+    "default_database": "stb_production",
+    "default_driver": "{ODBC Driver 17 for SQL Server}",
+    "default_host": "172.20.10.149\\PRODUCTION",
     "users": [
         {
             "id_user": 1,
@@ -50,7 +53,36 @@
             ]
         }
     ],
-    "default_database": "stb_production",
-    "default_driver": "{ODBC Driver 17 for SQL Server}",
-    "default_host": "172.20.10.149\\PRODUCTION"
+    "frequent_param": [
+        {
+            "table": "prod_config",
+            "param_name": "pallet_qty",
+            "id_config_param": 18
+        },
+        {
+            "table": "prod_config",
+            "param_name": "min_weight",
+            "id_config_param": 19
+        }, 
+        {
+            "table": "prod_config",
+            "param_name": "max_weight",
+            "id_config_param": 20
+        },
+        {
+            "table": "production_data",
+            "param_name": "oqc_counter",
+            "data_name": "oqc_counter"
+        },
+        {
+            "table": "test_parameter",
+            "param_name": "software_version",
+            "parameter": "SOFTWARE-VERSION"
+        },
+        {
+            "table": "test_parameter",
+            "param_name": "load_sequence_number",
+            "parameter": "LOAD-SEQUENCE-NUMBER"
+        }
+    ]
 }

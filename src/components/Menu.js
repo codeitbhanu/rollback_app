@@ -1,6 +1,8 @@
 import UnitRollbackContainer from "./containers/UnitRollback";
 import PalletRollbackContainer from "./containers/PalletRollback";
 import FractionPalletContainer from "./containers/FractionPallet";
+import FrequentParamContainer from "./containers/FrequentParam";
+
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
         <svg
@@ -15,6 +17,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 strokeLinejoin="round"
                 strokeWidth="{2}"
                 d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
+            />
+        </svg>
+    );
+    const iconFrequentParam = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="#8AE9FF"
+            viewBox="0 0 24 24"
+            stroke="#343434"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
             />
         </svg>
     );
@@ -74,9 +92,6 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
 
             <ul className="py-3 menu bg-base-100">
-                {/* <li>
-                    <a>Item without icon</a>
-                </li> */}
                 <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
@@ -96,6 +111,26 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconUnitRollback}</div>
                         Unit Rollback
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "frequent_param" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "frequent_param",
+                                "Frequent Param",
+                                iconFrequentParam,
+                                FrequentParamContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
+                        Frequent Param
                     </a>
                 </li>
                 <li
@@ -136,7 +171,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconRollbackPallet}</div>
                         Rollback Pallet
-                        {/* <div className="ml-2 badge success">3</div> */}
+
                     </a>
                 </li>
             </ul>

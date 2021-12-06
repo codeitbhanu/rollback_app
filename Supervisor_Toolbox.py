@@ -57,9 +57,9 @@ def read_variables(fin='variables2.txt'):
     '''
     d = {}
     with open(fin, 'r') as fh:
-        for l in fh:
-            if ',' in l:
-                d.update((l.strip().split(',', 1),))
+        for _l in fh:
+            if ',' in _l:
+                d.update((_l.strip().split(',', 1),))
     return d
 
 
@@ -967,13 +967,268 @@ def get_printer_list():
     }}, "message": "Printer List", "status": CONST_SUCCESS}
     return response_data
 
+
 @eel.expose
-def send_fraction_print(printer_name = "", pallet_num = "", stb_num_list = []):
-    print(f'[SEND-FRACTION-PRINT] printer: {printer_name} pallet: {pallet_num} stbs: {stb_num_list}')
+def send_fraction_print(printer_name="", pallet_num="", stb_num_list=[]):
+    print(
+        f'[SEND-FRACTION-PRINT] printer: {printer_name} pallet: {pallet_num} stbs: {stb_num_list}')
     response_data = {"function_name": inspect.currentframe().f_code.co_name, "data": {"metadata": {
         "pallet_num": pallet_num
     }}, "message": "Fraction Pallet Created", "status": CONST_SUCCESS}
     return response_data
+
+
+@eel.expose
+def get_active_products():
+    print('[GET-ACTIVE-PRODUCTS] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = '''SELECT prod_id
+                                ,prod_desc
+                            FROM stb_production.dbo.product
+                            WHERE id_status = 4'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                prod_list = []
+                for row in results:
+                    print(row)
+                    prod_list.append({"prod_id": row[0], "prod_desc": row[1]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_list": prod_list,
+                        },
+                    },
+                    "message": "Active Product List",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("Error: record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Active Products Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
+def get_frequent_params(prod_id, table, param_name, key):
+    print(
+        f'[GET-FREQUENT-PARAMS] prod_id: {prod_id} table: {table} param_name: {param_name} key: {key}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            if (table == "prod_config"):
+                select_sql = f'''SELECT cp.cp_desc, cd.cd_data
+                                FROM stb_production.dbo.config_data cd
+                                INNER JOIN stb_production.dbo.prod_config pc ON pc.id_config_data = cd.id_config_data
+                                INNER JOIN stb_production.dbo.config_param cp ON cp.id_config_param = pc.id_config_param
+                                WHERE pc.prod_id = {prod_id} and cp.id_config_param = {key}'''
+                print(f'[SELECT-SQL] {select_sql}')
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                }
+                conn.autocommit = False
+                results = cursor.execute(select_sql).fetchall()
+                print(f'[SELECT-SQL-RESULTS] {results}')
+                if len(results) == 1:
+                    cp_desc = results[0][0]
+                    cd_data = results[0][1]
+                    print(f'cd_data {cd_data}')
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "param_desc": cp_desc,
+                                "param_value": cd_data,
+                            }
+                        },
+                        "message": "Retrieved cd_data for parameter",
+                        "status": CONST_SUCCESS,
+                    }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            if len(results) == 0:
+                # raise ValueError("Error: record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Active Products Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
+def set_frequent_params(prod_id, table, param_name, key, param_value):
+    print(
+        f'[SET-FREQUENT-PARAMS] prod_id: {prod_id} table: {table} param_name: {param_name} key: {key} param_value: {param_value}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            try:
+                # Find and update the target_status
+                update_sql = ""
+                if (table == "prod_config"):
+                    update_sql = f'''UPDATE cd
+                                    SET cd.cd_data = {param_value}
+                                    FROM stb_production.dbo.config_data cd
+                                    INNER JOIN stb_production.dbo.prod_config pc ON pc.id_config_data = cd.id_config_data
+                                    INNER JOIN stb_production.dbo.config_param cp ON cp.id_config_param = pc.id_config_param
+                                    WHERE pc.prod_id = {prod_id} and cp.id_config_param = {key}'''
+                    response_data = {
+                        **response_data,
+                        "update_query": update_sql,
+                    }
+                    print(f'[UPDATE-SQL] {update_sql}')
+                conn.autocommit = False
+                update_count = cursor.execute(update_sql)
+                print(f'[UPDATE-SQL-RESULTS] {vars(update_count)}')
+                response_data = {
+                    **response_data,
+                    "update_count": update_count,
+                }
+            except pyodbc.DatabaseError as e:
+                print(
+                    f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+                cursor.rollback()
+                raise e
+
+            except pyodbc.ProgrammingError as pe:
+                cursor.rollback()
+                print(
+                    f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+                raise pe
+            except KeyError as e:
+                print(f"--7 {type(e).__name__ + ': ' + str(e)}")
+                print(
+                    f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
+                raise e
+            else:
+                cursor.commit()
+
+            finally:
+                conn.autocommit = True
+                return {
+                    **response_data,
+                    "data": {"metadata": None},
+                    "message": param_name + " data updated",
+                    "status": CONST_SUCCESS,
+                }
+
+        except Exception as e:
+            print(
+                f'>>>>>>> {type(e).__name__} type_of_e: {type(e.args)}')
+            print('Error on line {}'.format(
+                sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            message = type(e).__name__ + ': ' + str(e)
+
+            if type(e).__name__ == "KeyError" and len(e.args) and type(e.args[0]) == int:
+                print(f"--10 {e.args[0]}")
+                message = f"Rollback not allowed from {status_desc_for_id_status[e.args[0]]}"
+                print(f"--11 {message}\n{response_data}")
+            return {
+                "data": {"metadata": None},
+                "message": message,
+                "status": CONST_FAILURE,
+            }
+
 
 def start_eel(develop):
     """Start Eel with either production or development configuration."""

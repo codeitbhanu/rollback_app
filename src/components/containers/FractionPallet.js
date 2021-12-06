@@ -15,6 +15,35 @@ function FractionPallet({ eel, params, setParams }) {
     const INSTANT_MODE_STATUS_ID = -1;
     const CONST_SUCCESS = "SUCCESS";
     const CONST_FAILURE = "FAILURE";
+    const CONST_UNKNOWN = "UNKNOWN";
+
+    const DEFAULT_PARAMETER = "Choose a parameter";
+    const ACTION_BUTTON_EDIT = "edit";
+    const ACTION_BUTTON_SAVE = "save";
+    const ACTION_BUTTON_CANCEL = "cancel";
+    const ACTION_BUTTON_DELETE = "delete";
+
+    const handleRemoveItem = (id, rownum, serial) => {
+        console.log("handleRemoveItem called ");
+        if (
+            window.confirm(
+                `Confirm delete Row: ${rownum} - ${serial} from below list?`
+            )
+        ) {
+            setState((state) => {
+                let valid_scanned = state.valid_scanned;
+                const list = state.data.filter((item) => {
+                    const ret = item.id !== id;
+                    if (ret === false && item.valid) {
+                        valid_scanned = valid_scanned - 1;
+                    }
+                    return ret;
+                });
+                // console.log(`list: ${list}`);
+                return { ...state, data: list, valid_scanned: valid_scanned };
+            });
+        }
+    };
 
     const [state, setState] = useState({
         mode: MODE_INSTANT,
@@ -22,6 +51,7 @@ function FractionPallet({ eel, params, setParams }) {
         reason_other: false,
         reason_desc: "",
         reason_manual: "",
+        actionBtns: [{"action": ACTION_BUTTON_DELETE, "cb": handleRemoveItem}],
         data: [],
         valid_scanned: 0,
         printer_list: [],
@@ -49,12 +79,17 @@ function FractionPallet({ eel, params, setParams }) {
             validation_fraction_weight: false,
             // quantity_group: [],
             last_pallet: "",
-            last_carton: ""
+            last_carton: "",
         });
     };
 
     const onSelectFractionQty = (id = -1) => {
-        console.log("prev state.fraction_count: " + state.fraction_count + " and onSelectFractionQty", id);
+        console.log(
+            "prev state.fraction_count: " +
+                state.fraction_count +
+                " and onSelectFractionQty",
+            id
+        );
         // data: id > state.fraction_count ? state.data : [],
         setState((prevState) => ({
             ...prevState,
@@ -63,7 +98,7 @@ function FractionPallet({ eel, params, setParams }) {
             fraction_max_count: 8,
             fraction_count: id,
             last_pallet: "",
-            last_carton: ""
+            last_carton: "",
         }));
     };
 
@@ -72,11 +107,11 @@ function FractionPallet({ eel, params, setParams }) {
         let result = false;
         let n = 0.0;
         try {
-            const re=/^[+-]?(?:\d*\.)?\d+$/;
+            const re = /^[+-]?(?:\d*\.)?\d+$/;
 
-            result = re.exec(str)
-            if(result) {
-                n = parseFloat(result[0])
+            result = re.exec(str);
+            if (result) {
+                n = parseFloat(result[0]);
             }
         } catch (e) {
             console.log("Error: " + e.message);
@@ -114,44 +149,47 @@ function FractionPallet({ eel, params, setParams }) {
     };
 
     const validateInputParams = () => {
-        let return_status = false
+        let return_status = false;
         // Is Weight Valid?
         if (state.validation_fraction_weight === false) {
-            alert("[ERROR] Please enter valid weight")
-            return return_status
+            alert("[ERROR] Please enter valid weight");
+            return return_status;
         }
-        if(state.data.filter(
-            (item) => item.valid === false
-        ).length) {
-            alert("[ERROR] Please remove invalid entries from the list")
-            return return_status
+        if (state.data.filter((item) => item.valid === false).length) {
+            alert("[ERROR] Please remove invalid entries from the list");
+            return return_status;
         }
-        if(state.fraction_count != state.valid_scanned) {
-            alert("[ERROR] fraction_count and valid_scanned items count does not match")
-            return return_status
+        if (state.fraction_count != state.valid_scanned) {
+            alert(
+                "[ERROR] fraction_count and valid_scanned items count does not match"
+            );
+            return return_status;
         }
-        if(state.selectedPrinter === "") {
-            alert("[ERROR] Please choose a printer before printing")
-            return return_status
+        if (state.selectedPrinter === "") {
+            alert("[ERROR] Please choose a printer before printing");
+            return return_status;
         }
-        return_status = true
+        return_status = true;
         return return_status;
-        
-        // Are Status Valid for All STBs
 
-    }
+        // Are Status Valid for All STBs
+    };
 
     const sendPrint = () => {
         console.log(state);
         if (validateInputParams()) {
-            const stb_list = state.data.map(item => item.stb_num)
-            console.log(`list of stbs: ${stb_list}`)
-            eel.send_fraction_print(state.selectedPrinter, state.last_pallet, stb_list)
+            const stb_list = state.data.map((item) => item.stb_num);
+            console.log(`list of stbs: ${stb_list}`);
+            eel.send_fraction_print(
+                state.selectedPrinter,
+                state.last_pallet,
+                stb_list
+            );
         }
     };
 
     useEffect(() => {
-        console.log('useEffect called #1')
+        console.log("useEffect called #1");
         try {
             // if (params.session.active === false) {
             //     alert("Session not active, Please login first");
@@ -162,15 +200,22 @@ function FractionPallet({ eel, params, setParams }) {
                 eel.get_printer_list()((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
-                        const function_name = response.function_name
+                        const function_name = response.function_name;
                         const status = response.status;
                         const message = response.message;
                         const metadata = response.data.metadata;
-                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
+                        console.log(
+                            `${function_name} message got: ${JSON.stringify(
+                                message
+                            )} metadata: ${metadata}`
+                        );
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
-                                printer_list: ["Please Choose a printer", ...metadata.printers],
+                                printer_list: [
+                                    "Please Choose a printer",
+                                    ...metadata.printers,
+                                ],
                             }));
                         } else {
                             setTimeout(() => {
@@ -196,11 +241,11 @@ function FractionPallet({ eel, params, setParams }) {
     }, [params.server.status]);
 
     useEffect(() => {
-        console.log('useEffect called #2')
+        console.log("useEffect called #2");
         if (state.valid_scanned === state.fraction_count) {
-            fetchLastCartonPallet(state.common_prod_id)
+            fetchLastCartonPallet(state.common_prod_id);
         }
-    }, [state.valid_scanned, state.fraction_count, state.common_prod_id])
+    }, [state.valid_scanned, state.fraction_count, state.common_prod_id]);
 
     const modeInstant = () => {
         setState({ ...state, mode: MODE_INSTANT });
@@ -226,7 +271,7 @@ function FractionPallet({ eel, params, setParams }) {
 
     const handleBarcodeInput = (event) => {
         const pcb_sn = event.target.value.trim();
-        event.target.value = ""
+        event.target.value = "";
         console.log(`${eel}___${pcb_sn}___`);
 
         try {
@@ -253,8 +298,6 @@ function FractionPallet({ eel, params, setParams }) {
                         `Fraction Target Already Satisfied !! \nTo change fraction units please delete from the list`
                     );
                 }
-                
-                
 
                 const allowed_target_status = [80, 22];
                 eel.is_valid_unit(
@@ -269,10 +312,20 @@ function FractionPallet({ eel, params, setParams }) {
                         const message = response.message;
                         const metadata = response.data.metadata;
                         // let prod_id = metadata.prod_id;
-                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
+                        console.log(
+                            `${function_name} message got: ${JSON.stringify(
+                                message
+                            )} metadata: ${metadata}`
+                        );
 
-                        if (metadata.prod_id !== -1 && state.data.length && state.common_prod_id !== metadata.prod_id) {
-                            console.log(`${metadata.prod_id} conflict with previous scanned product ${state.data[0].prod_id} \nPlease scan similar product`)
+                        if (
+                            metadata.prod_id !== -1 &&
+                            state.data.length &&
+                            state.common_prod_id !== metadata.prod_id
+                        ) {
+                            console.log(
+                                `${metadata.prod_id} conflict with previous scanned product ${state.data[0].prod_id} \nPlease scan similar product`
+                            );
                             throw new Error(
                                 `${metadata.prod_desc} conflict with previous scanned product ${state.data[0].prod_desc} \nPlease scan similar product`
                             );
@@ -296,12 +349,16 @@ function FractionPallet({ eel, params, setParams }) {
                             pallet_num: metadata.pallet_num,
                             message: message,
                             status: status,
-                            valid: status === CONST_SUCCESS
+                            valid: status === CONST_SUCCESS,
                         });
                         setState((prevState) => ({
                             ...prevState,
                             data: updated_data,
-                            common_prod_id: state.valid_scanned === 0 && status === CONST_SUCCESS ? metadata.prod_id : state.common_prod_id,
+                            common_prod_id:
+                                state.valid_scanned === 0 &&
+                                status === CONST_SUCCESS
+                                    ? metadata.prod_id
+                                    : state.common_prod_id,
                             valid_scanned:
                                 status === CONST_SUCCESS
                                     ? state.valid_scanned + 1
@@ -383,7 +440,11 @@ function FractionPallet({ eel, params, setParams }) {
                         const status = response.status;
                         const message = response.message;
                         const metadata = response.data.metadata;
-                        console.log(`${function_name} message got: ${JSON.stringify(message)} metadata: ${metadata}`);
+                        console.log(
+                            `${function_name} message got: ${JSON.stringify(
+                                message
+                            )} metadata: ${metadata}`
+                        );
                         if (status === CONST_SUCCESS) {
                             setState((prevState) => ({
                                 ...prevState,
@@ -426,10 +487,10 @@ function FractionPallet({ eel, params, setParams }) {
 
     const onSelectPrinter = (event) => {
         console.log("onSelectPrinter called:" + event.target.value);
-        const printerName = event.target.value
+        const printerName = event.target.value;
         setState({
             ...state,
-            selectedPrinter: printerName
+            selectedPrinter: printerName,
         });
         // alert(JSON.stringify(event.target.value));
     };
@@ -438,27 +499,7 @@ function FractionPallet({ eel, params, setParams }) {
         console.log("handleChangeTextBox called " + event.target.value);
     };
 
-    const handleRemoveItem = (id, rownum, serial) => {
-        console.log("handleRemoveItem called ");
-        if (
-            window.confirm(
-                `Confirm delete Row: ${rownum} - ${serial} from below list?`
-            )
-        ) {
-            setState((state) => {
-                let valid_scanned = state.valid_scanned
-                const list = state.data.filter((item) => {
-                    const ret = item.id !== id
-                    if (ret === false && item.valid) {
-                        valid_scanned = valid_scanned - 1
-                    }
-                    return ret
-                });
-                // console.log(`list: ${list}`);
-                return { ...state, data: list, valid_scanned: valid_scanned };
-            });
-        }
-    };
+    
 
     // console.log(status_map);
     // console.log(fake_data);
@@ -731,6 +772,7 @@ function FractionPallet({ eel, params, setParams }) {
                                         </td>
                                         <td>
                                             <ActionButtons
+                                                actionList={state.actionBtns}
                                                 index={resp.id}
                                                 rowNum={
                                                     state.data.length !== 0
@@ -738,12 +780,11 @@ function FractionPallet({ eel, params, setParams }) {
                                                           index
                                                         : 0
                                                 }
-                                                serial={resp.stb_num}
+                                                param={resp.stb_num}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE
                                                 }
-                                                removeItem={handleRemoveItem}
                                                 message={resp.message}
                                             />
                                         </td>

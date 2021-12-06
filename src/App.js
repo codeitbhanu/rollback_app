@@ -5,6 +5,7 @@ import "./App.css";
 import Navbar from "./components/Navbar";
 import UnitRollbackContainer from "./components/containers/UnitRollback";
 import PalletRollbackContainer from "./components/containers/PalletRollback";
+import FrequentParamContainer from "./components/containers/FrequentParam";
 import FractionPalletContainer from "./components/containers/FractionPallet";
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
@@ -128,6 +129,14 @@ function App() {
             {/* Code here */}
             {menuState.selectedMenu === "unit_rollback" && (
                 <UnitRollbackContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "frequent_param" && (
+                <FrequentParamContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

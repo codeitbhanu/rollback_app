@@ -16,6 +16,22 @@ function UnitRollback({ eel, params, setParams }) {
     const INSTANT_MODE_STATUS_ID = -1;
     const CONST_SUCCESS = "SUCCESS";
     const CONST_FAILURE = "FAILURE";
+    const ACTION_BUTTON_DELETE = "delete";
+
+    const handleRemoveItem = (id, rownum, serial) => {
+        console.log("handleSelectReasonDropdown called ");
+        if (
+            window.confirm(
+                `Confirm delete Row: ${rownum} - ${serial} from below list?`
+            )
+        ) {
+            setState((state) => {
+                const list = state.data.filter((item) => item.id !== id);
+                // console.log(`list: ${list}`);
+                return { ...state, data: list };
+            });
+        }
+    };
 
     const [state, setState] = useState({
         mode: MODE_INSTANT,
@@ -23,6 +39,7 @@ function UnitRollback({ eel, params, setParams }) {
         reason_other: false,
         reason_desc: "",
         reason_manual: "",
+        actionBtns: [{"action": ACTION_BUTTON_DELETE, "cb": handleRemoveItem}],
         data: [], //fake_data,
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -52,7 +69,10 @@ function UnitRollback({ eel, params, setParams }) {
                 alert("Session not active, Please login first");
                 return;
             }
-            if (state.reason_desc === "" || state.reason_desc === reasons_map[0].id_status) {
+            if (
+                state.reason_desc === "" ||
+                state.reason_desc === reasons_map[0].id_status
+            ) {
                 alert(
                     "Incorrect reason to rollback, Please choose one from the dropdown."
                 );
@@ -200,20 +220,7 @@ function UnitRollback({ eel, params, setParams }) {
         });
     };
 
-    const handleRemoveItem = (id, rownum, serial) => {
-        console.log("handleSelectReasonDropdown called ");
-        if (
-            window.confirm(
-                `Confirm delete Row: ${rownum} - ${serial} from below list?`
-            )
-        ) {
-            setState((state) => {
-                const list = state.data.filter((item) => item.id !== id);
-                // console.log(`list: ${list}`);
-                return { ...state, data: list };
-            });
-        }
-    };
+    
 
     // console.log(status_map);
     // console.log(fake_data);
@@ -380,14 +387,14 @@ function UnitRollback({ eel, params, setParams }) {
                                         </td>
                                         <td>
                                             <ActionButtons
+                                                actionList={state.actionBtns}
                                                 index={resp.id}
                                                 rowNum={index + 1}
-                                                serial={resp.pcb_sn}
+                                                param={resp.pcb_sn}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE
                                                 }
-                                                removeItem={handleRemoveItem}
                                                 message={resp.message}
                                             />
                                         </td>

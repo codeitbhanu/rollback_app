@@ -15,6 +15,13 @@ function PalletRollback({ eel, params, setParams }) {
     const INSTANT_MODE_STATUS_ID = -1;
     const CONST_SUCCESS = "SUCCESS";
     const CONST_FAILURE = "FAILURE";
+    const CONST_UNKNOWN = "UNKNOWN";
+
+    const DEFAULT_PARAMETER = "Choose a parameter";
+    const ACTION_BUTTON_EDIT = "edit";
+    const ACTION_BUTTON_SAVE = "save";
+    const ACTION_BUTTON_CANCEL = "cancel";
+    const ACTION_BUTTON_DELETE = "delete";
 
     const [state, setState] = useState({
         mode: MODE_INSTANT,
@@ -22,6 +29,7 @@ function PalletRollback({ eel, params, setParams }) {
         reason_other: false,
         reason_desc: "",
         reason_manual: "",
+        actionBtns: [{"action": ACTION_BUTTON_DELETE, "cb": handleRemoveItem}],
         data: [], //fake_data,
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
@@ -236,9 +244,10 @@ function PalletRollback({ eel, params, setParams }) {
                                         </td>
                                         <td>
                                             <ActionButtons
+                                                actionList={state.actionBtns}
                                                 index={resp.id}
                                                 rowNum={index + 1}
-                                                serial={resp.pcb_sn}
+                                                param={resp.pcb_sn}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE
