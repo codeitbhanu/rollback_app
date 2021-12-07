@@ -113,46 +113,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Unit Rollback
                     </a>
                 </li>
-                <li
-                    className={
-                        menuState.selectedMenu === "frequent_param" ?
-                        "bordered" : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "frequent_param",
-                                "Edit Common Params",
-                                iconFrequentParam,
-                                FrequentParamContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
-                        Edit Common Params
-                    </a>
-                </li>
-                <li
-                    className={
-                        menuState.selectedMenu === "fraction_pallet" ?
-                        "bordered" : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "fraction_pallet",
-                                "Fraction Pallet",
-                                iconFractionPallet,
-                                FractionPalletContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
-                        Fraction Pallet
-                    </a>
-                </li>
+                
+                
                 <li
                     className={
                         menuState.selectedMenu === "rollback_pallet" ?
@@ -174,6 +136,46 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
 
                     </a>
                 </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "frequent_param" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "frequent_param",
+                                "Edit Common Params",
+                                iconFrequentParam,
+                                FrequentParamContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
+                        Edit Common Params
+                    </a>
+                </li>
+                {/* <li
+                    className={
+                        menuState.selectedMenu === "fraction_pallet" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "fraction_pallet",
+                                "Fraction Pallet",
+                                iconFractionPallet,
+                                FractionPalletContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
+                        Fraction Pallet
+                    </a>
+                </li> */}
             </ul>
         </div>
     );

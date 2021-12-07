@@ -236,36 +236,36 @@ function PalletRollback({ eel, params, setParams }) {
                             let status = response.status;
                             let message = response.message;
                             let metadata = response.data.metadata;
-                            // let results_data = response.data.results;
+                            let results_data = response.data.results;
                             
                             console.log("Result count : " + metadata.count)
                             if (status === CONST_SUCCESS) {
-                                handleBarcodeInput(metadata.pallet_num)
-                                //TODO: Reset state and re-call the list
-                                // const updated_data = results_data.map((item) => ({
-                                //     id: uuidv4(),
-                                //     pallet_num: item.pallet_num,
-                                //     pcb_sn: item.pcb_sn,
-                                //     prod_desc: item.prod_desc
-                                //         ? item.prod_desc
-                                //         : "Not found",
-                                //     current_status: {id_status: item.id_status, status_desc: item.status_desc},
-                                //     user: item.user_desc
-                                //         ? item.user_desc
-                                //         : "Unknown",
-                                //     status: status,
-                                //     message: message
-                                // }))
-                                // const filtered_prod_id_list = state.active_products.filter((item) => metadata.conversion_prod_id.includes(item.prod_id));
-                                // console.log(filtered_prod_id_list)
-                                // setState({
-                                //     ...state,
-                                //     data: updated_data,
-                                //     conversion_products: [
-                                //         default_product,
-                                //         ...filtered_prod_id_list
-                                //     ]
-                                // });
+                                // handleBarcodeInput(metadata.pallet_num)
+                                const updated_data = results_data.map((item) => ({
+                                    id: uuidv4(),
+                                    pallet_num: item.pallet_num,
+                                    pcb_sn: item.pcb_sn,
+                                    prod_desc: item.prod_desc
+                                        ? item.prod_desc
+                                        : "Not found",
+                                    current_status: {id_status: item.id_status, status_desc: item.status_desc},
+                                    user: item.user_desc
+                                        ? item.user_desc
+                                        : "Unknown",
+                                    status: status,
+                                    message: message
+                                }))
+                                const filtered_prod_id_list = state.active_products.filter((item) => metadata.conversion_prod_id.includes(item.prod_id));
+                                console.log(filtered_prod_id_list)
+                                setState({
+                                    ...state,
+                                    pallet_num: "",
+                                    prod_id: -1,
+                                    data: updated_data,
+                                    conversion_products: [
+                                        default_product,
+                                    ]
+                                });
                             }
                             
                             

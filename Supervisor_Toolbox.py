@@ -958,80 +958,6 @@ def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
 
 
 @eel.expose
-def rollback_pallet_items(pallet_num, target_status, stb_num_list=[], reason="", convert_prod_id=-1, id_user=""):
-    print(f'rollback_pallet_items requested {pallet_num}, {target_status}, {stb_num_list}, {reason}, {convert_prod_id}, {id_user}')
-    global serverinstance
-    current_time = get_current_time()
-    response_data = {
-        "function_name": inspect.currentframe().f_code.co_name,
-        "data": {
-            "metadata": None,
-        },
-        "message": "Default Message",
-        "status": CONST_FAILURE
-    }
-    if not serverinstance:
-        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
-    else:
-        cursor = serverinstance.cursor
-        conn = serverinstance.conn
-        try:
-            update_sql = f'''UPDATE pe
-                            SET pe.carton_num = NULL, pe.pallet_num = NULL, pe.id_customer_order_details = NULL, pe.id_customer_order = NULL, pe.weight = NULL, pe.id_status = {target_status}, pe.prod_id = {convert_prod_id}, pe.timestamp = N\'{current_time}\', pe.id_user = {id_user}
-                            FROM stb_production.dbo.production_event pe
-                            WHERE stb_num IN {tuple(stb_num_list)}'''
-            print(f'[UPDATE-SQL] {update_sql}')
-            response_data = {
-                **response_data,
-                "update_query": update_sql,
-            }
-            conn.autocommit = False
-            update_count = cursor.execute(update_sql)
-            print(f'[UPDATE-SQL-RESULTS] {update_count}')
-
-            response_data = {
-                **response_data,
-                "data": {
-                    "metadata": {
-                        "pallet_num": pallet_num,
-                    }
-                },
-                "message": "Pallet Rollback Done Successfully - " + pallet_num,
-                "status": CONST_SUCCESS,
-            }
-
-        except pyodbc.DatabaseError as e:
-            print(
-                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
-            cursor.rollback()
-            raise e
-        except pyodbc.ProgrammingError as pe:
-            cursor.rollback()
-            print(
-                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-            raise pe
-        except KeyError as ke:
-            print(
-                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
-            raise ke
-        else:
-            cursor.commit()
-        finally:
-            conn.autocommit = True
-            if not update_count:
-                # raise ValueError("Error: record not found")
-                response_data = {
-                    **response_data,
-                    "data": {
-                        "metadata": None
-                    },
-                    "message": "Could not rollback pallet: " + pallet_num,
-                    "status": CONST_FAILURE,
-                }
-            return response_data
-
-
-@eel.expose
 def get_pallet_items(pallet_num):
     print('[pallet_rollback] requested')
     global serverinstance
@@ -1131,6 +1057,133 @@ def get_pallet_items(pallet_num):
                     "status": CONST_FAILURE,
                 }
             return response_data
+
+
+@eel.expose
+def rollback_pallet_items(pallet_num, target_status, stb_num_list=[], reason="", convert_prod_id=-1, id_user=""):
+    print(f'rollback_pallet_items requested {pallet_num}, {target_status}, {stb_num_list}, {reason}, {convert_prod_id}, {id_user}')
+    global serverinstance
+    current_time = get_current_time()
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            update_sql = f'''UPDATE pe
+                            SET pe.carton_num = NULL, pe.pallet_num = NULL, pe.id_customer_order_details = NULL, pe.id_customer_order = NULL, pe.weight = NULL, pe.id_status = {target_status}, pe.prod_id = {convert_prod_id}, pe.timestamp = N\'{current_time}\', pe.id_user = {id_user}
+                            FROM stb_production.dbo.production_event pe
+                            WHERE stb_num IN {tuple(stb_num_list)}'''
+            print(f'[UPDATE-SQL] {update_sql}')
+            response_data = {
+                **response_data,
+                "update_query": update_sql,
+            }
+            conn.autocommit = False
+            update_count = cursor.execute(update_sql)
+            print(f'[UPDATE-SQL-RESULTS] {update_count}')
+            if (update_count):
+                select_sql = f'''SELECT pe.pallet_num, pe.stb_num, p.prod_desc, pe.id_status, s.status_desc, u.user_desc, pe.prod_id FROM stb_production.dbo.production_event pe
+                            INNER JOIN stb_production.dbo.[user] u ON u.id_user = pe.id_user
+                            INNER JOIN stb_production.dbo.status s ON s.id_status = pe.id_status
+                            INNER JOIN stb_production.dbo.product p ON p.prod_id = pe.prod_id
+                            WHERE stb_num IN {tuple(stb_num_list)}'''
+                print(f'[SELECT-SQL] {select_sql}')
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                }
+                conn.autocommit = False
+                results = cursor.execute(select_sql).fetchall()
+                print(f'[SELECT-SQL-RESULTS] {results}')
+                result_count = len(results)
+                if result_count > 0:
+                    list_results = []
+                    conversion_prod_id = []
+                    prod_id = results[0][6]
+                    if (prod_id in [94, 95, 96]):
+                        conversion_prod_id = [94, 95, 96]
+                    elif (prod_id in [97, 98, 99, 100, 101, 102, 103]):
+                        conversion_prod_id = [97, 98, 99, 100, 101, 102, 103]
+                    elif (prod_id in [105, 106, 107]):
+                        conversion_prod_id = [105, 106, 107]
+                    elif (prod_id in [108, 109, 110, 111, 112, 113, 114]):
+                        conversion_prod_id = [108, 109, 110, 111, 112, 113, 114]
+
+                    for row in results:
+                        list_results.append({
+                            "pallet_num": row[0],
+                            "pcb_sn": row[1],
+                            "prod_desc": row[2],
+                            "id_status": row[3],
+                            "status_desc": row[4],
+                            "user_desc": row[5],
+                        })
+                    print(list_results)
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "results": list_results,
+                            "metadata": {
+                                "pallet_num": pallet_num,
+                                "prod_id": prod_id,
+                                "count": result_count,
+                                "conversion_prod_id": conversion_prod_id
+                            }
+                        },
+                        "message": "Pallet Rollback Done Successfully - " + pallet_num,
+                        "status": CONST_SUCCESS,
+                    }
+            # response_data = {
+            #     **response_data,
+            #     "data": {
+            #         "metadata": {
+            #             "pallet_num": pallet_num,
+            #         }
+            #     },
+            #     "message": "Pallet Rollback Done Successfully - " + pallet_num,
+            #     "status": CONST_SUCCESS,
+            # }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            if not update_count:
+                # raise ValueError("Error: record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": None
+                    },
+                    "message": "Could not rollback pallet: " + pallet_num,
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
 
 
 @eel.expose
