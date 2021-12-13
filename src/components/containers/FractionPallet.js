@@ -23,7 +23,7 @@ function FractionPallet({ eel, params, setParams }) {
     const ACTION_BUTTON_CANCEL = "cancel";
     const ACTION_BUTTON_DELETE = "delete";
 
-    const handleRemoveItem = (id, rownum, serial) => {
+    const handleDeleteItem = (id, rownum, serial) => {
         console.log("handleRemoveItem called ");
         if (
             window.confirm(
@@ -783,6 +783,7 @@ function FractionPallet({ eel, params, setParams }) {
                                                         : 0
                                                 }
                                                 param={resp.stb_num}
+                                                actionDelete={handleDeleteItem}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE

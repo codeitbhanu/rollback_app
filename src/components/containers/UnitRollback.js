@@ -18,8 +18,8 @@ function UnitRollback({ eel, params, setParams }) {
     const CONST_FAILURE = "FAILURE";
     const ACTION_BUTTON_DELETE = "delete";
 
-    const handleRemoveItem = (id, rownum, serial) => {
-        console.log("handleRemoveItem called ");
+    const handleDeleteItem = (id, rownum, serial) => {
+        console.log("handleDeleteItem called ");
         if (
             window.confirm(
                 `Confirm delete Row: ${rownum} - ${serial} from below list?`
@@ -392,6 +392,7 @@ function UnitRollback({ eel, params, setParams }) {
                                                 index={resp.id}
                                                 rowNum={index + 1}
                                                 param={resp.pcb_sn}
+                                                actionDelete={handleDeleteItem}
                                                 warn={
                                                     resp.status ===
                                                     CONST_FAILURE

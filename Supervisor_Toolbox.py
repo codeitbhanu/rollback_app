@@ -670,6 +670,9 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
         try:
+            rrr = get_product_info(pcb_sn)
+            print(f'get_product_info {rrr}')
+
             if(mode == MODE_INSTANT or mode == MODE_MANUAL):
                 # HANDLE INSTANT ROLLBACK
                 ret = rollback_instant(mode, serverinstance.conn,
@@ -1285,6 +1288,90 @@ def get_active_products():
                         "metadata": results,
                     },
                     "message": "No Active Products Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+# @eel.expose
+def get_product_info(pcb_sn):
+    print('[GET-PRODUCT-INFO] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''SELECT pe.prod_id, p.prod_desc
+                            FROM stb_production.dbo.production_event pe
+                            INNER JOIN stb_production.dbo.product p ON p.prod_id = pe.prod_id
+                            WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                prod_list = []
+                for row in results:
+                    print(row)
+                    prod_list.append({"prod_id": row[0], "prod_desc": row[1]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_id": row[0],
+                            "prod_desc": row[1]
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("Error: record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
                     "status": CONST_FAILURE,
                 }
             return response_data
