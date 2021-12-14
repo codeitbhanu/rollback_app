@@ -91,6 +91,14 @@ const status = [
 		"id_status" : 87,
 		"status_desc" : "Wireless Test Failed"
 	},
+	{
+		"id_status" : 88,
+		"status_desc" : "Key Test Passed"
+	},
+	{
+		"id_status" : 89,
+		"status_desc" : "Key Test Failed"
+	},
 ];
 
 export default status;

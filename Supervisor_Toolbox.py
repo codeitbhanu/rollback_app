@@ -233,13 +233,17 @@ rollback_rules_matrix = {
         # IF CURR_STATUS 16	Mechanical
         16: [90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
         # IF CURR_STATUS 13	PCBA Test Passed
-        # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
-        13: [16,
-            90],
-        # IF CURR_STATUS 18	CA Test Passed
-        18: [13,            # 16	Mechanical	only if status = 18
-            16,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
-            90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        13: [16, 90],
+        86: [13, 16, 90],
+        87: [13, 16, 90],
+        88: [86, 13, 16],
+        89: [86, 13, 16],
+        18: [88, 13, 16],
+        # # IF CURR_STATUS 18	CA Test Passed
+        # 18: [13,            # 16	Mechanical	only if status = 18
+        #     16,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
+        #     90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        # IF CURR_STATUS 19	CA Test Passed
         # IF CURR_STATUS 19	CA Test Passed
         19: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
             16],                # 13	PCBA Test Passed	only if status = 16/18/19/80
@@ -256,6 +260,14 @@ rollback_rules_matrix = {
         # 57:[22],            # 22	OQC Test Passed     only if a unit needs to be forced into soak , Allows prod statuses  from testing to passed OQC
         # TODO Soak Test after discussion
     }
+}
+
+status_mapping_ott = {
+    16: 'NT',
+    13: 'interfacetest',
+    86: 'wirelesstest',
+    88: 'infocheck',
+    18: 'factoryinspection'
 }
 
 
@@ -291,7 +303,7 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
             if type(id_user) == int:
                 try:
                     select_sql = f'''
-                    SELECT pe.id_status, pro.prod_id, pro.prod_desc, status_desc FROM stb_production.dbo.production_event pe
+                    SELECT pe.pcb_num, pe.stb_num, pe.id_status, pro.prod_id, pro.prod_desc, status_desc FROM stb_production.dbo.production_event pe
                     INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
                     INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
                     WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
@@ -313,6 +325,8 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
                             "select_count": len(results),
                             "prod_id": row.prod_id,
                             "prod_desc": row.prod_desc,
+                            "pcb_num": row.pcb_num,
+                            "stb_num": row.stb_num,
                             "current_status": row.id_status,
                             "current_status_desc": row.status_desc,
                         }
@@ -392,9 +406,9 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
                             response_data = {
                                 **response_data,
                                 "data": {
-                                    **response_data.data,
+                                    **response_data['data'],
                                     "metadata": {
-                                        **response_data.data.metadata,
+                                        **response_data['data']['metadata'],
                                         "allowed_target_status": rollback_rules_matrix[prod_key][row.id_status]
                                     }
                                 }
@@ -455,10 +469,15 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
                 # raise e
                 message = type(e).__name__ + ': ' + str(e)
 
+                print(f'{type(e).__name__} {len(e.args)} {type(e.args[0])}')
                 if type(e).__name__ == "KeyError" and len(e.args) and type(e.args[0]) == int:
                     print(f"--10 {e.args[0]}")
                     message = f"Rollback not allowed from {status_desc_for_id_status[e.args[0]]}"
                     print(f"--11 {message}\n{response_data}")
+                elif type(e).__name__ == "KeyError" and len(e.args) and type(e.args[0]) == str:
+                    print(f"--12 {e.args[0]}")
+                    message = f"Rollback not allowed for status {status_desc_for_id_status[target_status]}"
+                    print(f"--13 {message}\n{response_data}")
                 return {
                     "data": {"metadata": response_data},
                     "message": message,
@@ -489,36 +508,42 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
 
 def roll_back_ott_db(pcb_sn, target_status_id):
     print(
-        f'[roll_back_insert_tracking] record updated for {pcb_sn} status: {target_status_id}')
-    try:
-        update_sql = f'''SET NOCOUNT ON; INSERT INTO stb_production.dbo.roll_back (serial_num, prod_id, ncr_num, id_user, entry_date) VALUES(N\'{pcb_sn}\', {prod_id}, N\'{reason_desc}\', {id_user}, N\'{timestamp}\'); SET NOCOUNT OFF;'''
-        print(f'[INSERT-SQL] {update_sql}')
-        # return
-        conn.autocommit = False
-        insert_count = cursor.execute(update_sql)
-        print(f'insert_count: {insert_count}')
-    except pyodbc.DatabaseError as e:
-        print(
-            f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
-        cursor.rollback()
-        raise e
-
-    except pyodbc.ProgrammingError as pe:
-        cursor.rollback()
-        print(
-            f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-        raise pe
-    except KeyError as e:
-        print(f"--7 {type(e).__name__ + ': ' + str(e)}")
-        print(
-            f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
-        raise e
+        f'[roll_back_ott_db] called for {pcb_sn} status: {target_status_id}')
+    global serverinstance
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
-        cursor.commit()
-
-    finally:
-        print("--8")
-        conn.autocommit = True
+        cursor = serverinstance.cursor_ott
+        conn = serverinstance.conn_ott
+        try:
+            newdb_status = status_mapping_ott[target_status_id]
+            update_sql = f'''SET NOCOUNT ON; UPDATE snr
+            SET snr.Field28 = \'{newdb_status}\'
+            FROM NEWDB.dbo.SNRecord snr
+            WHERE SN = \'{pcb_sn}\'; SET NOCOUNT OFF;'''
+            print(f'[INSERT-SQL] {update_sql}')
+            conn.autocommit = False
+            update_result = cursor.execute(update_sql)
+            if (update_result):
+                print(f'[OTT] NEWEDB Successfully upadated, rowcount: {update_result.rowcount}')
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
 
 
 def roll_back_insert_tracking(conn, cursor, pcb_sn, prod_id, target_status_id, reason_desc, id_user, timestamp):
@@ -847,14 +872,19 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
             # Update roll_back table for tracking
             try:
                 if prod_desc.startswith('OTT'):
-                    resp = roll_back_ott_db(pcb_sn, target_status_id)
-                    print(f'resp: {resp}')
-                    response_data = {
-                        **response_data,
-                        "message": help_message
-                    }
+                    stb_num = response_data['data']['metadata']['stb_num']
+                    target_status = response_data['data']['metadata']['target_status']
+                    print(f"[OTT] Rollbacked Items stb_num: {stb_num}")
+                    if (stb_num != '' and stb_num is not None):
+                        roll_back_ott_db(stb_num, target_status)
+
+                    # print(f'resp: {resp}')
+                    # response_data = {
+                    #     **response_data,
+                    #     "message": help_message
+                    # }
             except Exception as e:
-                help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status_id} Message: {type(e).__name__ + ': '+ str(e)}'''
+                help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status} Message: {type(e).__name__ + ': '+ str(e)}'''
                 response_data = {
                     **response_data,
                     "message": help_message
