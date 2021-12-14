@@ -107,6 +107,8 @@ CONST_UNKNOWN = "UNKNOWN"
 CONST_REASON_DEFAULT = "Other - Not specified"
 INSTANT_MODE_STATUS_ID = -1
 INSTANT_STATUS_ID = -1
+INVALID_PRODUCT_ID = -1
+INVALID_PRODUCT_DESC = ""
 
 status_desc_for_id_status = {
     0: 'False',
@@ -191,36 +193,69 @@ status_desc_for_id_status = {
     91: 'Reworked for RCU Issues'
 }
 rollback_rules_matrix = {
-    # IF CURR_STATUS 58	QR Code Printed
-    58: [15],           # 15	AOI Test Passed	only if status = 90/58
-    # IF CURR_STATUS 90	QR Code Verified
-    90: [15],           # 15	AOI Test Passed	only if status = 90/58
-    # IF CURR_STATUS 13	PCBA Test Passed
-    # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
-    13: [90],
-    # IF CURR_STATUS 16	Mechanical
-    16: [13,            # 13	PCBA Test Passed	only if status = 16/18/19/80
-         90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
-    # IF CURR_STATUS 18	CA Test Passed
-    18: [16,            # 16	Mechanical	only if status = 18
-         13,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
-         90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
-    # IF CURR_STATUS 19	CA Test Passed
-    19: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
-         13],                # 13	PCBA Test Passed	only if status = 16/18/19/80
-    # IF CURR_STATUS 80	Giftbox Pairing Verified
-    80: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
-         13,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
-         ],
-    # IF CURR_STATUS 73	Awaiting OQC Test
-    73: [18],           # 18	CA Test Passed	only if status = 19/80/57/22/73
-    # IF CURR_STATUS 50	OQC Test Failed
-    50: [73],            # 73	Awaiting OQC Test	only if status = 50
-    # IF CURR_STATUS 22	OQC Test Passed
-    22: [18],            # ????? 18	CA Test Passed	only if status = 19/80/57/22/73
-    # IF CURR_STATUS 57	Soak Test
-    # 57:[22],            # 22	OQC Test Passed     only if a unit needs to be forced into soak , Allows prod statuses  from testing to passed OQC
-    # TODO Soak Test after discussion
+    "DSD": {
+        # IF CURR_STATUS 58	QR Code Printed
+        58: [15],           # 15	AOI Test Passed	only if status = 90/58
+        # IF CURR_STATUS 90	QR Code Verified
+        90: [15],           # 15	AOI Test Passed	only if status = 90/58
+        # IF CURR_STATUS 13	PCBA Test Passed
+        # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        13: [90],
+        # IF CURR_STATUS 16	Mechanical
+        16: [13,            # 13	PCBA Test Passed	only if status = 16/18/19/80
+            90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        # IF CURR_STATUS 18	CA Test Passed
+        18: [16,            # 16	Mechanical	only if status = 18
+            13,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
+            90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        # IF CURR_STATUS 19	CA Test Passed
+        19: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
+            13],                # 13	PCBA Test Passed	only if status = 16/18/19/80
+        # IF CURR_STATUS 80	Giftbox Pairing Verified
+        80: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
+            13,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
+            ],
+        # IF CURR_STATUS 73	Awaiting OQC Test
+        73: [18],           # 18	CA Test Passed	only if status = 19/80/57/22/73
+        # IF CURR_STATUS 50	OQC Test Failed
+        50: [73],            # 73	Awaiting OQC Test	only if status = 50
+        # IF CURR_STATUS 22	OQC Test Passed
+        22: [18],            # ????? 18	CA Test Passed	only if status = 19/80/57/22/73
+        # IF CURR_STATUS 57	Soak Test
+        # 57:[22],            # 22	OQC Test Passed     only if a unit needs to be forced into soak , Allows prod statuses  from testing to passed OQC
+        # TODO Soak Test after discussion
+    },
+    "OTT": {
+        # IF CURR_STATUS 58	QR Code Printed
+        58: [15],           # 15	AOI Test Passed	only if status = 90/58
+        # IF CURR_STATUS 90	QR Code Verified
+        90: [15],           # 15	AOI Test Passed	only if status = 90/58
+        # IF CURR_STATUS 16	Mechanical
+        16: [90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        # IF CURR_STATUS 13	PCBA Test Passed
+        # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        13: [16,
+            90],
+        # IF CURR_STATUS 18	CA Test Passed
+        18: [13,            # 16	Mechanical	only if status = 18
+            16,                 # 13	PCBA Test Passed	only if status = 16/18/19/80
+            90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        # IF CURR_STATUS 19	CA Test Passed
+        19: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
+            16],                # 13	PCBA Test Passed	only if status = 16/18/19/80
+        # IF CURR_STATUS 80	Giftbox Pairing Verified
+        80: [18,             # 18	CA Test Passed	only if status = 19/80/57/22/73
+            16],
+        # IF CURR_STATUS 73	Awaiting OQC Test
+        73: [18],           # 18	CA Test Passed	only if status = 19/80/57/22/73
+        # IF CURR_STATUS 50	OQC Test Failed
+        50: [73],            # 73	Awaiting OQC Test	only if status = 50
+        # IF CURR_STATUS 22	OQC Test Passed
+        22: [18],            # ????? 18	CA Test Passed	only if status = 19/80/57/22/73
+        # IF CURR_STATUS 57	Soak Test
+        # 57:[22],            # 22	OQC Test Passed     only if a unit needs to be forced into soak , Allows prod statuses  from testing to passed OQC
+        # TODO Soak Test after discussion
+    }
 }
 
 
@@ -229,8 +264,8 @@ def get_current_time():
     return now.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]
 
 
-def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, id_user):
-    print("""rollback_instant called""")
+def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_status_id, reason_desc, id_user):
+    print(f'rollback_instant called for {prod_id} - {prod_desc}')
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name
     }
@@ -244,7 +279,15 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
         # customer_address = 'NOT FOUND'
     else:
         results = None
+        prod_key = None
         try:
+            if prod_desc.startswith('DSD'):
+                prod_key = 'DSD'
+            elif prod_desc.startswith('OTT'):
+                prod_key = 'OTT'
+            else:
+                ValueError('Invalid Product Type')
+
             if type(id_user) == int:
                 try:
                     select_sql = f'''
@@ -304,7 +347,7 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
                 finally:
                     conn.autocommit = True
                     if len(results) == 0:
-                        raise ValueError("Error: record not found")
+                        raise ValueError("record not found")
             else:
                 raise ValueError(
                     (id_user, "id_user cannot be other than int type"))
@@ -341,9 +384,9 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
                     }
                     print(f"--1 {row.id_status} {ROLLBACK_INDEX}")
                     if mode == MODE_INSTANT:
-                        target_status = rollback_rules_matrix[row.id_status][ROLLBACK_INDEX]
+                        target_status = rollback_rules_matrix[prod_key][row.id_status][ROLLBACK_INDEX]
                     elif mode == MODE_MANUAL:
-                        allowed = target_status in rollback_rules_matrix[row.id_status]
+                        allowed = target_status in rollback_rules_matrix[prod_key][row.id_status]
                         print(f'allowed target status? {allowed}')
                         if allowed is False:
                             response_data = {
@@ -352,13 +395,13 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
                                     **response_data.data,
                                     "metadata": {
                                         **response_data.data.metadata,
-                                        "allowed_target_status": rollback_rules_matrix[row.id_status]
+                                        "allowed_target_status": rollback_rules_matrix[prod_key][row.id_status]
                                     }
                                 }
                             }
 
                     print(f"--2 {target_status}")
-                    if target_status in rollback_rules_matrix[row.id_status] and target_status != -1:
+                    if target_status in rollback_rules_matrix[prod_key][row.id_status] and target_status != -1:
                         update_sql = f'''SET NOCOUNT ON; UPDATE stb_production.dbo.production_event
                                     SET id_status={target_status}, [timestamp] = N\'{current_time}\', id_user={id_user}  WHERE pcb_num=N\'{pcb_sn}\' OR stb_num=N\'{pcb_sn}\'; SET NOCOUNT OFF;'''
                     else:
@@ -679,25 +722,33 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
     if not serverinstance:
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
+        prod_id = INVALID_PRODUCT_ID
+        prod_desc = INVALID_PRODUCT_DESC
         try:
             resp = get_product_info(pcb_sn)
             if (resp['status'] == CONST_SUCCESS):
                 metadata = resp['data']['metadata']
                 print(f'metadata: {metadata}')
-                if (metadata['prod_id'] == 115):
-                    print('[APP] requested rollback for 115')
+                if ('prod_id' in metadata and 'prod_desc' in metadata):
+                    prod_id = metadata['prod_id']
                     prod_desc = metadata['prod_desc']
-                    response_data = {
-                        **response_data,
-                        "data": {
-                            "metadata": {
-                                "unsupported_product": True
-                            },
-                        },
-                        "message": f'{prod_desc} currently not supported for rollback!',
-                        "status": CONST_FAILURE
-                    }
-                    return response_data
+                    print(f'prod_id: {prod_id} prod_desc: {prod_desc}')
+                else:
+                    raise ValueError('Product Information Not Found for given PCB / Serial')
+                # if (metadata['prod_id'] == 115):
+                #     print('[APP] requested rollback for 115')
+                #     prod_desc = metadata['prod_desc']
+                #     response_data = {
+                #         **response_data,
+                #         "data": {
+                #             "metadata": {
+                #                 "unsupported_product": True
+                #             },
+                #         },
+                #         "message": f'{prod_desc} currently not supported for rollback!',
+                #         "status": CONST_FAILURE
+                #     }
+                #     return response_data
         except Exception as e:
             print('----15')
             help_message = f'''EXCEPTION {pcb_sn} {mode} Message: {type(e).__name__ + ': '+ str(e)}'''
@@ -709,7 +760,7 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
         try:
             if(mode == MODE_INSTANT or mode == MODE_MANUAL):
                 # HANDLE INSTANT ROLLBACK
-                response_data = rollback_instant(mode, serverinstance.conn, serverinstance.cursor, pcb_sn, target_status_id, reason_desc, id_user)
+                response_data = rollback_instant(mode, serverinstance.conn, serverinstance.cursor, prod_id, prod_desc, pcb_sn, target_status_id, reason_desc, id_user)
                 # rollback_status = f'''{response_data.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
             # elif(mode == MODE_MANUAL):
             #     # HANDLE MANUAL ROLLBACK
@@ -857,7 +908,7 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
         finally:
             conn.autocommit = True
             if len(results) == 0:
-                raise ValueError("Error: record not found")
+                raise ValueError("record not found")
             else:
                 return response_data
     # return response_data
@@ -974,7 +1025,7 @@ def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
         finally:
             conn.autocommit = True
             if len(results) == 0:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {
@@ -1092,7 +1143,7 @@ def get_pallet_items(pallet_num):
         finally:
             conn.autocommit = True
             if len(results) == 0:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {
@@ -1220,7 +1271,7 @@ def rollback_pallet_items(pallet_num, target_status, stb_num_list=[], reason="",
         finally:
             conn.autocommit = True
             if not update_count:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {
@@ -1326,7 +1377,7 @@ def get_active_products():
             conn.autocommit = True
             print(response_data)
             if len(results) == 0:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {
@@ -1413,7 +1464,7 @@ def get_product_info(pcb_sn):
             conn.autocommit = True
             print(response_data)
             if len(results) == 0:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {
@@ -1513,7 +1564,7 @@ def get_frequent_params(prod_id, table, param_name, key):
         finally:
             conn.autocommit = True
             if len(results) == 0:
-                # raise ValueError("Error: record not found")
+                # raise ValueError("record not found")
                 response_data = {
                     **response_data,
                     "data": {

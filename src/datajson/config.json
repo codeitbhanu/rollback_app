@@ -31,26 +31,13 @@
             "password": "Password123"
         },
         {
-            "id_user": 116,
-            "user_desc": "desigan.kalappa",
-            "id_title": 5,
+            "id_user": 107,
+            "user_desc": "vishal.saroop",
+            "id_title": 8,
             "id_department": 4,
-            "email": "desigan.kalappa@myskyworth.com",
+            "email": "Vishal.Saroop@uec.co.za",
             "id_status": 4,
             "password": "Password123"
-        },
-        {
-            "user": [
-                {
-                    "id_user": 107,
-                    "user_desc": "vishal.saroop",
-                    "id_title": 8,
-                    "id_department": 4,
-                    "email": "Vishal.Saroop@uec.co.za",
-                    "id_status": 4,
-                    "password": "Password123"
-                }
-            ]
         }
     ],
     "frequent_param": [
