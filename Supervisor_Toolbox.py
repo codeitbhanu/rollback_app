@@ -106,6 +106,7 @@ CONST_FAILURE = "FAILURE"
 CONST_UNKNOWN = "UNKNOWN"
 CONST_REASON_DEFAULT = "Other - Not specified"
 INSTANT_MODE_STATUS_ID = -1
+INSTANT_STATUS_ID = -1
 
 status_desc_for_id_status = {
     0: 'False',
@@ -347,7 +348,13 @@ def rollback_instant(mode, conn, cursor, pcb_sn, target_status_id, reason_desc, 
                         if allowed is False:
                             response_data = {
                                 **response_data,
-                                "allowed_target_status": rollback_rules_matrix[row.id_status]
+                                "data": {
+                                    **response_data.data,
+                                    "metadata": {
+                                        **response_data.data.metadata,
+                                        "allowed_target_status": rollback_rules_matrix[row.id_status]
+                                    }
+                                }
                             }
 
                     print(f"--2 {target_status}")
@@ -658,9 +665,12 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
     # rollback_status = CONST_FAILURE
     # response_data = None
     help_message = ''
-    ret = {
+    response_data = {
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -670,54 +680,77 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
         try:
-            rrr = get_product_info(pcb_sn)
-            print(f'get_product_info {rrr}')
-
+            resp = get_product_info(pcb_sn)
+            if (resp['status'] == CONST_SUCCESS):
+                metadata = resp['data']['metadata']
+                print(f'metadata: {metadata}')
+                if (metadata['prod_id'] == 115):
+                    print('[APP] requested rollback for 115')
+                    prod_desc = metadata['prod_desc']
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "unsupported_product": True
+                            },
+                        },
+                        "message": f'{prod_desc} currently not supported for rollback!',
+                        "status": CONST_FAILURE
+                    }
+                    return response_data
+        except Exception as e:
+            print('----15')
+            help_message = f'''EXCEPTION {pcb_sn} {mode} Message: {type(e).__name__ + ': '+ str(e)}'''
+            response_data = {
+                **response_data,
+                "message": help_message
+            }
+            return response_data
+        try:
             if(mode == MODE_INSTANT or mode == MODE_MANUAL):
                 # HANDLE INSTANT ROLLBACK
-                ret = rollback_instant(mode, serverinstance.conn,
-                                       serverinstance.cursor, pcb_sn, target_status_id, reason_desc, id_user)
-                # rollback_status = f'''{ret.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
+                response_data = rollback_instant(mode, serverinstance.conn, serverinstance.cursor, pcb_sn, target_status_id, reason_desc, id_user)
+                # rollback_status = f'''{response_data.status} {pcb_sn} {mode} rollback done to {target_status_id}'''
             # elif(mode == MODE_MANUAL):
             #     # HANDLE MANUAL ROLLBACK
             #     help_message = f'''{CONST_FAILURE} {pcb_sn} {mode} rollback done to {target_status_id}'''
-            #     ret = {
-            #         **ret,
+            #     response_data = {
+            #         **response_data,
             #         "message": help_message
             #     }
             else:
                 # ELSE
                 help_message = f'''{CONST_FAILURE} {pcb_sn} not allowed target status {target_status_id} in {mode} '''
-                ret = {
-                    **ret,
+                response_data = {
+                    **response_data,
                     "message": help_message
                 }
 
         except Exception as e:
             help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status_id} Message: {type(e).__name__ + ': '+ str(e)}'''
-            ret = {
-                **ret,
+            response_data = {
+                **response_data,
                 "message": help_message
             }
-        if ret['status'] == CONST_SUCCESS:
+        if response_data['status'] == CONST_SUCCESS:
             # Update roll_back table for tracking
             try:
-                prod_id = ret['data']['metadata']['prod_id']
-                timestamp = ret['data']['metadata']['timestamp']
-                target_status = ret['data']['metadata']['target_status']
-                print(ret['data']['metadata']['prod_id'])
+                prod_id = response_data['data']['metadata']['prod_id']
+                timestamp = response_data['data']['metadata']['timestamp']
+                target_status = response_data['data']['metadata']['target_status']
+                print(response_data['data']['metadata']['prod_id'])
                 roll_back_insert_tracking(serverinstance.conn,
                                           serverinstance.cursor, pcb_sn, prod_id, target_status, reason_desc, id_user, timestamp)
             except Exception as e:
                 help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status} Message: {type(e).__name__ + ': '+ str(e)}'''
-                ret = {
-                    **ret,
+                response_data = {
+                    **response_data,
                     "message": help_message
                 }
 
     print(f'''HELP> {help_message}''')
 
-    return ret
+    return response_data
     # return {"data": 'hello', 'repsonse': 'world'}
 
 
@@ -728,7 +761,10 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -836,7 +872,10 @@ def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -968,7 +1007,10 @@ def get_pallet_items(pallet_num):
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -1070,7 +1112,10 @@ def rollback_pallet_items(pallet_num, target_status, stb_num_list=[], reason="",
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -1293,7 +1338,7 @@ def get_active_products():
             return response_data
 
 
-# @eel.expose
+@eel.expose
 def get_product_info(pcb_sn):
     print('[GET-PRODUCT-INFO] requested ', pcb_sn)
     global serverinstance
@@ -1301,7 +1346,10 @@ def get_product_info(pcb_sn):
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE
@@ -1386,7 +1434,10 @@ def get_frequent_params(prod_id, table, param_name, key):
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
         },
         "message": "Default Message",
         "status": CONST_FAILURE

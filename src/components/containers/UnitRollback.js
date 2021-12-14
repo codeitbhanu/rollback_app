@@ -96,6 +96,14 @@ function UnitRollback({ eel, params, setParams }) {
                         let status = response.status;
                         let message = response.message;
                         let metadata = response.data.metadata;
+                        if (
+                            status === CONST_FAILURE &&
+                            metadata?.unsupported_product
+                        ) {
+                            setTimeout(() => alert(`Error: [${message}`), 200);
+                            return;
+                        }
+                        
                         let current_status = status_map.filter(
                             (item) =>
                                 item.id_status ===
@@ -112,6 +120,8 @@ function UnitRollback({ eel, params, setParams }) {
                         console.log(
                             `expected ${metadata.target_status} got: ${target_status}`
                         );
+
+                        
 
                         const updated_data = state.data;
                         updated_data.unshift({
