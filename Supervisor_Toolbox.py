@@ -487,6 +487,40 @@ def rollback_instant(mode, conn, cursor, prod_id, prod_desc, pcb_sn, target_stat
             }
 
 
+def roll_back_ott_db(pcb_sn, target_status_id):
+    print(
+        f'[roll_back_insert_tracking] record updated for {pcb_sn} status: {target_status_id}')
+    try:
+        update_sql = f'''SET NOCOUNT ON; INSERT INTO stb_production.dbo.roll_back (serial_num, prod_id, ncr_num, id_user, entry_date) VALUES(N\'{pcb_sn}\', {prod_id}, N\'{reason_desc}\', {id_user}, N\'{timestamp}\'); SET NOCOUNT OFF;'''
+        print(f'[INSERT-SQL] {update_sql}')
+        # return
+        conn.autocommit = False
+        insert_count = cursor.execute(update_sql)
+        print(f'insert_count: {insert_count}')
+    except pyodbc.DatabaseError as e:
+        print(
+            f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+        cursor.rollback()
+        raise e
+
+    except pyodbc.ProgrammingError as pe:
+        cursor.rollback()
+        print(
+            f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+        raise pe
+    except KeyError as e:
+        print(f"--7 {type(e).__name__ + ': ' + str(e)}")
+        print(
+            f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
+        raise e
+    else:
+        cursor.commit()
+
+    finally:
+        print("--8")
+        conn.autocommit = True
+
+
 def roll_back_insert_tracking(conn, cursor, pcb_sn, prod_id, target_status_id, reason_desc, id_user, timestamp):
     print(
         f'[roll_back_insert_tracking] record updated for {pcb_sn} status: {target_status_id} on {timestamp} with reason: {reason_desc} by {id_user}')
@@ -524,11 +558,15 @@ def roll_back_insert_tracking(conn, cursor, pcb_sn, prod_id, target_status_id, r
 class Server:
     conn = None
     cursor = None
+    # FOR NEW DB
+    conn_ott = None
+    cursor_ott = None
 
     def __init__(self, host="", driver="", database="", username="", password=""):
         # DEVELOPMENT CONFIG
         self.driver = "{ODBC Driver 17 for SQL Server}"
         self.database = "stb_production"
+        self.database_ott = "NEWDB"
         self.server = host  # "172.20.10.103\\PRODUCTION"
         self.username = "Neo.Tech"
         self.password = "Password357"
@@ -541,10 +579,13 @@ class Server:
         connection_status = CONST_FAILURE
         message = CONST_FAILURE
         if (self.conn and self.cursor):
-            connection_status = CONST_SUCCESS
-            connection_status = 'Server Already Connected'
+            if (self.conn_ott and self.cursor_ott):
+                connection_status = CONST_SUCCESS
+            else:
+                message += "NEWDB instance is null, "
+            # connection_status = 'Server Already Connected'
         else:
-            message += "Instance is null"
+            message += "stb_production instance is null"
         return {"data": {"metadata": None}, "message": message, "status": connection_status}
 
     def __del__(self):
@@ -552,6 +593,7 @@ class Server:
         if(self.conn):
             try:
                 self.conn.close()
+                self.conn_ott.close()
             except Exception as e:
                 print(
                     f'Server {self.server} has no connection established earlier' + type(e).__name__ + ': ' + str(e))
@@ -575,13 +617,31 @@ class Server:
                                        + ";DATABASE=" + self.database
                                        + ";UID=" + self.username
                                        + ";PWD=" + self.password)
+            self.conn_ott = pyodbc.connect("DRIVER=" + self.driver
+                                       + ";SERVER=" + self.server
+                                       + ";DATABASE=" + self.database_ott
+                                       + ";UID=" + self.username
+                                       + ";PWD=" + self.password)
+
             if(self.conn):
                 self.cursor = self.conn.cursor()
-                print(f'Connection established with server {self.server}')
-                connection_status = CONST_SUCCESS
+                print(f'[MAIN] Connection established with server {self.server}')
+                if(self.conn_ott):
+                    self.cursor_ott = self.conn_ott.cursor()
+                    print(f'[OTT] Connection established with server {self.server}')
+                    # connection_status = CONST_SUCCESS
+                else:
+                    print(f'Error: Server {self.server} could not be connected!')
+                    connection_status = connection_status + f"unable to establish {self.database_ott} connection"
             else:
                 print(f'Error: Server {self.server} could not be connected!')
-                connection_status = connection_status + "unable to establish server connection"
+                connection_status = connection_status + f"unable to establish {self.database} connection"
+
+            if (self.cursor and self.cursor_ott):
+                connection_status = CONST_SUCCESS
+            else:
+                print(f'Error: Server Cursors [MAIN]: {self.cursor_ott} [OTT]: {self.cursor} could not be connected!')
+                connection_status = connection_status + f"unable to establish {self.database} connection"
         except Exception as e:
             connection_status = connection_status + \
                 type(e).__name__ + ': ' + str(e)
@@ -785,6 +845,21 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
             }
         if response_data['status'] == CONST_SUCCESS:
             # Update roll_back table for tracking
+            try:
+                if prod_desc.startswith('OTT'):
+                    resp = roll_back_ott_db(pcb_sn, target_status_id)
+                    print(f'resp: {resp}')
+                    response_data = {
+                        **response_data,
+                        "message": help_message
+                    }
+            except Exception as e:
+                help_message = f'''EXCEPTION {pcb_sn} {mode} rollback done to {target_status_id} Message: {type(e).__name__ + ': '+ str(e)}'''
+                response_data = {
+                    **response_data,
+                    "message": help_message
+                }
+
             try:
                 prod_id = response_data['data']['metadata']['prod_id']
                 timestamp = response_data['data']['metadata']['timestamp']
