@@ -28,10 +28,6 @@ const status = [
 		"status_desc" : "PCBA Test Passed"
 	},
 	{
-		"id_status" : 48,
-		"status_desc" : "PCBA Test Failed"
-	},
-	{
 		"id_status" : 12,
 		"status_desc" : "Repairs"
 	},
@@ -76,10 +72,6 @@ const status = [
 		"status_desc" : "Soak Test Passed"
 	},
 	{
-		"id_status" : 78,
-		"status_desc" : "Soak Test Failed"
-	},
-	{
 		"id_status" : 85,
 		"status_desc" : "Assembly Received"
 	},
@@ -88,16 +80,8 @@ const status = [
 		"status_desc" : "Wireless Test Passed"
 	},
 	{
-		"id_status" : 87,
-		"status_desc" : "Wireless Test Failed"
-	},
-	{
 		"id_status" : 88,
 		"status_desc" : "Key Test Passed"
-	},
-	{
-		"id_status" : 89,
-		"status_desc" : "Key Test Failed"
 	},
 ];
 
