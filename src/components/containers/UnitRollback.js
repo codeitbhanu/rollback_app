@@ -35,7 +35,7 @@ function UnitRollback({ eel, params, setParams }) {
 
     const default_action_btns = [ACTION_BUTTON_DELETE];
     const [state, setState] = useState({
-        mode: MODE_INSTANT,
+        mode: MODE_MANUAL,
         manual_status: -1,
         reason_other: false,
         reason_desc: "",
@@ -103,7 +103,7 @@ function UnitRollback({ eel, params, setParams }) {
                             setTimeout(() => alert(`Error: [${message}`), 200);
                             return;
                         }
-                        
+
                         let current_status = status_map.filter(
                             (item) =>
                                 item.id_status ===
@@ -240,7 +240,7 @@ function UnitRollback({ eel, params, setParams }) {
         <div className="absolute flex flex-col w-full mt-4 border-0 border-red-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
-                    <div className="">
+                    <div className="hidden">
                         <nav className="flex flex-col sm:flex-row">
                             <button
                                 className={`flex-1 block px-6 py-4 lg:text-3xl md:text-xl sm:text-md font-bold  border-b-2 border-blue-500 hover:text-blue-500 focus:outline-none ${
