@@ -59,7 +59,7 @@
 
 const status = [
     {
-        id_status: 0,
+        id_status: -1,
         status_desc: "Select a Reason",
     },
     {

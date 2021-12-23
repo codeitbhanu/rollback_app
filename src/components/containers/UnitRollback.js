@@ -300,8 +300,8 @@ function UnitRollback({ eel, params, setParams }) {
                         >
                             {reasons_map.map((reason) => (
                                 <option
-                                    disabled={reason.id_status === 0}
-                                    selected={reason.id_status === 0}
+                                    disabled={reason.id_status === -1}
+                                    selected={reason.id_status === -1}
                                     key={reason.id_status}
                                     id={reason.id_status}
                                 >
@@ -340,8 +340,8 @@ function UnitRollback({ eel, params, setParams }) {
                                 >
                                     {option_status.map((status) => (
                                         <option
-                                            disabled={status.id_status === -1}
-                                            selected={status.id_status === -1}
+                                            disabled={status.id_status === 0}
+                                            selected={status.id_status === 0}
                                             key={status.id_status}
                                             id={status.id_status}
                                         >
