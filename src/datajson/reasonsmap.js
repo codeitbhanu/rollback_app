@@ -64,16 +64,20 @@ const status = [
     },
     {
         id_status: 2,
-        status_desc: "Barcode Misprint at Mechanical",
-    },
-    {
-        id_status: 4,
         status_desc: "Barcode Misprint at QR Code",
     },
     {
-        id_status: 6,
-        status_desc: "Barcode Misprint at Smartcard Pairing",
+        id_status: 4,
+        status_desc: "Barcode Misprint at Mechanical",
     },
+    {
+        id_status: 6,
+        status_desc: "Barcode Misprint at Giftbox Pairing",
+    },
+    {
+        id_status: 10,
+        status_desc: "OQC Test Failed",
+    }
     // KEEP THIS AT THE END
     // {
     //     id_status: 9999,

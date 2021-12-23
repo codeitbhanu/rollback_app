@@ -9,6 +9,29 @@ import reasons_map from "../../datajson/reasonsmap";
 
 // const defPath = "~";
 
+const option_status = [
+	{
+        id_status: 0,
+        status_desc: "Select a Target Status To Rollback",
+    },
+    {
+		id_status : 85,
+		status_desc : "Assembly Received",
+	},
+	{
+		id_status : 13,
+		status_desc : "PCBA Test Passed",
+	},
+	{
+		id_status : 18,
+		status_desc : "CA Test Passed",
+	},
+	{
+		id_status : 73,
+		status_desc : "Awaiting OQC Test",
+	},
+];
+
 function UnitRollback({ eel, params, setParams }) {
     console.log(params);
     const MODE_MANUAL = "manual";
@@ -315,7 +338,7 @@ function UnitRollback({ eel, params, setParams }) {
                                         handleSelectTargetDropdown(e)
                                     }
                                 >
-                                    {status_map.map((status) => (
+                                    {option_status.map((status) => (
                                         <option
                                             disabled={status.id_status === -1}
                                             selected={status.id_status === -1}
