@@ -1582,6 +1582,120 @@ def get_product_info(pcb_sn):
 
 
 @eel.expose
+def get_pcb_report(pcb_sn):
+    print('[GET-PCB-REPORT] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''DECLARE @pcb_num VARCHAR(50),
+            @stb_num VARCHAR(50),
+            @ord_sn_range VARCHAR(50),
+            @value_min VARCHAR(50),
+            @value_max VARCHAR(50),
+            @pcb_timestamp DATETIME,
+            @snrange_timestamp DATETIME,
+            @crf_timestamp DATETIME
+            SELECT @pcb_num = pe.pcb_num,
+                @stb_num = pe.stb_num
+                FROM stb_production.dbo.production_event pe WHERE pe.pcb_num = \'{pcb_sn}\' OR pe.stb_num = \'{pcb_sn}\'
+            SET @pcb_timestamp = (SELECT TOP 1 ped.[timestamp] FROM stb_production.dbo.production_event_details ped WHERE id_status = 7 AND (ped.pcb_num = @pcb_num OR ped.stb_num = @pcb_num))
+            SET @snrange_timestamp = (SELECT TOP 1 ped.[timestamp] FROM stb_production.dbo.production_event_details ped WHERE id_status = 13 AND (ped.pcb_num = @pcb_num OR ped.stb_num = @pcb_num))
+            SET @crf_timestamp = (SELECT TOP 1 ped.[timestamp] FROM stb_production.dbo.production_event_details ped WHERE id_status = 35 AND (ped.pcb_num = @pcb_num OR ped.stb_num = @pcb_num))
+            SELECT @ord_sn_range = SUBSTRING(data_value, 1, 6), @value_min = SUBSTRING(data_value, 7, 10), @value_max = SUBSTRING(data_value, 17, 10) FROM   stb_production.dbo.production_data
+            WHERE (data_name = 'order_stb_range') and @stb_num BETWEEN SUBSTRING(data_value, 7, 10) AND SUBSTRING(data_value, 17, 10)
+            SELECT pe.pcb_num AS [PCB NUM], pe.stb_num AS [STB NUM], SUBSTRING(pe.pcb_num,1,6) AS [PCB WAS FOR], @pcb_timestamp AS [PCB PRNIT TIMESTAMP],
+                @ord_sn_range AS [SN RANGE FROM],  @value_min AS [SN_MIN],  @value_max AS [SN_MAX], @snrange_timestamp AS [PCBA TIMESTAMP],
+                SUBSTRING(co.cus_ord,12,6) AS [SENT TO CUSTOMER ORD], @crf_timestamp AS [DISPATH TIMESTAMP],
+                cod.inv_num AS [INVOICE], co.cus_ord AS [FULL CO] FROM stb_production.dbo.production_event pe
+            INNER JOIN stb_production.dbo.customer_order co ON co.id_customer_order = pe.id_customer_order
+            INNER JOIN stb_production.dbo.customer_order_details cod ON cod.id_customer_order_details = pe.id_customer_order_details
+            WHERE pe.pcb_num = @pcb_num OR pe.stb_num = @pcb_num'''
+
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "pcb_sn": pcb_sn,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}, LENGTH: {len(results)}')
+
+            if len(results) == 1:
+                row = results[0]
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "pcb_num": row[0],
+                            "stb_num": row[1],
+                            "pcb_for": row[2],
+                            "pcb_ts": str(row[3]),
+                            "sn_from": row[4],
+                            "sn_min": row[5],
+                            "sn_max": row[6],
+                            "pcba_tp": str(row[7]),
+                            "cus_ord": row[8],
+                            "dispatch_ts": str(row[9]),
+                            "invoice": row[10],
+                            "cus_ord_full": row[11],
+                        },
+                    },
+                    "message": "PCB Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Product Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
 def get_frequent_params(prod_id, table, param_name, key):
     print(
         f'[GET-FREQUENT-PARAMS] prod_id: {prod_id} table: {table} param_name: {param_name} key: {key}')

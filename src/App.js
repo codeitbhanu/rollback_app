@@ -7,6 +7,7 @@ import UnitRollbackContainer from "./components/containers/UnitRollback";
 import PalletRollbackContainer from "./components/containers/PalletRollback";
 import FrequentParamContainer from "./components/containers/FrequentParam";
 import FractionPalletContainer from "./components/containers/FractionPallet";
+import PcbReportContainer from "./components/containers/PcbReport";
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
 
@@ -137,6 +138,14 @@ function App() {
             )}
             {menuState.selectedMenu === "frequent_param" && (
                 <FrequentParamContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "pcb_report" && (
+                <PcbReportContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

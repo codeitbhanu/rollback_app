@@ -2,6 +2,7 @@ import UnitRollbackContainer from "./containers/UnitRollback";
 import PalletRollbackContainer from "./containers/PalletRollback";
 import FractionPalletContainer from "./containers/FractionPallet";
 import FrequentParamContainer from "./containers/FrequentParam";
+import PcbReportContainer from "./containers/PcbReport";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -35,6 +36,12 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
             />
         </svg>
+    );
+    const iconPcbReport = (
+        <svg xmlns="http://www.w3.org/2000/svg" classname="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokelinecap="round" strokelinejoin="round" strokewidth="{2}" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
+</svg>
+
     );
     const iconFractionPallet = (
         <svg
@@ -132,6 +139,26 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
                         Edit Common Params
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "pcb_report" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "pcb_report",
+                                "PCB Tracking",
+                                iconPcbReport,
+                                PcbReportContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconPcbReport}</div>
+                        PCB Tracking
                     </a>
                 </li>
                 {/* 
