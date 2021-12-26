@@ -33,10 +33,10 @@ const option_status = [
 ];
 
 const getFormattedDateTime = (dt) => {
-    let options = {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}
-    let dateTime  = new Date(dt);
+    const options = {year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'}
+    const dateTime  = new Date(dt);
 
-    return dateTime.toLocaleDateString("en-ZA", options);
+    return dateTime.toLocaleDateString("en-ZA", options).replace(/[.,]/g, "");
 }
 
 function PcbReport({ eel, params, setParams }) {
@@ -199,15 +199,6 @@ function PcbReport({ eel, params, setParams }) {
                                         <td>{getFormattedDateTime(resp.dispatch_ts)}</td>
                                         <td>{resp.invoice}</td>
                                         <td>{resp.cus_ord_full}</td>
-                                        <td
-                                            className={
-                                                resp.status === CONST_SUCCESS
-                                                    ? `bg-yellow-200 text-green-500`
-                                                    : `bg-yellow-200 text-red-500`
-                                            }
-                                        >
-                                            {resp.status}
-                                        </td>
                                         <td>
                                             <ActionButtons
                                                 actionList={state.action_btns}
