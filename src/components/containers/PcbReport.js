@@ -33,6 +33,7 @@ const option_status = [
 ];
 
 const getFormattedDateTime = (dt) => {
+    if (!dt || dt === 'None') return "";
     const options = {year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'}
     const dateTime  = new Date(dt);
 
