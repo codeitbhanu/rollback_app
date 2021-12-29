@@ -1603,6 +1603,8 @@ def get_pcb_report(pcb_sn):
     else:
         cursor = serverinstance.cursor
         conn = serverinstance.conn
+        results = []
+        pyodbcError = False
         try:
             select_sql = f'''DECLARE @pcb_num VARCHAR(50),
             @stb_num VARCHAR(50),
@@ -1624,8 +1626,8 @@ def get_pcb_report(pcb_sn):
                 @ord_sn_range AS [SN RANGE FROM],  @value_min AS [SN_MIN],  @value_max AS [SN_MAX], @snrange_timestamp AS [PCBA TIMESTAMP],
                 SUBSTRING(co.cus_ord,12,6) AS [SENT TO CUSTOMER ORD], @crf_timestamp AS [DISPATH TIMESTAMP],
                 cod.inv_num AS [INVOICE], co.cus_ord AS [FULL CO] FROM stb_production.dbo.production_event pe
-            INNER JOIN stb_production.dbo.customer_order co ON co.id_customer_order = pe.id_customer_order
-            INNER JOIN stb_production.dbo.customer_order_details cod ON cod.id_customer_order_details = pe.id_customer_order_details
+            LEFT JOIN stb_production.dbo.customer_order co ON co.id_customer_order = pe.id_customer_order
+            LEFT JOIN stb_production.dbo.customer_order_details cod ON cod.id_customer_order_details = pe.id_customer_order_details
             WHERE pe.pcb_num = @pcb_num OR pe.stb_num = @pcb_num'''
 
             print(f'[SELECT-SQL] {select_sql}')
@@ -1663,17 +1665,12 @@ def get_pcb_report(pcb_sn):
                     "status": CONST_SUCCESS,
                 }
 
-        except pyodbc.DatabaseError as e:
+        except (pyodbc.DatabaseError, pyodbc.OperationalError, pyodbc.ProgrammingError) as e:
             print(
                 f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
             cursor.rollback()
-            raise e
-        except pyodbc.ProgrammingError as pe:
-            cursor.rollback()
-            print(
-                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-            raise pe
-        except KeyError as ke:
+            pyodbcError = True
+        except UnboundLocalError as ke:
             print(
                 f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
             raise ke
@@ -1682,7 +1679,16 @@ def get_pcb_report(pcb_sn):
         finally:
             conn.autocommit = True
             print(response_data)
-            if len(results) == 0:
+            if (pyodbcError):
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": None,
+                    },
+                    "message": "Connection got interrupted or server is down, Please try reconnecting",
+                    "status": CONST_FAILURE,
+                }
+            elif len(results) == 0:
                 # raise ValueError("record not found")
                 response_data = {
                     **response_data,
