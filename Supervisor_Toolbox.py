@@ -7,6 +7,7 @@ import inspect
 import eel
 import pyodbc
 import datetime
+from test import hello_test
 
 # ZEBRA ----------------------------------------------------------------
 import re
@@ -1583,6 +1584,7 @@ def get_product_info(pcb_sn):
 
 @eel.expose
 def get_pcb_report(pcb_sn):
+    hello_test()
     print('[GET-PCB-REPORT] requested ', pcb_sn)
     global serverinstance
 
