@@ -8,6 +8,7 @@ import PalletRollbackContainer from "./components/containers/PalletRollback";
 import FrequentParamContainer from "./components/containers/FrequentParam";
 import FractionPalletContainer from "./components/containers/FractionPallet";
 import PcbReportContainer from "./components/containers/PcbReport";
+import OrderItemsContainer from "./components/containers/OrderItems";
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
 
@@ -60,7 +61,7 @@ function App() {
         },
     });
     // fraction_pallet;
-    const defaultMenu = "unit_rollback";
+    const defaultMenu = "order_items";
     const defaultTitle = "Unit Rollback";
     const defaultIcon = (
         <svg
@@ -146,6 +147,14 @@ function App() {
             )}
             {menuState.selectedMenu === "pcb_report" && (
                 <PcbReportContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "order_items" && (
+                <OrderItemsContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

@@ -7,7 +7,7 @@ import inspect
 import eel
 import pyodbc
 import datetime
-from test import hello_test
+# from util_order_items import order_items
 
 # ZEBRA ----------------------------------------------------------------
 import re
@@ -110,6 +110,28 @@ INSTANT_MODE_STATUS_ID = -1
 INSTANT_STATUS_ID = -1
 INVALID_PRODUCT_ID = -1
 INVALID_PRODUCT_DESC = ""
+
+# LIST OF AVAILABE STATUS LIST
+report_status_mapping = {
+    'LEFT_FACTORY': (40, 35, 24, 23, 21, 20),
+    'DISPATCH': (23, 24, 35),
+    'PACKAGING': (20, 21),
+    'FID': (13, 16, 17, 18, 19, 22, 77, 80, 58, 90),
+    'A/W PCBA TEST': (85, ),
+    'SMD': (7, 83, 15),
+    'QC': (57, 73, 74),
+    'SCRAPPED': (43, ),
+    'BLACKLISTED': (39, ),
+    'REPAIRS': (12, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 65, 66, 68, 69, 78),
+    'SHIPPED': (40),
+    'PRINTED': (7, ),
+    'ASSEMBLY_RECEIVED': (85, ),
+    'BLACKLISTED_PCB': (84, ),
+    'TOTAL': (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91),
+}
+
+left_factory_status_str = ','.join(map(lambda status: str(status), report_status_mapping['LEFT_FACTORY']))
+blacklisted_str = ','.join(map(lambda status: str(status), report_status_mapping['BLACKLISTED']))
 
 status_desc_for_id_status = {
     0: 'False',
@@ -1389,8 +1411,6 @@ def rollback_pallet_items(pallet_num, target_status, stb_num_list=[], reason="",
             return response_data
 
 
-
-
 @eel.expose
 def get_printer_list():
     printers = get_printers()
@@ -1584,7 +1604,6 @@ def get_product_info(pcb_sn):
 
 @eel.expose
 def get_pcb_report(pcb_sn):
-    hello_test()
     print('[GET-PCB-REPORT] requested ', pcb_sn)
     global serverinstance
 
@@ -1688,6 +1707,217 @@ def get_pcb_report(pcb_sn):
                         "metadata": None,
                     },
                     "message": "Connection got interrupted or server is down, Please try reconnecting",
+                    "status": CONST_FAILURE,
+                }
+            elif len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Product Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
+def get_order_items(ord, opt_list):
+    print(f'[GET-ORDER-ITEMS] requested {ord} with opt list {opt_list}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    merged_options = ()
+    for opt in opt_list:
+        merged_options += report_status_mapping[opt]
+    merged_options = tuple(set(merged_options))
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        results = []
+        pyodbcError = False
+        try:
+            select_sql = f'''SELECT id_production_data, data_value FROM production_data WHERE data_value LIKE \'{ord}%\''''
+
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "ord": ord,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {results}, LENGTH: {len(results)}')
+
+            africa_orders = {}
+            africa_orders[ord] = {}
+            for row in results:
+                # print(row)
+                delim = 'S'
+                id_prod_data = row[0]
+                _, start, end = row[1].split(delim, 3)
+                print(f'[{id_prod_data}] order: {ord} start: {delim + start} end: {delim + end}', end='''\n''')
+                if ord in africa_orders:
+                    africa_orders[ord] = {
+                        **africa_orders[ord],
+                        id_prod_data: {'start': delim + start, 'end': delim + end}
+                    }
+                else:
+                    africa_orders[ord] = {
+                        id_prod_data: {'start': delim + start, 'end': delim + end}
+                    }
+            # Find all ranges count
+            total_qty_produced = 0
+            total_qty_target = 0
+            for id_prod_data in africa_orders[ord].keys():
+                # print(id_prod_data)
+                # print(f'{ord}_{id_prod_data}')
+                # qty_target = int(africa_orders[id_prod_data]['end'][1:]) - int(africa_orders[id_prod_data]['start'][1:])
+                qty_target = int(africa_orders[ord][id_prod_data]['end'][1:]) - int(africa_orders[ord][id_prod_data]['start'][1:])
+                # print(f'OrderNo: {ord}_{id_prod_data} Qty: {qty_target}')
+                africa_orders[ord][id_prod_data]['qty_target'] = qty_target
+
+            # Order Wise Missing Qty
+            # print('==== ORDER WISE MISSING QTY ====')
+            columns = ['pe.pcb_num', 'prod.prod_desc', 'pe.id_production_order', 'pe.id_status', 'pe.timestamp', 'pe.stb_num', 's.status_desc', 'u.user_desc']
+            # status_print_cols = ['pcb_num', 'stb_num', 'id_status', 'timestamp', 'id_user']
+            # status_print_cols = ['pcb_num', 'prod_desc', 'id_production_order', 'id_status', 'timestamp', 'stb_num']
+            # print(','.join(columns))
+            # print(f'africa_orders[ord].keys(): {africa_orders[ord].keys()}')
+            for id_prod_data in africa_orders[ord].keys():
+                # print(f'africa_orders: {africa_orders}')
+                items = []
+                select_sql = f'''SELECT {','.join(columns)}  FROM production_event pe
+                    INNER JOIN product prod ON pe.prod_id = prod.prod_id
+                    LEFT JOIN status s ON s.id_status = pe.id_status
+                    LEFT JOIN [user] u ON u.id_user = pe.id_user
+                    WHERE pe.stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND pe.id_status IN ({','.join(map(lambda status: str(status), merged_options))})
+                    ORDER BY pe.stb_num
+                    '''
+                print(select_sql)
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                    "status": CONST_FAILURE
+                }
+                for row in cursor.execute(select_sql):
+                    # print(row)  # returns a tuple
+                    items.append(dict(zip(columns, row)))
+                    # print(items)
+                    processed_items = []
+                    for item in items:
+                        processed_items.append({
+                            **item,
+                            'pe.timestamp': str(item['pe.timestamp']),
+                        })
+                    items = processed_items
+                    # break
+
+                # USE THIS TO GET ALL PRODUCED STB SN
+                # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
+                select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
+                    WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND id_status IN ({left_factory_status_str})'''
+                print(select_sql)
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                    "status": CONST_FAILURE
+                }
+                for row in cursor.execute(select_sql):
+                    if(row):
+                        africa_orders[ord][id_prod_data]['qty_choice'] = row[0]
+                    # break
+                # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
+                select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
+                    WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND id_status IN ({blacklisted_str})'''
+                print(select_sql)
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                    "status": CONST_FAILURE
+                }
+                for row in cursor.execute(select_sql):
+                    if(row):
+                        africa_orders[ord][id_prod_data]['blacklisted'] = row[0]
+                    # break
+                # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
+                select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
+                    WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\''''
+                # print(select_sql)
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                    "status": CONST_FAILURE
+                }
+                for row in cursor.execute(select_sql):
+                    if(row):
+                        africa_orders[ord][id_prod_data]['qty_produced'] = row[0]
+                    # break
+
+                # missing = africa_orders[k]['missing']
+                qty_choice = len(items)
+                qty_produced = africa_orders[ord][id_prod_data]['qty_produced']
+                qty_choice = africa_orders[ord][id_prod_data]['qty_choice']
+                qty_target = africa_orders[ord][id_prod_data]['qty_target']
+                blacklisted = africa_orders[ord][id_prod_data]['blacklisted']
+                africa_orders[ord][id_prod_data]['items'] = items
+                total_qty_produced = total_qty_produced + qty_produced - blacklisted
+                total_qty_target = qty_target if total_qty_target == 0 else total_qty_target
+
+                print(f'{ord}_{id_prod_data} qty_choice: {qty_choice} qty_choice: {qty_choice} qty_target: {qty_target} qty_produced: {qty_produced} blacklisted: {blacklisted}')
+
+            response_data = {
+                **response_data,
+                "data": {
+                    "metadata": {
+                        "order_data": africa_orders[ord],
+                        "total_qty_produced": total_qty_produced,
+                        "total_qty_target": total_qty_target
+                    },
+                },
+                "message": "Successfully Retrieved Data",
+                "status": CONST_SUCCESS
+            }
+        except (pyodbc.DatabaseError, pyodbc.OperationalError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            pyodbcError = True
+        except (UnboundLocalError, KeyError, ValueError) as ke:
+            print(
+                f'[ERROR: {ke.__str__} - {ke.args}, will skip this invalid cell value')
+            raise ke
+        except Exception as e:
+            print(
+                f'[ERROR: {{e.__str__}} - {e.args}, will skip this invalid cell value')
+            raise e
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            # print(response_data)
+            if (pyodbcError):
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": None,
+                    },
+                    "message": "Server Error, Please retry or contact developer",
                     "status": CONST_FAILURE,
                 }
             elif len(results) == 0:

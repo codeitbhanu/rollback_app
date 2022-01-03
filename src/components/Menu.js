@@ -3,6 +3,7 @@ import PalletRollbackContainer from "./containers/PalletRollback";
 import FractionPalletContainer from "./containers/FractionPallet";
 import FrequentParamContainer from "./containers/FrequentParam";
 import PcbReportContainer from "./containers/PcbReport";
+import OrderItemsContainer from "./containers/OrderItems";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -38,11 +39,20 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
         </svg>
     );
     const iconPcbReport = (
-        <svg xmlns="http://www.w3.org/2000/svg" classname="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path strokelinecap="round" strokelinejoin="round" strokewidth="{2}" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="{2}" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
 </svg>
 
     );
+
+    const iconOrderItems = (
+<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="{2}" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+</svg>
+
+
+    );
+
     const iconFractionPallet = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -159,6 +169,26 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconPcbReport}</div>
                         PCB Tracking
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "pcb_report" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "order_items",
+                                "Order Items",
+                                iconOrderItems,
+                                OrderItemsContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
+                        Order Items
                     </a>
                 </li>
                 {/* 
