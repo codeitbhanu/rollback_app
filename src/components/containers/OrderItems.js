@@ -382,17 +382,20 @@ function OrderItems({ eel, params, setParams }) {
                             </tfoot> */}
                         </table>
                     </div>
-                    <div className="border stats border-base-300 max-h-32">
+                    <div className="border stats max-h-32">
                         <div className="stat">
                             <div className="stat-title">Found Units</div> 
                             <div className="stat-value">{state.stats.length && state.stats[state.active_tab]["qty_choice"]}</div> 
+                            <div className="mt-2 stat-desc">
+                                <progress className="hidden progress" />
+                            </div>
                         </div>
 
                         <div className="stat">
                             <div className="stat-title">Produced vs Target</div> 
-                            <div className={state.stats.length && state.stats[state.active_tab]["total_qty_produced"] !== state.stats[state.active_tab]["total_qty_target"] ? "stat-value text-success" : "stat-value text-success"}>{state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} / {state.stats.length && state.stats[state.active_tab]["total_qty_target"]}</div> 
+                            <div className={state.stats.length && state.stats[state.active_tab]["total_qty_produced"] !== state.stats[state.active_tab]["total_qty_target"] ? "stat-value text-error" : "stat-value text-success"}>{state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} / {state.stats.length && state.stats[state.active_tab]["total_qty_target"]}</div> 
                             <div className="mt-2 stat-desc">
-                                <progress value={state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} max={state.stats.length && state.stats[state.active_tab]["total_qty_target"]} className="progress progress-primary" />
+                                <progress value={state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} max={state.stats.length && state.stats[state.active_tab]["total_qty_target"]} className="progress" />
                             </div>
                         </div>
                     </div>

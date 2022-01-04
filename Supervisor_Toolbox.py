@@ -123,14 +123,14 @@ report_status_mapping = {
     'SCRAPPED': (43, ),
     'BLACKLISTED': (39, ),
     'REPAIRS': (12, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 65, 66, 68, 69, 78),
-    'SHIPPED': (40),
+    'SHIPPED': (40, ),
     'PRINTED': (7, ),
     'ASSEMBLY_RECEIVED': (85, ),
     'BLACKLISTED_PCB': (84, ),
     'TOTAL': (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91),
 }
 
-left_factory_status_str = ','.join(map(lambda status: str(status), report_status_mapping['LEFT_FACTORY']))
+# left_factory_status_str = ','.join(map(lambda status: str(status), report_status_mapping['LEFT_FACTORY']))
 blacklisted_str = ','.join(map(lambda status: str(status), report_status_mapping['BLACKLISTED']))
 
 status_desc_for_id_status = {
@@ -1802,13 +1802,24 @@ def get_order_items(ord, opt_list):
             for id_prod_data in africa_orders[ord].keys():
                 # print(f'africa_orders: {africa_orders}')
                 items = []
-                select_sql = f'''SELECT {','.join(columns)}  FROM production_event pe
+                select_sql = ''
+                if 'TOTAL' in opt_list:
+                    select_sql = f'''SELECT {','.join(columns)}  FROM production_event pe
+                    INNER JOIN product prod ON pe.prod_id = prod.prod_id
+                    LEFT JOIN status s ON s.id_status = pe.id_status
+                    LEFT JOIN [user] u ON u.id_user = pe.id_user
+                    WHERE pe.stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\'
+                    ORDER BY pe.stb_num
+                    '''
+                else:
+                    select_sql = f'''SELECT {','.join(columns)}  FROM production_event pe
                     INNER JOIN product prod ON pe.prod_id = prod.prod_id
                     LEFT JOIN status s ON s.id_status = pe.id_status
                     LEFT JOIN [user] u ON u.id_user = pe.id_user
                     WHERE pe.stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND pe.id_status IN ({','.join(map(lambda status: str(status), merged_options))})
                     ORDER BY pe.stb_num
                     '''
+
                 print(select_sql)
                 response_data = {
                     **response_data,
@@ -1830,17 +1841,17 @@ def get_order_items(ord, opt_list):
 
                 # USE THIS TO GET ALL PRODUCED STB SN
                 # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
-                select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
-                    WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND id_status IN ({left_factory_status_str})'''
-                print(select_sql)
-                response_data = {
-                    **response_data,
-                    "select_query": select_sql,
-                    "status": CONST_FAILURE
-                }
-                for row in cursor.execute(select_sql):
-                    if(row):
-                        africa_orders[ord][id_prod_data]['qty_choice'] = row[0]
+                # select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
+                #     WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND id_status IN ({left_factory_status_str})'''
+                # print(select_sql)
+                # response_data = {
+                #     **response_data,
+                #     "select_query": select_sql,
+                #     "status": CONST_FAILURE
+                # }
+                # for row in cursor.execute(select_sql):
+                #     if(row):
+                #         africa_orders[ord][id_prod_data]['qty_choice'] = row[0]
                     # break
                 # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
                 select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
@@ -1858,7 +1869,7 @@ def get_order_items(ord, opt_list):
                 # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
                 select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
                     WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\''''
-                # print(select_sql)
+                print(select_sql)
                 response_data = {
                     **response_data,
                     "select_query": select_sql,
@@ -1872,7 +1883,7 @@ def get_order_items(ord, opt_list):
                 # missing = africa_orders[k]['missing']
                 qty_choice = len(items)
                 qty_produced = africa_orders[ord][id_prod_data]['qty_produced']
-                qty_choice = africa_orders[ord][id_prod_data]['qty_choice']
+                africa_orders[ord][id_prod_data]['qty_choice'] = qty_choice
                 qty_target = africa_orders[ord][id_prod_data]['qty_target']
                 blacklisted = africa_orders[ord][id_prod_data]['blacklisted']
                 africa_orders[ord][id_prod_data]['items'] = items
