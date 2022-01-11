@@ -171,6 +171,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         PCB Tracking
                     </a>
                 </li>
+                {/* 
                 <li
                     className={
                         menuState.selectedMenu === "pcb_report" ?
@@ -191,7 +192,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Items
                     </a>
                 </li>
-                {/* 
+                
                 <li
                     className={
                         menuState.selectedMenu === "rollback_pallet" ?

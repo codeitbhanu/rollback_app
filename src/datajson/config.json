@@ -38,6 +38,15 @@
             "email": "Vishal.Saroop@uec.co.za",
             "id_status": 4,
             "password": "Password123"
+        },
+        {
+            "id_user" : 142,
+            "user_desc" : "vanesh.naicker",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "Vanesh.Naicker@myskyworth.com",
+            "id_status" : 4,
+            "password": "Password234"
         }
     ],
     "frequent_param": [

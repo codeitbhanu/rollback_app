@@ -5,30 +5,39 @@ import ActionButtons from "../ActionButtons";
 
 // import fake_data from "../datajson/data";
 import status_map from "../../datajson/statusmap";
-import reasons_map from "../../datajson/reasonsmap";
 
 // const defPath = "~";
 
-const option_status = [
+const reason_status_map = [
 	{
         id_status: 0,
-        status_desc: "Select a Target Status To Rollback",
+        status_desc: "Target Status on Rollback",
+        reason_desc: "Select a Reason"
     },
     {
 		id_status : 85,
 		status_desc : "Assembly Received",
+        reason_desc: "Barcode Misprint at QR Code"
 	},
 	{
 		id_status : 13,
 		status_desc : "PCBA Test Passed",
+        reason_desc: "Barcode Misprint at Mechanical"
 	},
 	{
 		id_status : 18,
 		status_desc : "CA Test Passed",
+        reason_desc: "Barcode Misprint at Giftbox Pairing"
+	},
+	{
+		id_status : 18,
+		status_desc : "CA Test Passed",
+        reason_desc: "Rollback To CA Test Passed"
 	},
 	{
 		id_status : 73,
 		status_desc : "Awaiting OQC Test",
+        reason_desc: "Retest QC Test"
 	},
 ];
 
@@ -59,9 +68,9 @@ function UnitRollback({ eel, params, setParams }) {
     const default_action_btns = [ACTION_BUTTON_DELETE];
     const [state, setState] = useState({
         mode: MODE_MANUAL,
-        manual_status: -1,
+        manual_status: 0,
         reason_other: false,
-        reason_desc: "",
+        reason_desc: reason_status_map[0].reason_desc,
         reason_manual: "",
         action_btns: default_action_btns,
         data: [], //fake_data,
@@ -95,7 +104,7 @@ function UnitRollback({ eel, params, setParams }) {
             }
             if (
                 state.reason_desc === "" ||
-                state.reason_desc === reasons_map[0].id_status
+                state.reason_desc === reason_status_map[0].id_status
             ) {
                 alert(
                     "Incorrect reason to rollback, Please choose one from the dropdown."
@@ -239,10 +248,17 @@ function UnitRollback({ eel, params, setParams }) {
         // alert(JSON.stringify(event.target.value));
         const reason = event.target.value;
         const isOther = reason.startsWith("Other");
+        let manual_status = reason_status_map.filter(
+            (item) => item.reason_desc === reason
+        )[0];
+        console.log(
+            `status: ${reason} manual_status: ${JSON.stringify(manual_status)}`
+        );
         setState({
             ...state,
             reason_other: isOther,
             reason_desc: isOther ? state.reason_manual : reason,
+            manual_status: manual_status.id_status,
         });
     };
 
@@ -298,14 +314,14 @@ function UnitRollback({ eel, params, setParams }) {
                             disabled=""
                             onChange={(e) => handleSelectReasonDropdown(e)}
                         >
-                            {reasons_map.map((reason) => (
+                            {reason_status_map.map((reason) => (
                                 <option
-                                    disabled={reason.id_status === -1}
-                                    selected={reason.id_status === -1}
-                                    key={reason.id_status}
+                                    disabled={reason.id_status === 0}
+                                    selected={reason.reason_desc === state.reason_desc}
+                                    key={uuidv4()}
                                     id={reason.id_status}
                                 >
-                                    {reason.status_desc}
+                                    {reason.reason_desc}
                                 </option>
                             ))}
                         </select>
@@ -329,20 +345,21 @@ function UnitRollback({ eel, params, setParams }) {
                             <div className="flex flex-col mt-2 border-0 border-red-600">
                                 <label className="text-black label">
                                     <span className="text-black label-text">
-                                        Select Target Status
+                                        Target Status
                                     </span>
                                 </label>
                                 <select
+                                    disabled={true}
                                     className="flex min-w-full select select-bordered select-primary"
                                     onChange={(e) =>
                                         handleSelectTargetDropdown(e)
                                     }
                                 >
-                                    {option_status.map((status) => (
+                                    {reason_status_map.map((status) => (
                                         <option
                                             disabled={status.id_status === 0}
-                                            selected={status.id_status === 0}
-                                            key={status.id_status}
+                                            selected={status.id_status === state.manual_status}
+                                            key={uuidv4()}
                                             id={status.id_status}
                                         >
                                             {status.status_desc}

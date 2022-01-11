@@ -74,19 +74,19 @@ function PcbReport({ eel, params, setParams }) {
         // alert(`___${pcb_sn}___`);
         console.log(params);
         try {
-            if (params.session.active === false) {
-                alert("Session not active, Please login first");
-                return;
-            }
-            if (
-                state.reason_desc === "" ||
-                state.reason_desc === reasons_map[0].id_status
-            ) {
-                alert(
-                    "Incorrect reason to rollback, Please choose one from the dropdown."
-                );
-                return;
-            }
+            // if (params.session.active === false) {
+            //     alert("Session not active, Please login first");
+            //     return;
+            // }
+            // if (
+            //     state.reason_desc === "" ||
+            //     state.reason_desc === reasons_map[0].id_status
+            // ) {
+            //     alert(
+            //         "Incorrect reason to rollback, Please choose one from the dropdown."
+            //     );
+            //     return;
+            // }
             if (params.server.status) {
                 eel.get_pcb_report(
                     pcb_sn
