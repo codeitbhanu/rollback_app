@@ -218,9 +218,9 @@ status_desc_for_id_status = {
 rollback_rules_matrix = {
     "DSD": {
         # IF CURR_STATUS 58	QR Code Printed
-        58: [15],           # 15	AOI Test Passed	only if status = 90/58
+        58: [85],           # 85	Assembly Received	only if status = 90/58
         # IF CURR_STATUS 90	QR Code Verified
-        90: [15],           # 15	AOI Test Passed	only if status = 90/58
+        90: [85],           # 85	Assembly Received	only if status = 90/58
         # IF CURR_STATUS 13	PCBA Test Passed
         # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
         13: [90],
@@ -249,12 +249,8 @@ rollback_rules_matrix = {
         # TODO Soak Test after discussion
     },
     "OTT": {
-        # IF CURR_STATUS 58	QR Code Printed
-        58: [15],           # 15	AOI Test Passed	only if status = 90/58
-        # IF CURR_STATUS 90	QR Code Verified
-        90: [15],           # 15	AOI Test Passed	only if status = 90/58
         # IF CURR_STATUS 16	Mechanical
-        16: [90],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
+        16: [85],                # 90	QR Code Verified	only if status = 13/16/18[ PTC software required]
         # IF CURR_STATUS 13	PCBA Test Passed
         13: [16, 90],
         86: [13, 16, 90],

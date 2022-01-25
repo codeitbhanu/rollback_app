@@ -171,13 +171,12 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         PCB Tracking
                     </a>
                 </li>
-                {/* 
                 <li
                     className={
                         menuState.selectedMenu === "pcb_report" ?
                         "bordered" : ""
                     }
-                >
+                    >
                     <a
                         onClick={() =>
                             onSelectMenu(
@@ -185,14 +184,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                                 "Order Items",
                                 iconOrderItems,
                                 OrderItemsContainer
-                            )
-                        }
-                    >
+                                )
+                            }
+                            >
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
                 </li>
                 
+                {/* 
                 <li
                     className={
                         menuState.selectedMenu === "rollback_pallet" ?

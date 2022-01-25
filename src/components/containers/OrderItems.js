@@ -83,49 +83,61 @@ function OrderItems({ eel, params, setParams }) {
             {
                 tag: "DISPATCH",
                 checked: false,
+                disabled: true,
             },
             {
                 tag: "PACKAGING",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "FID",
                 checked: true,
+                disabled: false,
             },
             {
                 tag: "A/W PCBA TEST",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "SMD",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "QC",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "SCRAPPED",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "BLACKLISTED",
                 checked: false,
+                disabled: false,
             },
             {
                 tag: "REPAIRS",
                 checked: true,
+                disabled: false,
             },
             {
                 tag: "SHIPPED",
                 checked: false,
+                disabled: true,
             },
             {
                 tag: "TOTAL",
                 checked: false,
+                disabled: true,
             },
         ],
         action_btns: default_action_btns,
+        ord_num: "",
         tabs: [],
         stats: [],
         items: [],
@@ -168,6 +180,7 @@ function OrderItems({ eel, params, setParams }) {
             }
             setState((prevState) => ({
                 ...prevState,
+                ord_num: ord_num,
                 tabs: [],
                 items: [],
                 active_tab: 0,
@@ -214,6 +227,7 @@ function OrderItems({ eel, params, setParams }) {
                         console.log(typeof items);
                         setState({
                             ...state,
+                            ord_num: ord_num,
                             tabs: tabs,
                             stats: stats,
                             items: items,
@@ -265,8 +279,12 @@ function OrderItems({ eel, params, setParams }) {
                         <div className="grid grid-flow-col grid-rows-2 gap-2 pl-4 mt-4 max-h-72">
                             {state.field_list.map((f) => {
                                 return (
-                                    <label className="flex items-center pl-2 align-middle border-0 border-gray-400 cursor-pointer hover:bg-gray-300">
+                                    <label
+                                        className="flex items-center pl-2 align-middle border-0 border-gray-400 cursor-pointer hover:bg-gray-300"
+                                        key={f.tag}
+                                    >
                                         <input
+                                            disabled={f.disabled}
                                             type="checkbox"
                                             defaultChecked={f.checked}
                                             className="checkbox-sm checkbox-primary"
@@ -384,18 +402,65 @@ function OrderItems({ eel, params, setParams }) {
                     </div>
                     <div className="border stats max-h-32">
                         <div className="stat">
-                            <div className="stat-title">Found Units</div> 
-                            <div className="stat-value">{state.stats.length && state.stats[state.active_tab]["qty_choice"]}</div> 
+                            <div className="stat-title">Order Number</div>
+                            <div className="stat-value">{state.ord_num}</div>
                             <div className="mt-2 stat-desc">
                                 <progress className="hidden progress" />
                             </div>
                         </div>
 
                         <div className="stat">
-                            <div className="stat-title">Produced vs Target</div> 
-                            <div className={state.stats.length && state.stats[state.active_tab]["total_qty_produced"] !== state.stats[state.active_tab]["total_qty_target"] ? "stat-value text-error" : "stat-value text-success"}>{state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} / {state.stats.length && state.stats[state.active_tab]["total_qty_target"]}</div> 
+                            <div className="stat-title">Found Units</div>
+                            <div className="stat-value">
+                                {state.stats.length &&
+                                    state.stats[state.active_tab]["qty_choice"]}
+                            </div>
                             <div className="mt-2 stat-desc">
-                                <progress value={state.stats.length && state.stats[state.active_tab]["total_qty_produced"]} max={state.stats.length && state.stats[state.active_tab]["total_qty_target"]} className="progress" />
+                                <progress className="hidden progress" />
+                            </div>
+                        </div>
+
+                        <div className="stat">
+                            <div className="stat-title">Produced vs Target</div>
+                            <div
+                                className={
+                                    state.stats.length &&
+                                    state.stats[state.active_tab][
+                                        "total_qty_produced"
+                                    ] !==
+                                        state.stats[state.active_tab][
+                                            "total_qty_target"
+                                        ]
+                                        ? "stat-value text-error"
+                                        : "stat-value text-success"
+                                }
+                            >
+                                {state.stats.length &&
+                                    state.stats[state.active_tab][
+                                        "total_qty_produced"
+                                    ]}{" "}
+                                /{" "}
+                                {state.stats.length &&
+                                    state.stats[state.active_tab][
+                                        "total_qty_target"
+                                    ]}
+                            </div>
+                            <div className="mt-2 stat-desc">
+                                <progress
+                                    value={
+                                        state.stats.length &&
+                                        state.stats[state.active_tab][
+                                            "total_qty_produced"
+                                        ]
+                                    }
+                                    max={
+                                        state.stats.length &&
+                                        state.stats[state.active_tab][
+                                            "total_qty_target"
+                                        ]
+                                    }
+                                    className="progress"
+                                />
                             </div>
                         </div>
                     </div>
