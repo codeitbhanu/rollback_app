@@ -137,7 +137,7 @@ function OrderItems({ eel, params, setParams }) {
             },
         ],
         action_btns: default_action_btns,
-        ord_num: "",
+        ord_num: "Unknown",
         tabs: [],
         stats: [],
         items: [],
@@ -301,7 +301,7 @@ function OrderItems({ eel, params, setParams }) {
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2 px-4 pt-0 bg-gray-100 border-0 border-red-500 h-tableheight">
+                <div className="flex h-auto gap-2 px-4 pt-0 bg-gray-100 border stats border-base-300">
                     <div className="flex flex-col flex-1 mb-16 overflow-x-auto border-0 border-green-400">
                         <div class="tabs">
                             {state.tabs.map((pd, idx) => (
@@ -400,7 +400,7 @@ function OrderItems({ eel, params, setParams }) {
                             </tfoot> */}
                         </table>
                     </div>
-                    <div className="border stats max-h-32">
+                    <div className="flex flex-col w-1/4 h-auto gap-2 border-0 border-red-500 stats">
                         <div className="stat">
                             <div className="stat-title">Order Number</div>
                             <div className="stat-value">{state.ord_num}</div>
@@ -444,23 +444,6 @@ function OrderItems({ eel, params, setParams }) {
                                     state.stats[state.active_tab][
                                         "total_qty_target"
                                     ]}
-                            </div>
-                            <div className="mt-2 stat-desc">
-                                <progress
-                                    value={
-                                        state.stats.length &&
-                                        state.stats[state.active_tab][
-                                            "total_qty_produced"
-                                        ]
-                                    }
-                                    max={
-                                        state.stats.length &&
-                                        state.stats[state.active_tab][
-                                            "total_qty_target"
-                                        ]
-                                    }
-                                    className="progress"
-                                />
                             </div>
                         </div>
                     </div>
