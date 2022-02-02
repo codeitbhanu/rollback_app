@@ -4,6 +4,7 @@ import FractionPalletContainer from "./containers/FractionPallet";
 import FrequentParamContainer from "./containers/FrequentParam";
 import PcbReportContainer from "./containers/PcbReport";
 import OrderItemsContainer from "./containers/OrderItems";
+import OrderSerialConfigContainer from "./containers/OrderSerialConfig";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -78,6 +79,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             stroke="#343434"
         >
             <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+        </svg>
+    );
+    const iconOrderSerialConfig = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                strokewidth="{2}"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+            />
         </svg>
     );
     return (
@@ -192,6 +209,27 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     </a>
                 </li>
                 
+                <li
+                    className={
+                        menuState.selectedMenu === "rollback_pallet" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "order_serial_config",
+                                "Order Serial Config",
+                                iconOrderSerialConfig,
+                                OrderSerialConfigContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconOrderSerialConfig}</div>
+                        Order Serial Config
+
+                    </a>
+                </li>
                 {/* 
                 <li
                     className={

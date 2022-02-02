@@ -612,12 +612,12 @@ class Server:
         self.database = "stb_production"
         self.database_ott = "NEWDB"
         self.server = host  # "172.20.10.103\\PRODUCTION"
-        self.username = "Neo.Tech"
-        self.password = "Password357"
+        # self.username = "Neo.Tech"
+        # self.password = "Password357"
         # LOCAL FOR TESTING
         # self.server = "HOMEPC\\SQLEXPRESS"
-        # self.username = "Bhanu.Pratap"
-        # self.password = "Password123"
+        self.username = "Bhanu.Pratap"
+        self.password = "Password123"
 
     def getInstanceStatus(self):
         connection_status = CONST_FAILURE
@@ -1511,6 +1511,7 @@ def get_active_products():
             return response_data
 
 
+
 @eel.expose
 def get_product_info(pcb_sn):
     print('[GET-PRODUCT-INFO] requested ', pcb_sn)
@@ -2038,6 +2039,196 @@ def get_frequent_params(prod_id, table, param_name, key):
                     "status": CONST_FAILURE,
                 }
             return response_data
+
+
+# FEATURE: Order Serial Config
+@eel.expose
+def get_prod_data_by_id(prod_id):
+    print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''SELECT prod_id, data_value, priority, status
+                            FROM stb_production.dbo.production_data
+                            WHERE prod_id={prod_id} and data_name = \'order_stb_range\';
+                            '''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                prod_data_list = []
+                for row in results:
+                    print(row)
+                    prod_data_list.append({"prod_id": row[0], "data_value": row[1], "priority": row[2], "status": row[3]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_data": prod_data_list,
+                        },
+                    },
+                    "message": "Production Data for Product",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "Production Data Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def set_prod_data_priority(data_value, p):
+    print(
+        f'[SET-FREQUENT-PARAMS] prod_id: {prod_id} table: {table} param_name: {param_name} key: {key} param_value: {param_value}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            try:
+                # Find and update the target_status
+                update_sql = ""
+                if (table == "prod_config"):
+                    update_sql = f'''UPDATE cd
+                                    SET cd.cd_data = {param_value}
+                                    FROM stb_production.dbo.config_data cd
+                                    INNER JOIN stb_production.dbo.prod_config pc ON pc.id_config_data = cd.id_config_data
+                                    INNER JOIN stb_production.dbo.config_param cp ON cp.id_config_param = pc.id_config_param
+                                    WHERE pc.prod_id = {prod_id} and cp.id_config_param = {key}'''
+                if (table == "production_data"):
+                    update_sql = f'''UPDATE pd
+                                    SET pd.data_value = \'{param_value}\'
+                                    FROM stb_production.dbo.production_data pd
+                                    WHERE prod_id = {prod_id} and data_name = \'{param_name}\''''
+                if (table == "test_parameter"):
+                    target_prod_id = None
+                    if (prod_id in [94, 95, 96]):
+                        target_prod_id = 94
+                    elif (prod_id in [97, 98, 99, 100, 101, 102, 103]):
+                        target_prod_id = 97
+                    elif (prod_id in [105, 106, 107]):
+                        target_prod_id = 105
+                    elif (prod_id in [108, 109, 110, 111, 112, 113, 114]):
+                        target_prod_id = 108
+                    else:
+                        target_prod_id = prod_id
+                    update_sql = f'''UPDATE tp SET tp.value = \'{param_value}\' FROM stb_production.dbo.test_parameter tp WHERE prod_id = {target_prod_id} and parameter = \'{key}\''''
+                response_data = {
+                    **response_data,
+                    "update_query": update_sql,
+                }
+                print(f'[UPDATE-SQL] {update_sql}')
+                conn.autocommit = False
+                update_count = cursor.execute(update_sql)
+                print(f'[UPDATE-SQL-RESULTS] {vars(update_count)}')
+                response_data = {
+                    **response_data,
+                    "update_count": update_count,
+                }
+            except pyodbc.DatabaseError as e:
+                print(
+                    f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+                cursor.rollback()
+                raise e
+
+            except pyodbc.ProgrammingError as pe:
+                cursor.rollback()
+                print(
+                    f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+                raise pe
+            except KeyError as e:
+                print(f"--7 {type(e).__name__ + ': ' + str(e)}")
+                print(
+                    f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
+                raise e
+            else:
+                cursor.commit()
+
+            finally:
+                conn.autocommit = True
+                return {
+                    **response_data,
+                    "data": {"metadata": None},
+                    "message": param_name + " data updated",
+                    "status": CONST_SUCCESS,
+                }
+
+        except Exception as e:
+            print(
+                f'>>>>>>> {type(e).__name__} type_of_e: {type(e.args)}')
+            print('Error on line {}'.format(
+                sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            message = type(e).__name__ + ': ' + str(e)
+
+            if type(e).__name__ == "KeyError" and len(e.args) and type(e.args[0]) == int:
+                print(f"--10 {e.args[0]}")
+                message = f"Rollback not allowed from {status_desc_for_id_status[e.args[0]]}"
+                print(f"--11 {message}\n{response_data}")
+            return {
+                "data": {"metadata": None},
+                "message": message,
+                "status": CONST_FAILURE,
+            }
+
 
 
 @eel.expose
