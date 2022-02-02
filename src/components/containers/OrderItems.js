@@ -1,11 +1,53 @@
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useTable } from "react-table";
+import MaterialTable from "material-table";
+import { forwardRef } from "react";
 
+import AddBox from "@material-ui/icons/AddBox";
+import ArrowUpward from "@material-ui/icons/ArrowUpward";
+import ArrowDownward from "@material-ui/icons/ArrowDownward";
+import Check from "@material-ui/icons/Check";
+import ChevronLeft from "@material-ui/icons/ChevronLeft";
+import ChevronRight from "@material-ui/icons/ChevronRight";
+import Clear from "@material-ui/icons/Clear";
+import DeleteOutline from "@material-ui/icons/DeleteOutline";
+import Edit from "@material-ui/icons/Edit";
+import FilterList from "@material-ui/icons/FilterList";
+import FirstPage from "@material-ui/icons/FirstPage";
+import LastPage from "@material-ui/icons/LastPage";
+import Remove from "@material-ui/icons/Remove";
+import SaveAlt from "@material-ui/icons/SaveAlt";
+import Search from "@material-ui/icons/Search";
+import ViewColumn from "@material-ui/icons/ViewColumn";
 import ActionButtons from "../ActionButtons";
+
 
 // import fake_data from "../datajson/data";
 import status_map from "../../datajson/statusmap";
 import reasons_map from "../../datajson/reasonsmap";
+
+const tableIcons = {
+    Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
+    ArrowUpward: forwardRef((props, ref) => <ArrowUpward {...props} ref={ref} />),
+    ArrowDownward: forwardRef((props, ref) => <ArrowDownward {...props} ref={ref} />),
+    Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
+    Clear: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+    Delete: forwardRef((props, ref) => <DeleteOutline {...props} ref={ref} />),
+    DetailPanel: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
+    Edit: forwardRef((props, ref) => <Edit {...props} ref={ref} />),
+    Export: forwardRef((props, ref) => <SaveAlt {...props} ref={ref} />),
+    Filter: forwardRef((props, ref) => <FilterList {...props} ref={ref} />),
+    FirstPage: forwardRef((props, ref) => <FirstPage {...props} ref={ref} />),
+    LastPage: forwardRef((props, ref) => <LastPage {...props} ref={ref} />),
+    NextPage: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
+    PreviousPage: forwardRef((props, ref) => <ChevronLeft {...props} ref={ref} />),
+    ResetSearch: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+    Search: forwardRef((props, ref) => <Search {...props} ref={ref} />),
+    SortArrow: forwardRef((props, ref) => <ArrowDownward {...props} ref={ref} />),
+    ThirdStateCheck: forwardRef((props, ref) => <Remove {...props} ref={ref} />),
+    ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />)
+  };
 
 // const defPath = "~";
 
@@ -52,6 +94,36 @@ function OrderItems({ eel, params, setParams }) {
     const CONST_FAILURE = "FAILURE";
     const ACTION_BUTTON_DELETE = "delete";
 
+    const tableRef = React.createRef();
+
+    // <th>PCB NUM</th>
+    // <th>STB NUM</th>
+    // <th>PROD ID</th>
+    // <th>ID STATUS</th>
+    // <th>TIMESTAMP</th>
+    // <th>USER</th>
+    const columns = [
+        // { title: "ID", field: "id" },
+        { title: "INDEX", field: "index"},
+        { title: "PCB NUM", field: "pe.pcb_num"},
+        { title: "STB NUM", field: "pe.stb_num" },
+        { title: "PRODUCT", field: "prod.prod_desc"},
+        { title: "STATUS", field: 's.status_desc'},
+        { title: "TIMESTAMP", field: "pe.timestamp"},
+        { title: "USER", field: "u.user_desc"},
+    ]
+    // const actions = [
+    //     {
+    //         icon: ArrowUpward,
+    //         tooltip: "Move Up",
+    //         onClick: (event, rowData) => {/** handleMoveUp(rowData) */},
+    //     },
+    //     {
+    //         icon: ArrowDownward,
+    //         tooltip: "Move Down",
+    //         onClick: (event, rowData) =>{/**  handleMoveDown(rowData) */},
+    //     },
+    // ];
     // const handleDeleteItem = (id, rownum, serial) => {
     //     console.log("handleDeleteItem called ");
     //     if (
@@ -215,13 +287,14 @@ function OrderItems({ eel, params, setParams }) {
                             tabs.push(key);
                             items.push(value.items);
                             stats.push({
-                                "qty_choice": value["qty_choice"],
-                                "qty_target": value["qty_target"],
-                                "qty_produced": value["qty_produced"],
-                                "blacklisted": value["blacklisted"],
-                                "total_qty_produced": metadata["total_qty_produced"],
-                                "total_qty_target": metadata["total_qty_target"],
-                            })
+                                qty_choice: value["qty_choice"],
+                                qty_target: value["qty_target"],
+                                qty_produced: value["qty_produced"],
+                                blacklisted: value["blacklisted"],
+                                total_qty_produced:
+                                    metadata["total_qty_produced"],
+                                total_qty_target: metadata["total_qty_target"],
+                            });
                         }
                         console.log(`tabs: ${tabs}`);
                         console.log(typeof items);
@@ -323,9 +396,23 @@ function OrderItems({ eel, params, setParams }) {
                                 </a>
                             ))}
                         </div>
-                        <table className="table w-full overflow-y-scroll table-compact">
+                        <MaterialTable
+                            title={`${state.ord_num}_${state.tabs[state.active_tab]}_order_items_${getOptionList().join("_")}`}
+                            tableRef={tableRef}
+                            icons={tableIcons}
+                            data={state.items[state.active_tab]}
+                            columns={columns}
+                            options={{
+                                sorting: false,
+                                search: false,
+                                paging: false,
+                                actionsColumnIndex: -1,
+                                draggable: false,
+                                exportButton: true
+                            }}
+                        />
+                        {/* <table className="table w-full overflow-y-scroll table-compact">
                             <thead className="border-0 border-blue-500">
-                                {/* <thead className="flex w-full overflow-x-hidden rounded-tl-none rounded-bl-none"> */}
                                 <tr className="">
                                     <th className="">SN</th>
                                     <th>PCB NUM</th>
@@ -334,7 +421,6 @@ function OrderItems({ eel, params, setParams }) {
                                     <th>ID STATUS</th>
                                     <th>TIMESTAMP</th>
                                     <th>USER</th>
-                                    {/* <th>Actions</th> */}
                                 </tr>
                             </thead>
                             <tbody className="h-screen overflow-y-scroll border-0 border-purple-500">
@@ -353,9 +439,6 @@ function OrderItems({ eel, params, setParams }) {
                                                   className="p-0 border-0 border-red-600"
                                               >
                                                   <th>
-                                                      {/* {state.items[state.active_tab].length !== 0
-                                                    ? state.items[state.active_tab].length - index
-                                                    : 0} */}
                                                       {index + 1}
                                                   </th>
                                                   <td>{item["pe.pcb_num"]}</td>
@@ -376,29 +459,8 @@ function OrderItems({ eel, params, setParams }) {
                                           )
                                       )
                                     : null}
-
-                                {/*<tr>
-                                    <th>20</th>
-                                    <td>Lorelei Blackstone</td>
-                                    <td>Data Coordiator</td>
-                                    <td>Witting, Kutch and Greenfelder</td>
-                                    <td>Kazakhstan</td>
-                                    <td>6/3/2020</td>
-                                    <td>Red</td>
-                                </tr> */}
                             </tbody>
-                            {/* <tfoot>
-                                <tr>
-                                    <th></th>
-                                    <th>Name</th>
-                                    <th>Job</th>
-                                    <th>company</th>
-                                    <th>location</th>
-                                    <th>Last Login</th>
-                                    <th>Favorite Color</th>
-                                </tr>
-                            </tfoot> */}
-                        </table>
+                        </table> */}
                     </div>
                     <div className="flex flex-col w-1/4 h-auto gap-2 border-0 border-red-500 stats">
                         <div className="stat">

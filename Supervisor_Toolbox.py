@@ -612,12 +612,12 @@ class Server:
         self.database = "stb_production"
         self.database_ott = "NEWDB"
         self.server = host  # "172.20.10.103\\PRODUCTION"
-        # self.username = "Neo.Tech"
-        # self.password = "Password357"
+        self.username = "Neo.Tech"
+        self.password = "Password357"
         # LOCAL FOR TESTING
         # self.server = "HOMEPC\\SQLEXPRESS"
-        self.username = "Bhanu.Pratap"
-        self.password = "Password123"
+        # self.username = "Bhanu.Pratap"
+        # self.password = "Password123"
 
     def getInstanceStatus(self):
         connection_status = CONST_FAILURE
@@ -1828,10 +1828,13 @@ def get_order_items(ord, opt_list):
                     items.append(dict(zip(columns, row)))
                     # print(items)
                     processed_items = []
+                    index = 0
                     for item in items:
+                        index = index + 1
                         processed_items.append({
                             **item,
-                            'pe.timestamp': str(item['pe.timestamp']),
+                            'index': index,
+                            'pe.timestamp': str(item['pe.timestamp']).split('.')[0],
                         })
                     items = processed_items
                     # break
