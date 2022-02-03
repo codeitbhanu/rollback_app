@@ -229,6 +229,11 @@ function OrderItems({ eel, params, setParams }) {
         setState((prevState) => ({
             ...prevState,
             field_list: newFields,
+            ord_num: "Please Enter Order",
+            tabs: [],
+            stats: [],
+            items: [],
+            active_tab: 0,
         }));
     };
 
@@ -237,10 +242,10 @@ function OrderItems({ eel, params, setParams }) {
         // alert(`___${pcb_sn}___`);
         console.log(params);
         try {
-            if (params.session.active === false) {
-                alert("Session not active, Please login first");
-                return;
-            }
+            // if (params.session.active === false) {
+            //     alert("Session not active, Please login first");
+            //     return;
+            // }
             if (
                 state.reason_desc === "" ||
                 state.reason_desc === reasons_map[0].id_status

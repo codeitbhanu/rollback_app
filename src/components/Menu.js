@@ -209,9 +209,10 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     </a>
                 </li>
                 
+                {/* 
                 <li
                     className={
-                        menuState.selectedMenu === "rollback_pallet" ?
+                        menuState.selectedMenu === "order_serial_config" ?
                         "bordered" : ""
                     }
                 >
