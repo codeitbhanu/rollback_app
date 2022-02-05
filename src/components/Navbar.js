@@ -1,6 +1,7 @@
 import { useState } from "react";
 import menu from "../menu.svg";
 import logo from "../logo.svg";
+import { connect } from "tls";
 
 function Navbar({
     eel,
@@ -66,7 +67,7 @@ function Navbar({
         }
     };
 
-    const connect_db = () => {
+    const connect_db = (hostAfterConnect=params.server.host) => {
         if (eel) {
             try {
                 if (params.server.status === false) {
@@ -76,7 +77,7 @@ function Navbar({
                         // params.server.database,
                         // params.session.userdata.user_desc,
                         // params.session.userdata.password
-                        params.server.host
+                        hostAfterConnect
                     )((response) => {
                         console.log(`[PY]: ${JSON.stringify(response.data)}`);
                         console.log(
@@ -91,11 +92,30 @@ function Navbar({
                                 server: {
                                     ...params.server,
                                     status: true,
+                                    host: hostAfterConnect
                                 },
                             });
+                        } else {
+                            alert(`Error: Unable to connect to ${params.server_type}: ${params.server.host}`);
                         }
                     });
                 } else {
+                    // alert("Server is already connected");
+                    disconnect_db()
+                }
+            } catch (error) {
+                alert(error);
+            }
+        } else {
+            alert("Unable to get instance of `Eel`");
+        }
+    };
+
+    const disconnect_db = (hostAfterDisconnect=params.server.host) => {
+        if (eel) {
+            try {
+                // console.trace()
+                if (params.server.status === true) {
                     // alert("Server is already connected");
                     eel.disconnect_db()((response) => {
                         console.log(`[PY]: ${JSON.stringify(response)}`);
@@ -104,9 +124,11 @@ function Navbar({
                         if (status.startsWith("SUCCESS")) {
                             setParams({
                                 ...params,
+                                server_type: hostAfterDisconnect.startsWith("172.20.10.103") ? "Live" : "Development",
                                 server: {
                                     ...params.server,
                                     status: false,
+                                    host: hostAfterDisconnect
                                 },
                             });
                         }
@@ -118,17 +140,51 @@ function Navbar({
         } else {
             alert("Unable to get instance of `Eel`");
         }
-        setParams({
-            ...params,
-            session: {
-                ...params.session,
-                server: {
-                    ...params.server,
-                    status: false,
-                },
-            },
-        });
     };
+
+    const handleSwitchServer = () => {
+        if (
+            window.confirm(
+                `Confirm switch server to: ${
+                    params.server_type === "Live"
+                                ? "Development"
+                                : "Live"
+                }`
+            )
+        ) {
+            if (eel) {
+                const prevStatus = params.server.status
+                // console.log(`prevStatus: ${prevStatus}`);
+                // disconnect_db()
+                if (params.server_type === "Live") {
+                    // prevStatus ? connect_db(config_data.development_host)
+                    disconnect_db(config_data.development_host)
+                    !prevStatus && setParams({
+                        ...params,
+                        server_type: "Development",
+                        server: {
+                            ...params.server,
+                            host: config_data.development_host
+                        },
+                    });
+                } else if (params.server_type === "Development") {
+                    // prevStatus ? connect_db(config_data.default_host) 
+                    disconnect_db(config_data.default_host)
+                    !prevStatus && setParams({
+                        ...params,
+                        server_type: "Live",
+                        server: {
+                            ...params.server,
+                            host: config_data.default_host
+                        },
+                    });
+                }
+            } else {
+                alert("Unable to get instance of `Eel`");
+            }
+        }
+
+    }
 
     const handleLogin = () => {
         console.log("handleLogin called");
@@ -171,9 +227,27 @@ function Navbar({
                 </div>
             </div>
             <div className="flex justify-end flex-1 border-0 border-red-300">
-                <div className="flex flex-col">
-                    <button className={`btn btn-outline rounded-full btn-xs font-bold mr-4 border-2 ${params.server_type === "Live"? "border-red-600 text-red-600" : "border-gray-100 text-gray-100"}`}>{params.server_type}</button>
-                    <div className="mr-4 text-white">{params.version}</div>
+                <div className="flex flex-col mr-4 ">
+                    <div
+                        data-tip={`Click to switch to ${
+                            params.server_type === "Live"
+                                ? "Development"
+                                : "Live"
+                        } Server`}
+                        class="tooltip tooltip-primary tooltip-bottom rounded-full"
+                    >
+                        <button
+                            onClick={() => handleSwitchServer()}
+                            className={`btn btn-outline rounded-full btn-xs font-bold border-2 ${
+                                params.server_type === "Live"
+                                    ? "border-red-600 text-red-600"
+                                    : "border-gray-100 text-gray-100"
+                            }`}
+                        >
+                            {params.server_type}
+                        </button>
+                    </div>
+                    <div className="text-gray-300">{params.version}</div>
                 </div>
 
                 <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-gray-300 rounded-full shadow max-h-12">
