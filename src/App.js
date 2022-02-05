@@ -10,6 +10,7 @@ import FractionPalletContainer from "./components/containers/FractionPallet";
 import PcbReportContainer from "./components/containers/PcbReport";
 import OrderItemsContainer from "./components/containers/OrderItems";
 import OrderSerialConfigContainer from "./components/containers/OrderSerialConfig";
+import BoxFastForwardContainer from "./components/containers/BoxFastForward";
 
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
@@ -64,42 +65,42 @@ function App() {
             timeout: 60,
         },
     });
-    const defaultMenu = "unit_rollback";
-    const defaultTitle = "Unit Rollback";
-    const defaultIcon = (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            fill="#8AE9FF"
-            viewBox="0 0 24 24"
-            stroke="#343434"
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="{2}"
-                d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
-            />
-        </svg>
-    );
-    // const defaultMenu = "order_serial_config";
-    // const defaultTitle = "Order Serial Config";
+    // const defaultMenu = "unit_rollback";
+    // const defaultTitle = "Unit Rollback";
     // const defaultIcon = (
     //     <svg
     //         xmlns="http://www.w3.org/2000/svg"
-    //         classname="h-6 w-6"
-    //         fill="none"
+    //         className="w-5 h-5"
+    //         fill="#8AE9FF"
     //         viewBox="0 0 24 24"
-    //         stroke="currentColor"
+    //         stroke="#343434"
     //     >
     //         <path
-    //             strokelinecap="round"
-    //             strokelinejoin="round"
-    //             strokewidth="{2}"
-    //             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="{2}"
+    //             d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
     //         />
     //     </svg>
     // );
+    const defaultMenu = "box_fast_forward";
+    const defaultTitle = "Box Fast Forward";
+    const defaultIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                strokewidth="{2}"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+            />
+        </svg>
+    );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
@@ -200,6 +201,14 @@ function App() {
             )}
             {menuState.selectedMenu === "order_serial_config" && (
                 <OrderSerialConfigContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "box_fast_forward" && (
+                <BoxFastForwardContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

@@ -5,6 +5,7 @@ import FrequentParamContainer from "./containers/FrequentParam";
 import PcbReportContainer from "./containers/PcbReport";
 import OrderItemsContainer from "./containers/OrderItems";
 import OrderSerialConfigContainer from "./containers/OrderSerialConfig";
+import BoxFastForwardContainer from "./containers/BoxFastForward";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -40,18 +41,37 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
         </svg>
     );
     const iconPcbReport = (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="{2}" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" />
-</svg>
-
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
+                d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z"
+            />
+        </svg>
     );
 
     const iconOrderItems = (
-<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="{2}" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-</svg>
-
-
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+            />
+        </svg>
     );
 
     const iconFractionPallet = (
@@ -94,6 +114,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 strokelinejoin="round"
                 strokewidth="{2}"
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+            />
+        </svg>
+    );
+    const iconFastForward = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                strokewidth="{2}"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
             />
         </svg>
     );
@@ -147,11 +183,12 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Unit Rollback
                     </a>
                 </li>
-                
+
                 <li
                     className={
-                        menuState.selectedMenu === "frequent_param" ?
-                        "bordered" : ""
+                        menuState.selectedMenu === "frequent_param"
+                            ? "bordered"
+                            : ""
                     }
                 >
                     <a
@@ -170,8 +207,9 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "pcb_report" ?
-                        "bordered" : ""
+                        menuState.selectedMenu === "pcb_report"
+                            ? "bordered"
+                            : ""
                     }
                 >
                     <a
@@ -190,10 +228,11 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "pcb_report" ?
-                        "bordered" : ""
+                        menuState.selectedMenu === "pcb_report"
+                            ? "bordered"
+                            : ""
                     }
-                    >
+                >
                     <a
                         onClick={() =>
                             onSelectMenu(
@@ -201,14 +240,34 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                                 "Order Items",
                                 iconOrderItems,
                                 OrderItemsContainer
-                                )
-                            }
-                            >
+                            )
+                        }
+                    >
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
                 </li>
-                
+                <li
+                    className={
+                        menuState.selectedMenu === "order_serial_config" ?
+                        "bordered" : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "box_fast_forward",
+                                "Box Fast Forward",
+                                iconFastForward,
+                                BoxFastForwardContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
+                        Box Fast Forward
+
+                    </a>
+                </li>
                 {/* 
                 <li
                     className={
