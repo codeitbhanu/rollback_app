@@ -47,6 +47,8 @@ function App() {
     // console.log(JSON.stringify(config_data.users[1]));
     // let userdata = config_data.users[1];
     const [appState, setAppState] = useState({
+        version: config_data.app_version,
+        server_type: config_data.default_host.startsWith("172.20.10.103") ? "Live" : "Development",
         server: {
             status: false, // true: connected, false: disconnected
             host: config_data.default_host,

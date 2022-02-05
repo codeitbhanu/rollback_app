@@ -171,6 +171,11 @@ function Navbar({
                 </div>
             </div>
             <div className="flex justify-end flex-1 border-0 border-red-300">
+                <div className="flex flex-col">
+                    <button className={`btn btn-outline rounded-full btn-xs font-bold mr-4 border-2 ${params.server_type === "Live"? "border-red-600 text-red-600" : "border-gray-100 text-gray-100"}`}>{params.server_type}</button>
+                    <div className="mr-4 text-white">{params.version}</div>
+                </div>
+
                 <div className="flex flex-col justify-between align-middle bg-gray-200 border-4 border-gray-300 rounded-full shadow max-h-12">
                     <div className="flex justify-between px-2 py-1 align-middle border-0 border-red-600">
                         <div className="flex pr-2 align-middle border-0 border-green-600 flex-start text-primary">
