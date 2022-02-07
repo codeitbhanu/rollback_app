@@ -54,6 +54,11 @@
     "frequent_param": [
         {
             "table": "prod_config",
+            "param_name": "carton_qty",
+            "id_config_param": 17
+        },
+        {
+            "table": "prod_config",
             "param_name": "pallet_qty",
             "id_config_param": 18
         },

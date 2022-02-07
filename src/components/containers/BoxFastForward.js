@@ -71,15 +71,21 @@ function BoxFastForward({ eel, params, setParams }) {
     const [state, setState] = useState({
         action_btns: default_action_btns,
         data: [
-            {
-                stb_num: 111111111111,
-                status: "pass",
-            },
-            {
-                stb_num: 111111111111,
-                status: "pass",
-            },
+            // {
+            //     stb_num: 111111111111,
+            //     status: "pass",
+            // },
+            // {
+            //     stb_num: 111111111111,
+            //     status: "pass",
+            // },
         ], //fake_data,
+        tests: [
+            'interfacetest',
+            'wirelesstest',
+            'infocheck',
+            'factoryinspection'
+        ]
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -121,7 +127,7 @@ function BoxFastForward({ eel, params, setParams }) {
             //     return;
             // }
             if (params.server.status) {
-                eel.get_pcb_report(pcb_sn)((response) => {
+                eel.set_test_status_ott(pcb_sn, state.tests)((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {
                         let status = response.status;
@@ -172,12 +178,12 @@ function BoxFastForward({ eel, params, setParams }) {
                         <div className="flex flex-col flex-1">
                             <label className="text-black label">
                                 <span className="text-black label-text">
-                                    Scan PCB_Num or STB_Num
+                                    Scan STB number
                                 </span>
                             </label>
                             <input
                                 type="text"
-                                placeholder="Scan PCB_Num or STB_Num"
+                                placeholder="Scan STB number"
                                 className="border-double input input-primary input-bordered w-2/3"
                                 onKeyDown={(e) =>
                                     e.key === "Enter" && handleBarcodeInput(e)

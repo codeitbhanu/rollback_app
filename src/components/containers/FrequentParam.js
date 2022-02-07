@@ -81,6 +81,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             case "max_weight":
                 re = /^[\+\-]?\d*\.?\d+(?:[Ee][\+\-]?\d+)?$/;
                 break
+            case "carton_qty":
             case "pallet_qty":
             default:
                 re = /^[+-]?(?:\d*)?\d+$/;
@@ -188,6 +189,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
 
         // console.log(prevState)
         switch (param) {
+            case "carton_qty":
             case "pallet_qty":
             case "min_weight":
             case "max_weight":
@@ -363,6 +365,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
         // });
 
         switch (paramName) {
+            case "carton_qty":
             case "pallet_qty":
             case "min_weight":
             case "max_weight":
