@@ -81,14 +81,16 @@ function BoxFastForward({ eel, params, setParams }) {
             // },
         ], //fake_data,
         tests: [
-            'interfacetest',
-            'wirelesstest',
-            'infocheck',
-            'factoryinspection'
-        ]
+            {name: 'Interface Test', tag: 'interfacetest', passed: false},
+            {name: 'Wireless | Throughput Test', tag: 'wirelesstest', passed: false},
+            {name: 'Information check', tag: 'infocheck', passed: false},
+            {name: 'Factory inspection', tag: 'factoryinspection', passed: false},
+        ],
+        final: false
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
+
 
     // handle what happens on key press
     const handleKeyPress = useCallback((event) => {
@@ -127,32 +129,73 @@ function BoxFastForward({ eel, params, setParams }) {
             //     return;
             // }
             if (params.server.status) {
-                eel.set_test_status_ott(pcb_sn, state.tests)((response) => {
-                    console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
-                    try {
-                        let status = response.status;
-                        let message = response.message;
-                        let metadata = response.data.metadata;
-                        if (status === CONST_FAILURE) {
-                            setTimeout(() => alert(`Error: [${message}`), 200);
-                            return;
+                // state.tests.forEach(testname => {
+                setState({
+                    ...state,
+                    data: [],
+                    tests: [
+                        {name: 'Interface Test', tag: 'interfacetest', passed: false},
+                        {name: 'Wireless | Throughput Test', tag: 'wirelesstest', passed: false},
+                        {name: 'Information check', tag: 'infocheck', passed: false},
+                        {name: 'Factory inspection', tag: 'factoryinspection', passed: false},
+                    ]
+                })
+                for ( const test in state.tests) {
+                    console.log("::: test.name: " + state.tests[test] + " :::");
+                    eel.set_test_status_ott(pcb_sn, state.tests[test].tag)((response) => {
+                        console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                        try {
+                            let status = response.status;
+                            let message = response.message;
+                            let metadata = response.data.metadata;
+                            if (status === CONST_FAILURE) {
+                                // setTimeout(() => alert(`Error: [${message}`), 200);
+                                const updated_data = state.data;
+                                updated_data.push({
+                                    id: uuidv4(),
+                                    ...{
+                                        stb_num: metadata.stb_num,
+                                        status: message
+                                    },
+                                });
+                                const otl = state.tests
+                                otl[test] = {
+                                    ...otl[test],
+                                    passed: false
+                                }
+                                setState({
+                                    ...state,
+                                    data: updated_data,
+                                    tests: otl
+                                });
+                                return;
+                            } else {
+                                const updated_data = state.data;
+                                updated_data.push({
+                                    id: uuidv4(),
+                                    ...metadata,
+                                });
+                                const otl = state.tests
+                                otl[test] = {
+                                    ...otl[test],
+                                    passed: true
+                                }
+                                setState({
+                                    ...state,
+                                    data: updated_data,
+                                    tests: otl,
+                                });
+                            }
+    
+                            
+                        } catch (error) {
+                            setTimeout(() => {
+                                alert(`PARSE ERROR: ${error}`);
+                            }, 200);
                         }
-
-                        const updated_data = state.data;
-                        updated_data.unshift({
-                            id: uuidv4(),
-                            ...metadata,
-                        });
-                        setState({
-                            ...state,
-                            data: updated_data,
-                        });
-                    } catch (error) {
-                        setTimeout(() => {
-                            alert(`PARSE ERROR: ${error}`);
-                        }, 200);
-                    }
-                });
+                    });
+                }
+                
             } else {
                 throw Error(`Connect the server first`);
             }
@@ -170,6 +213,23 @@ function BoxFastForward({ eel, params, setParams }) {
     //     });
     // };
 
+    useEffect(() => {
+        // let res = state.tests.filter((item) => item.passed === true)
+        let res = state.tests.filter((item) => item.passed === true)
+        console.log(res);
+        if (res.length === state.tests.length) {
+            setState((prevState) => ({
+                ...prevState,
+                final: true
+            }));
+        } else {
+            setState((prevState) => ({
+                ...prevState,
+                final: false
+            }));
+        }
+    },[state.tests])
+
     return (
         <div className="absolute flex flex-col w-full mt-2 border-0 border-red-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
@@ -185,18 +245,22 @@ function BoxFastForward({ eel, params, setParams }) {
                                 type="text"
                                 placeholder="Scan STB number"
                                 className="border-double input input-primary input-bordered w-2/3"
+                                onChange={() => setState((prevState) => ({
+                                    ...prevState,
+                                    data: []
+                                }))}
                                 onKeyDown={(e) =>
                                     e.key === "Enter" && handleBarcodeInput(e)
                                 }
                             />
                         </div>
-                        <div>
+                        {/* <div>
                             <label className="text-black label">
                                 <span className="text-black label-text">Hotkey</span>
                             </label>
                             <kbd class="kbd">___SPACE___</kbd>
-                        </div>
-                        <div>
+                        </div> */}
+                        {/* <div>
                             <label className="text-black label">
                                 <span className="text-black label-text">
                                     All-in-one
@@ -207,42 +271,32 @@ function BoxFastForward({ eel, params, setParams }) {
                                 defaultChecked="checked"
                                 className="toggle toggle-lg"
                             />
-                        </div>
+                        </div> */}
                     </div>
 
                     <div className="border-0 flex flex-col gap-8 border-blue-500 mt-8">
-                        <div className="border-0 flex  cursor-pointer border-red-500">
-                            <kbd className="w-12 h-12 text-3xl kbd mx-2">1</kbd>
-                            <div className="divider-vertical"></div>
-                            <div className="text-3xl py-4">Interface Test</div>
-                        </div>
-                        <div className="border-0 flex  cursor-pointer border-red-500">
-                            <kbd className="w-12 h-12 text-3xl kbd mx-2">2</kbd>
-                            <div className="divider-vertical"></div>
-                            <div className="text-3xl py-4">
-                                Wireless | Throughput Test
+                        {state.tests.map((test, index) => 
+                            <div className="border-0 flex  cursor-pointer border-red-500">
+                                <div className="flex place-content-between">
+                                    <div className="flex border-0 border-yellow-500">
+                                        {test.passed ? <kbd className="w-12 h-12 text-3xl kbd mx-2">✔️</kbd> : <kbd className="w-12 h-12 text-3xl kbd mx-2">❌</kbd>}
+                                        <kbd className="w-12 h-12 text-3xl kbd mx-2">{index + 1}</kbd>
+                                    </div>
+                                    <div className="flex border-0 border-green-500">
+                                        <div className="divider-vertical"></div>
+                                        <div className="text-3xl py-4">                  
+                                            {test.name}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="border-0 flex  cursor-pointer border-red-500">
-                            <kbd className="w-12 h-12 text-3xl kbd mx-2">3</kbd>
-                            <div className="divider-vertical"></div>
-                            <div className="text-3xl py-4">
-                                Information check
-                            </div>
-                        </div>
-                        <div className="border-0 flex  cursor-pointer border-red-500">
-                            <kbd className="w-12 h-12 text-3xl kbd mx-2">4</kbd>
-                            <div className="divider-vertical"></div>
-                            <div className="text-3xl py-4">
-                                Factory inspection
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="shadow stats mt-8">
                         <div className="stat">
-                            <div className="stat-value text-left text-green-500">
-                                Proceed to Giftbox Pairing
+                            <div className={`stat-value text-left ${state.final ? "text-green-500" : "text-red-500"}`}>
+                                {/* {state.final ? "Proceed to Giftbox Pairing}" : "Unable to proceed to Giftbox pairing"} */}
                             </div>
                         </div>
                     </div>
@@ -266,9 +320,7 @@ function BoxFastForward({ eel, params, setParams }) {
                                         className="p-0 border-0 border-red-600"
                                     >
                                         <th>
-                                            {state.data.length !== 0
-                                                ? state.data.length - index
-                                                : 0}
+                                            {index + 1}
                                         </th>
                                         <td>{resp.stb_num}</td>
                                         <td>{resp.status}</td>

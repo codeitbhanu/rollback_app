@@ -43,7 +43,7 @@ const eel_load = () => {
 };
 
 eel_load();
-
+// HOMEPC\\SQLEXPRESS
 function App() {
     // console.log(JSON.stringify(config_data.users[1]));
     // let userdata = config_data.users[1];

@@ -2341,8 +2341,8 @@ def set_frequent_params(prod_id, table, param_name, key, param_value):
 
 
 @eel.expose
-def set_test_status_ott(sn, tests=[]):
-    print(f'[SET-TEST-STATUS-OTT] sn: {sn} tests: {tests}')
+def set_test_status_ott(sn, testname):
+    print(f'[SET-TEST-STATUS-OTT] sn: {sn} test: {testname}')
     global serverinstance
     current_time = get_current_time()
     response_data = {
@@ -2361,53 +2361,130 @@ def set_test_status_ott(sn, tests=[]):
         try:
             try:
                 # Find and update the target_status
+                REQUIRED_STATUS_FOR_PCBA_TEST_PASSED = 16
                 STATUS_PCBA_TEST_PASSED = 13
+                REQUIRED_STATUS_WIRELESS_TEST_PASSED = 13
                 STATUS_WIRELESS_TEST_PASSED = 86
+                REQUIRED_STATUS_KEY_TEST_PASSED = 86
                 STATUS_KEY_TEST_PASSED = 88
+                REQUIRED_STATUS_CA_TEST_PASSED = 88
                 STATUS_CA_TEST_PASSED = 18
                 # interfacetest
                 # wirelesstest
                 # infocheck
                 # factoryinspection
 
-                next_status = ""
-                for testname in tests:
-                    print(f'[TEST-NAME] {testname}')
-                    update_sql = ""
-                    next_status = testname
-                    if (testname == "interfacetest"):
-                        update_sql = f'''UPDATE stb_production.dbo.production_event
-                                        SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\'
-                                        WHERE stb_num = N\'{sn}\''''
-                    if (testname == "wirelesstest"):
-                        update_sql = f'''UPDATE stb_production.dbo.production_event
-                                        SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\'
-                                        WHERE stb_num = N\'{sn}\''''
-                    if (testname == "infocheck"):
-                        update_sql = f'''UPDATE stb_production.dbo.production_event
-                                        SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\'
-                                        WHERE stb_num = N\'{sn}\''''
-                    if (testname == "factoryinspection"):
-                        update_sql = f'''UPDATE stb_production.dbo.production_event, [timestamp] = N\'{current_time}\'
-                                        SET id_status = {STATUS_CA_TEST_PASSED}
-                                        WHERE stb_num = N\'{sn}\''''
-                    print(f'[{testname}][UPDATE-SQL] {update_sql}')
-                    response_data = {
-                        **response_data,
-                        "update_query_" + testname: update_sql,
-                        "data": {"metadata": {
-                            "stb_num": sn,
-                            "status": next_status,
-                        }},
-                    }
-                    conn.autocommit = False
-                    update_count = cursor.execute(update_sql)
-                    print(f'[UPDATE-SQL-RESULTS] {vars(update_count)}')
+                # next_status = ""
+                # for testname in tests:
+                print(f'[TEST-NAME] {testname}')
+                update_sql = ""
+                pe_required_status = -1
+                pe_update = -1
+                if (testname == "interfacetest"):
+                    pe_required_status = REQUIRED_STATUS_FOR_PCBA_TEST_PASSED
+                    update_sql = f'''UPDATE stb_production.dbo.production_event
+                                    SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                if (testname == "wirelesstest"):
+                    pe_required_status = REQUIRED_STATUS_WIRELESS_TEST_PASSED
+                    update_sql = f'''UPDATE stb_production.dbo.production_event
+                                    SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                if (testname == "infocheck"):
+                    pe_required_status = REQUIRED_STATUS_KEY_TEST_PASSED
+                    update_sql = f'''UPDATE stb_production.dbo.production_event
+                                    SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                if (testname == "factoryinspection"):
+                    pe_required_status = REQUIRED_STATUS_CA_TEST_PASSED
+                    update_sql = f'''UPDATE stb_production.dbo.production_event
+                                    SET id_status = {STATUS_CA_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                print(f'[{testname}][UPDATE-SQL] {update_sql}')
                 response_data = {
                     **response_data,
-                    "message": f'''{sn} status {tests} updated''',
-                    "status": CONST_SUCCESS
+                    "update_query_" + testname: update_sql,
+                    "data": {"metadata": {
+                        "stb_num": sn,
+                        "status": testname,
+                    }},
                 }
+                conn.autocommit = False
+                pe_update = cursor.execute(update_sql)
+                cursor.commit()
+                conn.autocommit = True
+                print(f'[UPDATE-SQL-PROD] {pe_update.rowcount}')
+
+                # Find and update the target_status
+                REQUIRED_STATUS_INTERFACE_TEST = 'NT'
+                STATUS_INTERFACE_TEST = 'interfacetest'
+                REQUIRED_STATUS_WIRELESS_TEST = 'interfacetest'
+                STATUS_WIRELESS_TEST = 'wirelesstest'
+                REQUIRED_STATUS_INFO_CHECK = 'wirelesstest'
+                STATUS_INFO_CHECK = 'infocheck'
+                REQUIRED_STATUS_FACTORY_INSPECTION = 'infocheck'
+                STATUS_FACTORY_INSPECTION = 'factoryinspection'
+                newdb_required_status = None
+                newdb_update = -1
+                if (pe_update.rowcount == 1):
+                    if (testname == "interfacetest"):
+                        newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
+                        update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                                        SET Field28 = \'{STATUS_INTERFACE_TEST}\', [LastEditDate] = N\'{current_time}\'
+                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                    if (testname == "wirelesstest"):
+                        newdb_required_status = REQUIRED_STATUS_WIRELESS_TEST
+                        update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                                        SET Field28 = \'{STATUS_WIRELESS_TEST}\', [LastEditDate] = N\'{current_time}\'
+                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                    if (testname == "infocheck"):
+                        newdb_required_status = REQUIRED_STATUS_INFO_CHECK
+                        update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                                        SET Field28 = \'{STATUS_INFO_CHECK}\', [LastEditDate] = N\'{current_time}\'
+                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                    if (testname == "factoryinspection"):
+                        newdb_required_status = REQUIRED_STATUS_FACTORY_INSPECTION
+                        update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                                        SET Field28 = \'{STATUS_FACTORY_INSPECTION}\', [LastEditDate] = N\'{current_time}\'
+                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                    conn.autocommit = False
+                    newdb_update = cursor.execute(update_sql)
+                    cursor.commit()
+                    conn.autocommit = True
+                    print(f'[UPDATE-SQL-NEWDB] {newdb_update.rowcount}')
+                    if (newdb_update.rowcount == 0):
+                        response_data = {
+                            **response_data,
+                            "message": f'''{sn} status {testname} could not be updated''',
+                            "status": CONST_FAILURE,
+                            "data": {"metadata": {
+                                "stb_num": sn,
+                                "status": testname,
+                            }},
+                        }
+                    elif (newdb_update.rowcount == 1):
+                        response_data = {
+                            **response_data,
+                            "message": f'''{sn} status {testname} updated''',
+                            "status": CONST_SUCCESS,
+                            "data": {"metadata": {
+                                "stb_num": sn,
+                                "status": testname,
+                            }},
+                        }
+                if (pe_update.rowcount == 0):
+                    response_data = {
+                        **response_data,
+                        "message": f'''{sn} status {testname} could not be updated''',
+                        "status": CONST_FAILURE,
+                        "data": {"metadata": {
+                            "stb_num": sn,
+                            "status": testname,
+                        }},
+                    }
+                # print(f'[UPDATE-SQL-RESULTS] {vars('FAKE')}')
+                # conn.autocommit = True
+
             except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
                 print(
                     f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
@@ -2415,7 +2492,7 @@ def set_test_status_ott(sn, tests=[]):
                 response_data = {
                     **response_data,
                     "error": e.args,
-                    "message": f'''{sn} status {tests} could not be updated, check error''',
+                    "message": f'''{sn} status {testname} could not be updated, check error''',
                     "status": CONST_FAILURE
                 }
                 raise e
@@ -2426,7 +2503,9 @@ def set_test_status_ott(sn, tests=[]):
                     f'[ERROR: eyError - {e.args}, will skip this invalid cell value')
                 raise e
             else:
+                print('[UPDATE-SQL-NO_ERROR]')
                 cursor.commit()
+                pass
 
             finally:
                 conn.autocommit = True
