@@ -86,7 +86,7 @@ function BoxFastForward({ eel, params, setParams }) {
             {name: 'Information check', tag: 'infocheck', passed: false},
             {name: 'Factory inspection', tag: 'factoryinspection', passed: false},
         ],
-        final: false
+        status: false
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -132,7 +132,8 @@ function BoxFastForward({ eel, params, setParams }) {
                 // state.tests.forEach(testname => {
                 setState({
                     ...state,
-                    data: [],
+                    // data: [],
+                    status: false,
                     tests: [
                         {name: 'Interface Test', tag: 'interfacetest', passed: false},
                         {name: 'Wireless | Throughput Test', tag: 'wirelesstest', passed: false},
@@ -140,52 +141,37 @@ function BoxFastForward({ eel, params, setParams }) {
                         {name: 'Factory inspection', tag: 'factoryinspection', passed: false},
                     ]
                 })
-                for ( const test in state.tests) {
-                    console.log("::: test.name: " + state.tests[test] + " :::");
-                    eel.set_test_status_ott(pcb_sn, state.tests[test].tag)((response) => {
+                // for ( const test in state.tests) {
+                //     console.log("::: test.name: " + state.tests[test] + " :::");
+                    // eel.set_test_status_ott(pcb_sn, state.tests[test].tag)((response) => {
+                    const lTests = ['interfacetest','wirelesstest','infocheck','factoryinspection']
+                    eel.mes_get_sn_status(pcb_sn)((response) => {
                         console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                         try {
                             let status = response.status;
                             let message = response.message;
                             let metadata = response.data.metadata;
-                            if (status === CONST_FAILURE) {
-                                // setTimeout(() => alert(`Error: [${message}`), 200);
-                                const updated_data = state.data;
-                                updated_data.push({
-                                    id: uuidv4(),
-                                    ...{
-                                        stb_num: metadata.stb_num,
-                                        status: message
-                                    },
-                                });
-                                const otl = state.tests
-                                otl[test] = {
-                                    ...otl[test],
-                                    passed: false
-                                }
-                                setState({
-                                    ...state,
-                                    data: updated_data,
-                                    tests: otl
-                                });
-                                return;
-                            } else {
-                                const updated_data = state.data;
-                                updated_data.push({
-                                    id: uuidv4(),
-                                    ...metadata,
-                                });
-                                const otl = state.tests
-                                otl[test] = {
-                                    ...otl[test],
-                                    passed: true
-                                }
-                                setState({
-                                    ...state,
-                                    data: updated_data,
-                                    tests: otl,
-                                });
+                            const updated_data = state.data;
+                            updated_data.unshift({
+                                id: uuidv4(),
+                                ...updated_data,
+                                stb_num: metadata.stb_num,
+                                status: metadata.status,
+                            });
+                            const otl = []
+                            for (let tIndex in state.tests) {
+                                otl.push({
+                                    ...state.tests[tIndex],
+                                    passed: tIndex <= lTests.indexOf(metadata.status)
+                                })
                             }
+                            
+                            setState({
+                                ...state,
+                                data: updated_data,
+                                tests: otl,
+                                status: metadata.status === lTests[lTests.length - 1]
+                            });
     
                             
                         } catch (error) {
@@ -194,7 +180,7 @@ function BoxFastForward({ eel, params, setParams }) {
                             }, 200);
                         }
                     });
-                }
+                // }
                 
             } else {
                 throw Error(`Connect the server first`);
@@ -213,28 +199,28 @@ function BoxFastForward({ eel, params, setParams }) {
     //     });
     // };
 
-    useEffect(() => {
-        // let res = state.tests.filter((item) => item.passed === true)
-        let res = state.tests.filter((item) => item.passed === true)
-        console.log(res);
-        if (res.length === state.tests.length) {
-            setState((prevState) => ({
-                ...prevState,
-                final: true
-            }));
-        } else {
-            setState((prevState) => ({
-                ...prevState,
-                final: false
-            }));
-        }
-    },[state.tests])
+    // useEffect(() => {
+    //     // let res = state.tests.filter((item) => item.passed === true)
+    //     let res = state.tests.filter((item) => item.passed === true)
+    //     console.log(res);
+    //     if (res.length === state.tests.length) {
+    //         setState((prevState) => ({
+    //             ...prevState,
+    //             final: true
+    //         }));
+    //     } else {
+    //         setState((prevState) => ({
+    //             ...prevState,
+    //             final: false
+    //         }));
+    //     }
+    // },[state.tests])
 
     return (
         <div className="absolute flex flex-col w-full mt-2 border-0 border-red-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-full mb-2 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
-                    <div className="flex flex-1 gap-8 h-24 mt-2 border-0 border-yellow-600">
+                    <div className="flex gap-8 h-24 mt-2 border-0 border-yellow-600">
                         <div className="flex flex-col flex-1">
                             <label className="text-black label">
                                 <span className="text-black label-text">
@@ -245,10 +231,10 @@ function BoxFastForward({ eel, params, setParams }) {
                                 type="text"
                                 placeholder="Scan STB number"
                                 className="border-double input input-primary input-bordered w-2/3"
-                                onChange={() => setState((prevState) => ({
-                                    ...prevState,
-                                    data: []
-                                }))}
+                                // onChange={() => setState((prevState) => ({
+                                //     ...prevState,
+                                //     data: []
+                                // }))}
                                 onKeyDown={(e) =>
                                     e.key === "Enter" && handleBarcodeInput(e)
                                 }
@@ -274,7 +260,7 @@ function BoxFastForward({ eel, params, setParams }) {
                         </div> */}
                     </div>
 
-                    <div className="border-0 flex flex-col gap-8 border-blue-500 mt-8">
+                    <div className="border-0 flex flex-col gap-8 border-blue-500 mt-8 max-h-96">
                         {state.tests.map((test, index) => 
                             <div className="border-0 flex  cursor-pointer border-red-500">
                                 <div className="flex place-content-between">
@@ -295,24 +281,24 @@ function BoxFastForward({ eel, params, setParams }) {
 
                     <div className="shadow stats mt-8">
                         <div className="stat">
-                            <div className={`stat-value text-left ${state.final ? "text-green-500" : "text-red-500"}`}>
-                                {/* {state.final ? "Proceed to Giftbox Pairing}" : "Unable to proceed to Giftbox pairing"} */}
+                            <div className={`stat-value text-left ${state.status ? "text-green-500" : "text-red-500"}`}>
+                                {state.status ? "Proceed to Giftbox Pairing" : "Retest / Continue Testing From Status"}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="divider divider-vertical">⚡</div>
-                <div className="bottom-0 flex px-4 pt-0 border-0 border-red-500 w-full">
+                <div class="divider divider-vertical"></div>
+                <div className="flex px-4 pt-0 border-0 border-red-500 w-2/5 max-w-1/2">
                     <div className="flex-1 overflow-y-scroll">
-                        <table className="flex table w-full overflow-x-hidden table-compact text-2xs">
+                        <table className="flex table w-full overflow-x-hidden table-compact text-2xs overflow-y-scroll">
                             <thead className="overflow-x-hidden rounded-tl-none rounded-bl-none">
                                 <tr className="bg-gray-400">
-                                    <th className="overflow-x-hidden roun"></th>
+                                    <th className="overflow-x-hidden round"></th>
                                     <th>STB NUM</th>
                                     <th>STATUS</th>
                                 </tr>
                             </thead>
-                            <tbody className="overflow-y-scroll">
+                            <tbody className="overflow-y-scroll max-h-3/4">
                                 {state.data.map((resp, index) => (
                                     <tr
                                         key={resp.id}
@@ -320,7 +306,9 @@ function BoxFastForward({ eel, params, setParams }) {
                                         className="p-0 border-0 border-red-600"
                                     >
                                         <th>
-                                            {index + 1}
+                                            {state.data.length !== 0
+                                                ? state.data.length - index
+                                                : 0}
                                         </th>
                                         <td>{resp.stb_num}</td>
                                         <td>{resp.status}</td>

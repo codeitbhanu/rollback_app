@@ -772,10 +772,14 @@ def connect_db(host="", driver="", database="", username="", password=""):
     print(
         f'[APP] requested connect_db driver={driver}, host={host}, database={database}, username={username}, password={password}')
     global serverinstance
+    global messerverinstance
     if serverinstance:
         return serverinstance.getInstanceStatus()
     else:
         serverinstance = Server(host)
+        messerverinstance = MesServer("172.20.10.149\\PRODUCTION")
+        mes_connect_result = messerverinstance.connect()
+        print(f'[MES] {mes_connect_result}')
         # serverinstance = Server(driver, server, database, username, password)
         return serverinstance.connect()
     # if(serverinstance):
@@ -790,9 +794,13 @@ def disconnect_db():
     """Returns connection status if connected, else connects to the production server"""
     print('[APP] requested disconnect_db')
     global serverinstance
+    global messerverinstance
     if serverinstance:
         serverinstance = serverinstance.disconnect()
         serverinstance = None
+        if messerverinstance:
+            messerverinstance = messerverinstance.disconnect()
+            messerverinstance = None
         return {"data": {"metadata": None}, "message": "Server Disonnected", "status": CONST_SUCCESS}
     else:
         return {"data": {"metadata": None}, "message": "FAILURE: No server instance available", "status": CONST_FAILURE}
@@ -2564,6 +2572,242 @@ def start_eel(develop):
             eel.start(page, mode='edge', **eel_kwargs)
         else:
             raise
+
+
+# -------------------------------------------------------------------------------------- SQL07
+class MesServer:
+    conn = None
+    cursor = None
+
+    def __init__(self, host="", driver="", database="", username="", password=""):
+        # DEVELOPMENT CONFIG
+        self.driver = "{ODBC Driver 17 for SQL Server}"
+        self.database = "NEWDB"
+        self.server = host  # "172.20.10.103\\PRODUCTION"
+        self.username = "Neo.Tech"
+        self.password = "Password357"
+        # LOCAL FOR TESTING
+        # self.server = "HOMEPC\\SQLEXPRESS"
+        # self.username = "Bhanu.Pratap"
+        # self.password = "Password123"
+
+    def getInstanceStatus(self):
+        connection_status = CONST_FAILURE
+        message = CONST_FAILURE
+        if (self.conn and self.cursor):
+            connection_status = CONST_SUCCESS
+            # connection_status = 'Server Already Connected'
+        else:
+            message += "stb_production instance is null"
+        return {"data": {"metadata": None}, "message": message, "status": connection_status}
+
+    def __del__(self):
+        print(f'Server {self.server} instance destroyed')
+        if(self.conn):
+            try:
+                self.conn.close()
+            except Exception as e:
+                print(
+                    f'Server {self.server} has no connection established earlier' + type(e).__name__ + ': ' + str(e))
+        else:
+            print(
+                f'Server {self.server} has no connection established earlier')
+
+    # def connect(self, driver='', server='', database='', username='', password=''):
+    def connect(self):
+        connection_status = 'FAILURE: '
+        print(
+            f'connect to driver={self.driver}, server={self.server}, database={self.database}, username={self.username}, password={self.password}')
+        try:
+            # if(server == ''):
+            # conn_str = f'''DRIVER=\"{self.driver}\";SERVER=\"{self.server}\";DATABASE=\"{self.database}\";UID=\"{self.username}\";PWD=\"{self.password}\";'''
+            # print(f'[CONNECTION-STRING] {conn_str}')
+            # self.conn = pyodbc.connect(conn_str)
+            # else:
+            self.conn = pyodbc.connect("DRIVER=" + self.driver
+                                       + ";SERVER=" + self.server
+                                       + ";DATABASE=" + self.database
+                                       + ";UID=" + self.username
+                                       + ";PWD=" + self.password)
+
+            if(self.conn):
+                self.cursor = self.conn.cursor()
+                print(f'[MES] Connection established with server {self.server}')
+                connection_status = CONST_SUCCESS
+            else:
+                print(f'[MES] Error: Server {self.server} could not be connected!')
+                connection_status = connection_status + f"unable to establish {self.database} connection"
+
+        except Exception as e:
+            connection_status = connection_status + \
+                type(e).__name__ + ': ' + str(e)
+            print(
+                f'[MES] Error: Server {self.server} could not be connected! \n {connection_status}')
+        if(connection_status == CONST_SUCCESS):
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_SUCCESS}
+        else:
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_FAILURE}
+
+    def disconnect(self):
+        connection_status = CONST_SUCCESS
+        # connection_status = CONST_SUCCESS
+        # print(
+        #             connection_status=connection_status + "unable to establish server connection"
+        #             f'Server {self.server} has no connection established earlier')
+        # connection_status = connection_status + type(e).__name__ + ': '+ str(e)
+        # print(
+        #         f'Error: Server {self.server} could not be connected! \n {connection_status}')
+        try:
+            if(self.conn):
+                self.cursor.close()
+            else:
+                connection_status = connection_status = 'FAILURE: ' + 'No active connection'
+                print(
+                    connection_status=connection_status + "unable to establish server connection"
+                    f'Server {self.server} has no connection established earlier')
+        except Exception as e:
+            connection_status = 'FAILURE: ' + type(e).__name__ + ': ' + str(e)
+            print('SERVER: cursor close error: ' + connection_status)
+
+        try:
+            self.conn.close()
+        except Exception as e:
+            connection_status = 'FAILURE: ' + type(e).__name__ + ': ' + str(e)
+            print('SERVER: connection close error: ' + connection_status)
+
+        if(connection_status.startswith(CONST_SUCCESS)):
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_SUCCESS}
+        else:
+            return {"data": {"metadata": connection_status}, "message": connection_status, "status": CONST_FAILURE}
+
+
+messerverinstance = None
+
+
+@eel.expose
+def mes_connect_db(host="", driver="", database="", username="", password=""):
+    """Returns connection status if connected, else connects to the production server"""
+    print(
+        f'[APP] requested connect_db driver={driver}, host={host}, database={database}, username={username}, password={password}')
+    global messerverinstance
+    if messerverinstance:
+        return messerverinstance.getInstanceStatus()
+    else:
+        messerverinstance = Server(host)
+        # messerverinstance = Server(driver, server, database, username, password)
+        return messerverinstance.connect()
+    # if(messerverinstance):
+    #     return "Success"
+    # else:
+    #     return "Unable to connect"
+    # pass
+
+
+@eel.expose
+def mes_disconnect_db():
+    """Returns connection status if connected, else connects to the production server"""
+    print('[APP] requested disconnect_db')
+    global messerverinstance
+    if messerverinstance:
+        messerverinstance = messerverinstance.disconnect()
+        messerverinstance = None
+        return {"data": {"metadata": None}, "message": "Server Disonnected", "status": CONST_SUCCESS}
+    else:
+        return {"data": {"metadata": None}, "message": "FAILURE: No server instance available", "status": CONST_FAILURE}
+
+    # if(messerverinstance):
+    #     return "Success"
+    # else:
+    #     return "Unable to connect"
+    # pass
+
+
+@eel.expose
+def mes_get_sn_status(pcb_sn):
+    """Returns connection status if connected, else connects to the production server"""
+    print(f'[APP] requested get_sn_status {pcb_sn}')
+    global messerverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "stb_num": None,
+                "status": None
+            },
+        },
+        "message": "NOT TESTED",
+        "status": CONST_FAILURE
+    }
+
+    mes_status_dict = {
+        152: "motherboardbinding",
+        31: "interfacetest",
+        34: "wirelesstest",
+        36: "infocheck",
+        146: "factoryinspection"
+    }
+
+    if not messerverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + ' Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = messerverinstance.cursor
+        conn = messerverinstance.conn
+        try:
+            select_sql = f'''SELECT gsn,curprocessid, lastupdate
+                            FROM SDTMESV2DIGITAL.dbo.MESProc_WIP
+                            WHERE gsn  = \'{pcb_sn}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                for row in results:
+                    print(row)
+                    print("#######################################")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "stb_num": row[0],
+                                "status": mes_status_dict[row[1]],
+                                "timestamp": row[2]
+                            },
+                        },
+                        "message": "Product Info Retrieved",
+                        "status": CONST_SUCCESS,
+                    }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
 
 
 if __name__ == '__main__':
