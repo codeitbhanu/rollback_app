@@ -2349,7 +2349,7 @@ def set_frequent_params(prod_id, table, param_name, key, param_value):
 
 
 @eel.expose
-def set_test_status_ott(sn, testname):
+def set_test_status_ott(sn, testname, user=52):
     print(f'[SET-TEST-STATUS-OTT] sn: {sn} test: {testname}')
     global serverinstance
     current_time = get_current_time()
@@ -2391,22 +2391,22 @@ def set_test_status_ott(sn, testname):
                 if (testname == "interfacetest"):
                     pe_required_status = REQUIRED_STATUS_FOR_PCBA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
-                                    SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
                                     WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
                 if (testname == "wirelesstest"):
                     pe_required_status = REQUIRED_STATUS_WIRELESS_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
-                                    SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
                                     WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
                 if (testname == "infocheck"):
                     pe_required_status = REQUIRED_STATUS_KEY_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
-                                    SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
                                     WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
                 if (testname == "factoryinspection"):
                     pe_required_status = REQUIRED_STATUS_CA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
-                                    SET id_status = {STATUS_CA_TEST_PASSED}, [timestamp] = N\'{current_time}\'
+                                    SET id_status = {STATUS_CA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
                                     WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
                 print(f'[{testname}][UPDATE-SQL] {update_sql}')
                 response_data = {
@@ -2435,6 +2435,11 @@ def set_test_status_ott(sn, testname):
                 newdb_required_status = None
                 newdb_update = -1
                 if (pe_update.rowcount == 1):
+                    # if (testname == "motherboardbinding"):
+                    #     newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
+                    #     update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                    #                     SET Field28 = \'NT\', [LastEditDate] = N\'{current_time}\'
+                    #                     WHERE SN = N\'{sn}\' AND Field28 = NULL'''
                     if (testname == "interfacetest"):
                         newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
@@ -2723,9 +2728,9 @@ def mes_disconnect_db():
 
 
 @eel.expose
-def mes_get_sn_status(pcb_sn):
+def mes_get_sn_status(pcb_sn, user=52):
     """Returns connection status if connected, else connects to the production server"""
-    print(f'[APP] requested get_sn_status {pcb_sn}')
+    print(f'[APP] requested get_sn_status {pcb_sn} {user}')
     global messerverinstance
 
     response_data = {
@@ -2767,15 +2772,24 @@ def mes_get_sn_status(pcb_sn):
             print(f'[SELECT-SQL-RESULTS] {results}')
 
             if len(results) == 1:
+                lTests = ['motherboardbinding', 'interfacetest', 'wirelesstest', 'infocheck', 'factoryinspection']
                 for row in results:
                     print(row)
                     print("#######################################")
+                    mes_status = mes_status_dict[row[1]]
+                    stb_num = row[0]
+                    print(f'mes_status: {mes_status} stb_num: {stb_num}')
+                    for test in lTests:
+                        set_test_status_ott(stb_num, test, user)
+                        if (mes_status == test):
+                            break
+
                     response_data = {
                         **response_data,
                         "data": {
                             "metadata": {
-                                "stb_num": row[0],
-                                "status": mes_status_dict[row[1]],
+                                "stb_num": stb_num,
+                                "status": mes_status,
                                 "timestamp": row[2]
                             },
                         },

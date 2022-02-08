@@ -115,10 +115,10 @@ function BoxFastForward({ eel, params, setParams }) {
         // alert(`___${pcb_sn}___`);
         console.log(params);
         try {
-            // if (params.session.active === false) {
-            //     alert("Session not active, Please login first");
-            //     return;
-            // }
+            if (params.session.active === false) {
+                alert("Session not active, Please login first");
+                return;
+            }
             // if (
             //     state.reason_desc === "" ||
             //     state.reason_desc === reasons_map[0].id_status
@@ -145,7 +145,7 @@ function BoxFastForward({ eel, params, setParams }) {
                 //     console.log("::: test.name: " + state.tests[test] + " :::");
                     // eel.set_test_status_ott(pcb_sn, state.tests[test].tag)((response) => {
                     const lTests = ['interfacetest','wirelesstest','infocheck','factoryinspection']
-                    eel.mes_get_sn_status(pcb_sn)((response) => {
+                    eel.mes_get_sn_status(pcb_sn,params.session.userdata.id_user)((response) => {
                         console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                         try {
                             let status = response.status;
@@ -262,7 +262,7 @@ function BoxFastForward({ eel, params, setParams }) {
 
                     <div className="border-0 flex flex-col gap-8 border-blue-500 mt-8 max-h-96">
                         {state.tests.map((test, index) => 
-                            <div className="border-0 flex  cursor-pointer border-red-500">
+                            <div className="border-0 flex select-none border-red-500">
                                 <div className="flex place-content-between">
                                     <div className="flex border-0 border-yellow-500">
                                         {test.passed ? <kbd className="w-12 h-12 text-3xl kbd mx-2">✔️</kbd> : <kbd className="w-12 h-12 text-3xl kbd mx-2">❌</kbd>}
@@ -288,22 +288,22 @@ function BoxFastForward({ eel, params, setParams }) {
                     </div>
                 </div>
                 <div class="divider divider-vertical"></div>
-                <div className="flex px-4 pt-0 border-0 border-red-500 w-2/5 max-w-1/2">
-                    <div className="flex-1 overflow-y-scroll">
+                <div className="flex px-4 pt-0 border-0 border-red-500 w-2/5 max-w-1/2 overflow-x-hidden">
+                    <div className="flex-1 overflow-y-scroll overflow-x-hidden">
                         <table className="flex table w-full overflow-x-hidden table-compact text-2xs overflow-y-scroll">
-                            <thead className="overflow-x-hidden rounded-tl-none rounded-bl-none">
+                            <thead className="overflow-x-hidden rounded-tl-none rounded-bl-none border-0 border-red-500">
                                 <tr className="bg-gray-400">
                                     <th className="overflow-x-hidden round"></th>
                                     <th>STB NUM</th>
                                     <th>STATUS</th>
                                 </tr>
                             </thead>
-                            <tbody className="overflow-y-scroll max-h-3/4">
+                            <tbody className="overflow-y-scroll max-h-3/4 overflow-x-hidden border-0 border-green-500">
                                 {state.data.map((resp, index) => (
                                     <tr
                                         key={resp.id}
                                         id={resp.id}
-                                        className="p-0 border-0 border-red-600"
+                                        className={`p-0 overflow-x-hidden border-yellow-400 ${index === 0 ? "border-0" : "border-0"}`}
                                     >
                                         <th>
                                             {state.data.length !== 0
