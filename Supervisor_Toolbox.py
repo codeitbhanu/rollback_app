@@ -2440,11 +2440,12 @@ def set_test_status_ott(sn, testname, user=52):
                     #     update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                     #                     SET Field28 = \'NT\', [LastEditDate] = N\'{current_time}\'
                     #                     WHERE SN = N\'{sn}\' AND Field28 = NULL'''
+                    # WHERE SN = 'MD00055559' AND (Field28 IS NULL OR Field28 = 'NT')
                     if (testname == "interfacetest"):
                         newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                                         SET Field28 = \'{STATUS_INTERFACE_TEST}\', [LastEditDate] = N\'{current_time}\'
-                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                                        WHERE SN = N\'{sn}\' AND (Field28 IS NULL OR Field28 = \'{newdb_required_status}\')'''
                     if (testname == "wirelesstest"):
                         newdb_required_status = REQUIRED_STATUS_WIRELESS_TEST
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
