@@ -439,7 +439,10 @@ function StreamaMechanical({ eel, params, setParams }) {
                 // eel.get_device_info(
                 // eel.generate_stb_num(
                 eel.process_streama_mechanical(
-                    pcb_sn
+                    pcb_sn,
+                    state.selectedPrinter,
+                    state.selected_prodline,
+                    params.session.userdata.user_desc
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                     try {

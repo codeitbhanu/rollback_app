@@ -1791,11 +1791,103 @@ def generate_stb_num(pcb_sn):
 
 
 @eel.expose
-def process_streama_mechanical(pcb_sn):
-    print('[GENERATE-STB-NUM] requested ', pcb_sn)
+def update_mechanical(pcb_sn, fPanel="", PSU="", RS232="", prodLine="", userDesc="", material="", genericVariant=False, prodDesc=""):
+    print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            storedProc = '''EXEC spLocal_UPDUpdateMechanical @pcbNum  = ?, @fPanel  = ?, @PSU  = ?, @RS232  = ?, @prodLine  = ?, @userDesc  = ?, @material  = ?, @genericVariant  = ?, @prodDesc  = ?'''
+            params = (pcb_sn, fPanel, PSU, RS232, prodLine, userDesc, material, genericVariant, prodDesc)
+            print(f'[SELECT-SQL] {storedProc} {pcb_sn}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                ret = []
+                for row in results:
+                    print(row)
+                    ret.append({
+                        "ErrorMessage": row[0]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "ErrorMessage": ret[0]["ErrorMessage"]
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+# PRINTER_NAME = 'ZDesigner ZT230-200dpi ZPL'
+# ZEBRA.setqueue(PRINTER_NAME)
+
+
+@eel.expose
+def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user_desc=''):
+    print(f'[PROCESS-STREAMA-MECHANICAL] requested {pcb_sn} {printer_name} {production_line} {user_desc}')
     global serverinstance
 
     state_common = {}
+
+    ZEBRA.setqueue(printer_name)
 
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
@@ -1842,6 +1934,47 @@ def process_streama_mechanical(pcb_sn):
                             # =============== NOW WE HAVE THE STB NUMBER, WITH PCB =====================
                             # TODO: Update SQL07 MES System for binding STB Number
                             # PRINT THE VALUES
+                            varDict = {
+                                'STB_NUM': state_common["device_info"]["STB_Num"],
+                                'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
+                            }
+
+                            # TODO: 1. Printer Name, 2. Get Real Template From Database
+                            print_status = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                            if print_status != CONST_SUCCESS:
+                                response_data = {
+                                    **response_data,
+                                    "data": {
+                                        "metadata": state_common,
+                                    },
+                                    "message": f'''PRINT STATUS {print_status}''',
+                                    "status": CONST_FAILURE,
+                                }
+                            else:
+                                print("Printing Successful")
+                                # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
+                                mech_status = update_mechanical(pcb_sn, '', '', '', production_line, user_desc, '', False, '')
+                                print(mech_status)
+                                mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
+                                if mech_message.startswith(CONST_SUCCESS):
+                                    response_data = {
+                                        **response_data,
+                                        "data": {
+                                            "metadata": state_common,
+                                        },
+                                        "message": f'''{mech_message}''',
+                                        "status": CONST_SUCCESS,
+                                    }
+                                else:
+                                    response_data = {
+                                        **response_data,
+                                        "data": {
+                                            "metadata": state_common,
+                                        },
+                                        "message": f'''ERROR, {mech_message}''',
+                                        "status": CONST_FAILURE,
+                                    }
+
                     else:
                         response_data = {
                             **response_data,
@@ -1884,6 +2017,24 @@ def process_streama_mechanical(pcb_sn):
             #         "status": CONST_FAILURE,
             #     }
             return response_data
+
+
+def printer_wrapper(v, template_file):
+    with open(template_file, 'r') as fh:
+        try:
+            t = replace_prn_variables(
+                ''.join(c for c in fh.read() if ord(c) < 128), v)
+            # print t
+            send_prn(t)
+            return CONST_SUCCESS
+        except MissingVariableException as e:
+            print(f'Some variables specified in the PRN text are not supplied in the {template_file} file.')
+            print(f'These variables are not supplied: {e[0].sort()}')
+            print('\n'.join(e[0]))
+            return CONST_FAILURE
+        except Exception as e:
+            print('\n'.join(e[0]))
+            return CONST_FAILURE
 
 
 @eel.expose
