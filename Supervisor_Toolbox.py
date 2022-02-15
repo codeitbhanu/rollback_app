@@ -1625,7 +1625,7 @@ def get_device_info(pcb_sn):
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
         cursor = serverinstance.cursor
-        # conn = serverinstance.conn
+        conn = serverinstance.conn
         try:
             storedProc = '''EXEC sp_RPT_GetDeviceInfo @serialNum  = ?'''
             params = (pcb_sn)
@@ -1634,7 +1634,7 @@ def get_device_info(pcb_sn):
                 **response_data,
                 "select_query": storedProc,
             }
-            # conn.autocommit = False
+            conn.autocommit = False
             results = cursor.execute(storedProc, params).fetchall()
             print(f'[SELECT-SQL-RESULTS] {results}')
 
@@ -1665,7 +1665,7 @@ def get_device_info(pcb_sn):
                     **response_data,
                     "data": {
                         "metadata": {
-                            "device_info": device_info
+                            "device_info": device_info[0]
                         },
                     },
                     "message": "Product Info Retrieved",
@@ -1689,7 +1689,7 @@ def get_device_info(pcb_sn):
         else:
             cursor.commit()
         finally:
-            # conn.autocommit = True
+            conn.autocommit = True
             print(response_data)
             if len(results) == 0:
                 # raise ValueError("record not found")
@@ -1701,6 +1701,188 @@ def get_device_info(pcb_sn):
                     "message": "No Products Found with PCB/SN",
                     "status": CONST_FAILURE,
                 }
+            return response_data
+
+
+@eel.expose
+def generate_stb_num(pcb_sn):
+    print('[GENERATE-STB-NUM] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            storedProc = '''EXEC sp_UPD_GenerateStbNum @pcbNum  = ?'''
+            params = (pcb_sn)
+            print(f'[SELECT-SQL] {storedProc} {pcb_sn}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                ret = []
+                for row in results:
+                    print(row)
+                    ret.append({
+                        "ErrorMessage": row[0]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "ErrorMessage": ret[0]["ErrorMessage"]
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
+def process_streama_mechanical(pcb_sn):
+    print('[GENERATE-STB-NUM] requested ', pcb_sn)
+    global serverinstance
+
+    state_common = {}
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        # cursor = serverinstance.cursor
+        # conn = serverinstance.conn
+        try:
+            # Wrapper for all sub-methods for processing streama mechanical
+            allowed_target_status = [85, 45, 47]
+            device = get_device_info(pcb_sn)
+            # print(device)
+            if device["status"] == CONST_SUCCESS:
+                # TODO: Handle StoredProcedure's failure codes also
+                state_common = {
+                    **state_common,
+                    **device["data"]["metadata"]
+                }
+                id_status = state_common["device_info"]["Status"]
+                if id_status in allowed_target_status:
+                    gen_sn = generate_stb_num(pcb_sn)
+                    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                    print(gen_sn)
+                    if gen_sn["data"]["metadata"]["ErrorMessage"].startswith(CONST_SUCCESS):
+                        print(f'############################## {gen_sn["data"]["metadata"]["ErrorMessage"]}')
+                        device = get_device_info(pcb_sn)
+                        if device["status"] == CONST_SUCCESS:
+                            # TODO: Handle StoredProcedure's failure codes also
+                            state_common = {
+                                **state_common,
+                                **device["data"]["metadata"]
+                            }
+                            # =============== NOW WE HAVE THE STB NUMBER, WITH PCB =====================
+                            # TODO: Update SQL07 MES System for binding STB Number
+                            # PRINT THE VALUES
+                    else:
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": f'''{gen_sn["data"]["metadata"]["ErrorMessage"]}''',
+                            "status": CONST_FAILURE,
+                        }
+                else:
+                    # TODO: Set proper failure message that status is not allowed
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": state_common,
+                        },
+                        "message": f'''PCB: {pcb_sn} IS IN NOT ALLOWED STATUS {id_status}, ALLOWED {allowed_target_status}''',
+                        "status": CONST_FAILURE,
+                    }
+                    pass
+            pass
+        except Exception as e:
+            print(
+                f'[ERROR: Exception - {e.args}, will skip this invalid cell value')
+            raise e
+        else:
+            pass
+            # cursor.commit()
+        finally:
+            # conn.autocommit = True
+            print(response_data)
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Products Found with PCB/SN",
+            #         "status": CONST_FAILURE,
+            #     }
             return response_data
 
 
