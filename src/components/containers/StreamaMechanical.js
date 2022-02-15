@@ -436,7 +436,9 @@ function StreamaMechanical({ eel, params, setParams }) {
                 }
 
                 const allowed_target_status = [85, 45, 47];
-                eel.get_device_info(
+                // eel.get_device_info(
+                // eel.generate_stb_num(
+                eel.process_streama_mechanical(
                     pcb_sn
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
@@ -457,7 +459,7 @@ function StreamaMechanical({ eel, params, setParams }) {
                             device_info: metadata.device_info
                         }))
 
-                        
+
 
                         // if (
                         //     metadata.prod_id !== -1 &&
