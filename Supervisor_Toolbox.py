@@ -1519,6 +1519,190 @@ def get_active_products():
             return response_data
 
 
+@eel.expose
+def get_all_prod_lines(deptDesc='Final Integration'):
+    print(f'[GET-ALL-PROD-LINES] requested {deptDesc}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = '''SELECT 0 AS production_line,'PROD_LINE' AS line_desc ,'DEPARTMENT' AS dept_desc
+                            UNION ALL
+                            SELECT pl.id_production_line, pl.line_desc, d.dept_desc
+                            FROM production_line AS pl
+                            INNER JOIN department AS d ON pl.id_department = d.id_department
+                            WHERE        (pl.id_status = 4) AND d.dept_desc = 'Final Integration' ORDER BY dept_desc, line_desc'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                prod_lines = []
+                for row in results:
+                    print(row)
+                    prod_lines.append({"production_line": row[0], "line_desc": row[1], "dept_desc": row[2]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_lines": prod_lines,
+                        },
+                    },
+                    "message": "Active Product List",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Active Products Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+@eel.expose
+def get_device_info(pcb_sn):
+    print('[GET-PRODUCT-INFO] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        # conn = serverinstance.conn
+        try:
+            storedProc = '''EXEC sp_RPT_GetDeviceInfo @serialNum  = ?'''
+            params = (pcb_sn)
+            print(f'[SELECT-SQL] {storedProc} {pcb_sn}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            # conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                device_info = []
+                for row in results:
+                    print(row)
+                    device_info.append({
+                        "Pcb_Num": row[0],
+                        "STB_Num": row[1],
+                        "Status": row[2],
+                        "Smartcard": row[3],
+                        "Carton": row[4],
+                        "Pallet": row[5],
+                        "CAS_ID": row[6],
+                        "IUC_Serial": row[7],
+                        "Custom_String_1": row[8],
+                        "Custom_String_2": row[9],
+                        "Custom_String_3": row[10],
+                        "Custom_String_4": row[11],
+                        "Custom_String_5": row[12],
+                        "Status_Description": row[13],
+                        "Product_Description": row[14],
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "device_info": device_info
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            # conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
 
 @eel.expose
 def get_product_info(pcb_sn):
