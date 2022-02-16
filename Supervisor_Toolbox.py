@@ -1950,8 +1950,11 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                             }
 
                             # TODO: 1. Printer Name, 2. Get Real Template From Database
+                            print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
                             print_status = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                            print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
                             if print_status != CONST_SUCCESS:
+                                print("Printing Failed")
                                 response_data = {
                                     **response_data,
                                     "data": {
@@ -2007,8 +2010,9 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                     pass
             pass
         except Exception as e:
+            error = '\n'.join(e[0])
             print(
-                f'[ERROR: Exception - {e.args}, will skip this invalid cell value')
+                f'[ERROR: Exception - {error}, will skip this invalid cell value')
             raise e
         else:
             pass
@@ -2030,21 +2034,37 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
 
 
 def printer_wrapper(v, template_file):
-    with open(template_file, 'r') as fh:
-        try:
+    print(f'printer_wrapper requested {v} {template_file}')
+    try:
+        with open('./' + template_file, 'r') as fh:
             t = replace_prn_variables(
                 ''.join(c for c in fh.read() if ord(c) < 128), v)
             # print t
             send_prn(t)
             return CONST_SUCCESS
-        except MissingVariableException as e:
-            print(f'Some variables specified in the PRN text are not supplied in the {template_file} file.')
-            print(f'These variables are not supplied: {e[0].sort()}')
-            print('\n'.join(e[0]))
-            return CONST_FAILURE
-        except Exception as e:
-            print('\n'.join(e[0]))
-            return CONST_FAILURE
+    except MissingVariableException as e:
+        print(f'Some variables specified in the PRN text are not supplied in the {template_file} file.')
+        print(f'These variables are not supplied: {e[0].sort()}')
+        print('\n'.join(e[0]))
+        return CONST_FAILURE
+    except Exception as e:
+        print('\n'.join(e[0]))
+        return CONST_FAILURE
+
+
+@eel.expose
+def test_print(printer_name=''):
+    print(f'[TEST_PRINT] requested {printer_name}')
+    ZEBRA.setqueue(printer_name)
+    varDict = {
+        'STB_NUM': "MD88888888",
+        'ETHERNET_MAC': "EFEFEFEFEFEF"
+    }
+
+    # TODO: 1. Printer Name, 2. Get Real Template From Database
+    print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+    print_status = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+    print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
 
 
 @eel.expose
@@ -3094,7 +3114,7 @@ def start_eel(develop):
 
     eel_kwargs = dict(
         host='localhost',
-        port=8080,
+        port=8888,
         size=(1280, 800),
     )
     try:
@@ -3544,6 +3564,7 @@ def mes_update_WIP(pcb_sn, gsn=''):
             print(f'[INSERT-SQL-ROWCOUNT] {wipdata_insert.rowcount}')
 
             if (wipdata_insert.rowcount == 0):
+                print(f'''{pcb_sn} SN: {gsn} could not be inserted''')
                 response_data = {
                     **response_data,
                     "message": f'''{pcb_sn} SN: {gsn} could not be inserted''',
@@ -3554,9 +3575,10 @@ def mes_update_WIP(pcb_sn, gsn=''):
                     }},
                 }
             elif (wipdata_insert.rowcount == 1):
+                print(f'''{pcb_sn} SN: {gsn} successfully updated in MESProc_WIP''')
                 response_data = {
                     **response_data,
-                    "message": f'''{pcb_sn} SN: {gsn} successfully inserted''',
+                    "message": f'''{pcb_sn} SN: {gsn} successfully updated in MESProc_WIP''',
                     "status": CONST_SUCCESS,
                     "data": {"metadata": {
                         "pcb_sn": pcb_sn,
@@ -3577,9 +3599,10 @@ def mes_update_WIP(pcb_sn, gsn=''):
             cursor.commit()
         finally:
             conn.autocommit = True
+            print('VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV')
             print(response_data)
+            print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
             return response_data
-
 
 
 if __name__ == '__main__':

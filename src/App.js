@@ -20,7 +20,7 @@ import Menu from "./components/Menu";
 export const eel = window.eel;
 const eel_load = () => {
     try {
-        eel.set_host("ws://localhost:8080");
+        eel.set_host("ws://localhost:8888");
 
         // Expose the `sayHelloJS` function to Python as `say_hello_js`
         function sayHelloJS(x) {

@@ -89,6 +89,7 @@ function StreamaMechanical({ eel, params, setParams }) {
     const [mechanicalState, setMechanicalState] = useState({
         status: false,
         message: "Please scan PCB",
+        testprint: false
     });
 
     const resetState = () => {
@@ -660,7 +661,19 @@ function StreamaMechanical({ eel, params, setParams }) {
         console.log("handleChangeTextBox called " + event.target.value);
     };
 
-    
+    const handleTestPrintCheckbox = () => {
+        console.log("handleTestPrintCheckbox called ");
+        try {
+            if (state.selectedPrinter === "") {
+                alert("[ERROR] Please choose a printer before printing");
+                return;
+            }
+
+            eel.test_print(state.selectedPrinter)
+        } catch (error) {
+            alert(`ERROR: ${error}`);
+        }     
+    }
 
     // console.log(status_map);
     // console.log(fake_data);
@@ -843,6 +856,15 @@ function StreamaMechanical({ eel, params, setParams }) {
                                 e.key === "Enter" && handleBarcodeInput(e)
                             }
                         />
+                    </div>
+                    {/* <div className="">
+                        <label className="cursor-pointer label">
+                            <span className="label-text">Test Print</span> 
+                            <input type="checkbox" className="checkbox" onClick={(e) => handleTestPrintCheckbox(e)} />
+                        </label>
+                    </div> */}
+                    <div className="flex pr-2 align-middle border-0 border-green-600 flex-start text-primary mt-8">
+                        <button class="btn btn-xs" onClick={() => handleTestPrintCheckbox()}>Test Print</button>
                     </div>
                     {/* <div className="justify-between w-full mt-4 text-black form-control">
                         <label
