@@ -86,7 +86,10 @@ function StreamaMechanical({ eel, params, setParams }) {
         // path: defPath,
     });
 
-    const [mechanicalState, setMechanicalState] = useState({});
+    const [mechanicalState, setMechanicalState] = useState({
+        status: false,
+        message: "Please scan PCB",
+    });
 
     const resetState = () => {
         setState({
@@ -410,9 +413,19 @@ function StreamaMechanical({ eel, params, setParams }) {
         event.target.value = "";
         console.log(`${eel}___${pcb_sn}___`);
 
+        setMechanicalState({
+            status: false,
+            message: "",
+            device_info: undefined
+        })
+
         try {
             if (params.session.active === false) {
                 alert("Session not active, Please login first");
+                return;
+            }
+            if (state.selected_product !== "OTT MDMP100") {
+                alert("Invalid Product, Allowed: OTT MDMP100");
                 return;
             }
             if (params.server.status) {
@@ -459,6 +472,8 @@ function StreamaMechanical({ eel, params, setParams }) {
 
                         setMechanicalState((prevState) => ({
                             ...prevState,
+                            status: status,
+                            message: message,
                             device_info: metadata.device_info
                         }))
 
@@ -886,8 +901,15 @@ function StreamaMechanical({ eel, params, setParams }) {
                     </div> */}
                 </div>
                 <div className="bottom-0 flex flex-1 px-4 pt-0 border-0 border-red-500">
-                    <div className="flex-1 overflow-y-scroll">
-                        <table className="flex table w-full overflow-x-hidden table-compact">
+                    <div className="shadow stats mt-8 w-full">
+                        <div className="stat flex-wrap">
+                            <div className={`text-left text-4xl text-red-500 flex-wrap ${mechanicalState.status === CONST_SUCCESS ? "text-green-500" : "text-red-500"}`}>
+                                {mechanicalState.message}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-scroll hidden">
+                        {/* <table className="flex table w-full overflow-x-hidden table-compact">
                             <thead className="overflow-x-hidden">
                                 <tr className="bg-gray-400">
                                     <th></th>
@@ -985,29 +1007,8 @@ function StreamaMechanical({ eel, params, setParams }) {
                                         </td>
                                     </tr>
                                 ))}
-
-                                {/*<tr>
-                                    <th>20</th>
-                                    <td>Lorelei Blackstone</td>
-                                    <td>Data Coordiator</td>
-                                    <td>Witting, Kutch and Greenfelder</td>
-                                    <td>Kazakhstan</td>
-                                    <td>6/3/2020</td>
-                                    <td>Red</td>
-                                </tr> */}
                             </tbody>
-                            {/* <tfoot>
-                                <tr>
-                                    <th></th>
-                                    <th>Name</th>
-                                    <th>Job</th>
-                                    <th>company</th>
-                                    <th>location</th>
-                                    <th>Last Login</th>
-                                    <th>Favorite Color</th>
-                                </tr>
-                            </tfoot> */}
-                        </table>
+                        </table> */}
                     </div>
                 </div>
             </div>

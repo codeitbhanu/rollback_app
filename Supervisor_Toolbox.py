@@ -1932,8 +1932,18 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                                 **device["data"]["metadata"]
                             }
                             # =============== NOW WE HAVE THE STB NUMBER, WITH PCB =====================
-                            # TODO: Update SQL07 MES System for binding STB Number
+                            # DONE_TODO: Update SQL07 MES System for binding STB Number
+                            # 1. CSN
+                            csn_ret = mes_update_WIPData(pcb_sn, state_common["device_info"]["STB_Num"], 'CSN')
+                            print(csn_ret)
+                            # 2. MAC
+                            mac_ret = mes_update_WIPData(pcb_sn, state_common["device_info"]["Custom_String_1"], 'MAC')
+                            print(mac_ret)
+                            # 3 mes_update_WIP
+                            wip_ret = mes_update_WIP(pcb_sn, state_common["device_info"]["STB_Num"])
+                            print(wip_ret)
                             # PRINT THE VALUES
+                            # =============== PRINT =====================
                             varDict = {
                                 'STB_NUM': state_common["device_info"]["STB_Num"],
                                 'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
@@ -1991,7 +2001,7 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                         "data": {
                             "metadata": state_common,
                         },
-                        "message": f'''PCB: {pcb_sn} IS IN NOT ALLOWED STATUS {id_status}, ALLOWED {allowed_target_status}''',
+                        "message": f'''PCB: {pcb_sn} IS IN NOT ALLOWED STATUS {status_desc_for_id_status[id_status]}, ALLOWED {','.join(map(lambda id_status: status_desc_for_id_status[id_status], allowed_target_status))}''',
                         "status": CONST_FAILURE,
                     }
                     pass
@@ -3340,6 +3350,236 @@ def mes_get_sn_status(pcb_sn, user=52):
                     "status": CONST_FAILURE,
                 }
             return response_data
+
+
+@eel.expose
+def mes_update_WIPData(pcb_sn, data_value='', data_type=''):
+    """Returns connection status if connected, else connects to the production server"""
+    print(f'[MES-UPDATE-WIPData] {pcb_sn} {data_value} {data_type}')
+    global messerverinstance
+
+    current_time = get_current_time()
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "stb_num": None,
+                "status": None
+            },
+        },
+        "message": "NOT TESTED",
+        "status": CONST_FAILURE
+    }
+
+    mes_status_dict = {
+        152: "motherboardbinding",
+        31: "interfacetest",
+        34: "wirelesstest",
+        36: "infocheck",
+        146: "factoryinspection"
+    }
+
+    if not messerverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + ' Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = messerverinstance.cursor
+        conn = messerverinstance.conn
+        try:
+            insert_sql = f'''INSERT INTO SDTMESV2DIGITAL.dbo.MESProc_WIPData
+                            (productid, sntype, aliasname, datavalue, bindfuid, bindat, isunique, factory)
+                            VALUES(N'FC011001', N\'{data_type}\', N\'{data_type}\', N\'{data_value}\', N\'{pcb_sn}\', N\'{current_time}\', 1, N'合权');
+                            '''
+            print(f'[INSERT-SQL] {insert_sql}')
+            response_data = {
+                **response_data,
+                "insert_query": insert_sql,
+            }
+            # conn.autocommit = False
+            # results = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {results}')
+
+            conn.autocommit = False
+            wipdata_insert = cursor.execute(insert_sql)
+            cursor.commit()
+            conn.autocommit = True
+            print(f'[INSERT-SQL-ROWCOUNT] {wipdata_insert.rowcount}')
+
+            if (wipdata_insert.rowcount == 0):
+                response_data = {
+                    **response_data,
+                    "message": f'''{pcb_sn} {data_type}: {data_value} could not be inserted''',
+                    "status": CONST_FAILURE,
+                    "data": {"metadata": {
+                        "pcb_sn": pcb_sn,
+                        data_type: data_type
+                    }},
+                }
+            elif (wipdata_insert.rowcount == 1):
+                response_data = {
+                    **response_data,
+                    "message": f'''{pcb_sn} {data_type}: {data_value} successfully inserted''',
+                    "status": CONST_SUCCESS,
+                    "data": {"metadata": {
+                        "pcb_sn": pcb_sn,
+                        data_type: data_type
+                    }},
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            return response_data
+
+
+@eel.expose
+def mes_update_WIP(pcb_sn, gsn=''):
+    """Returns connection status if connected, else connects to the production server"""
+    print(f'[MES-UPDATE-WIP] {pcb_sn} {gsn}')
+    global messerverinstance
+
+    current_time = get_current_time()
+    current_date = current_time[:10]
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "stb_num": None,
+                "status": None
+            },
+        },
+        "message": "NOT TESTED",
+        "status": CONST_FAILURE
+    }
+
+    mes_status_dict = {
+        152: "motherboardbinding",
+        31: "interfacetest",
+        34: "wirelesstest",
+        36: "infocheck",
+        146: "factoryinspection"
+    }
+
+    if not messerverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + ' Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = messerverinstance.cursor
+        conn = messerverinstance.conn
+        try:
+            update_sql = f'''UPDATE SDTMESV2DIGITAL.dbo.MESProc_WIP
+                                SET gsn=N\'{gsn}\',
+                                martno=N'HPR0A',
+                                state=15,
+                                inputat=N\'{current_time}\',
+                                outputat=NULL,
+                                storageat=NULL,
+                                deliveryat=NULL,
+                                ngcode=NULL,
+                                pono=N'310582',
+                                sono=N'310582',
+                                lineid=201,
+                                factoryid=1,
+                                curprocessid=152,
+                                repairflag=0,
+                                specialflag=-1,
+                                parentfuid=NULL,
+                                cartonno=NULL,
+                                packat=NULL,
+                                qabatchno=NULL,
+                                productiontype=0,
+                                reworkflag=0,
+                                weighted=0,
+                                weight=-1,
+                                linecode=N'AL-01D',
+                                pdate=N\'{current_date}\',
+                                curprocess=N'bindingmainboard',
+                                palletno=NULL,
+                                palletat=NULL,
+                                ngtimes=0,
+                                repairedtimes=0,
+                                inflag=0,
+                                outflag=N'0         ',
+                                lock=0,
+                                lockdesc=NULL,
+                                lasteditor=N'陈维南',
+                                drepairflag=0,
+                                lrepairflag=0,
+                                intervalid=186,
+                                factory=N'UEC',
+                                checkflag=-1,
+                                manualpass=0,
+                                boxid=NULL,
+                                oqcbarcomfirm=1,
+                                checkstate=NULL,
+                                lastupdate=N\'{current_time}\',
+                                previousprocess=N'bindingmainboard',
+                                previoustime=N\'{current_time}\'
+                            WHERE fuid=N\'{pcb_sn}\';
+                            '''
+            print(f'[UPDATE-SQL] {update_sql}')
+            response_data = {
+                **response_data,
+                "update_query": update_sql,
+            }
+            # conn.autocommit = False
+            # results = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {results}')
+
+            conn.autocommit = False
+            wipdata_insert = cursor.execute(update_sql)
+            cursor.commit()
+            conn.autocommit = True
+            print(f'[INSERT-SQL-ROWCOUNT] {wipdata_insert.rowcount}')
+
+            if (wipdata_insert.rowcount == 0):
+                response_data = {
+                    **response_data,
+                    "message": f'''{pcb_sn} SN: {gsn} could not be inserted''',
+                    "status": CONST_FAILURE,
+                    "data": {"metadata": {
+                        "pcb_sn": pcb_sn,
+                        "gsn": gsn
+                    }},
+                }
+            elif (wipdata_insert.rowcount == 1):
+                response_data = {
+                    **response_data,
+                    "message": f'''{pcb_sn} SN: {gsn} successfully inserted''',
+                    "status": CONST_SUCCESS,
+                    "data": {"metadata": {
+                        "pcb_sn": pcb_sn,
+                        "gsn": gsn
+                    }},
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            return response_data
+
 
 
 if __name__ == '__main__':
