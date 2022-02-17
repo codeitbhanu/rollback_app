@@ -669,7 +669,32 @@ function StreamaMechanical({ eel, params, setParams }) {
                 return;
             }
 
-            eel.test_print(state.selectedPrinter)
+            eel.test_print(
+                state.selectedPrinter
+            )((response) => {
+                console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                try {
+                    const function_name = response.function_name;
+                    const status = response.status;
+                    const message = response.message;
+                    const metadata = response.data.metadata;
+                    // let prod_id = metadata.prod_id;
+                    console.log(
+                        `${function_name} message got: ${JSON.stringify(
+                            message
+                        )} metadata: ${metadata}`
+                    );
+                    if (status === CONST_FAILURE) {
+                        setTimeout(() => {
+                            alert(`ERROR: ${message}`);
+                        }, 200);
+                    }
+                } catch (error) {
+                    setTimeout(() => {
+                        alert(`PARSE ${error}`);
+                    }, 200);
+                }
+            });
         } catch (error) {
             alert(`ERROR: ${error}`);
         }     
@@ -864,7 +889,7 @@ function StreamaMechanical({ eel, params, setParams }) {
                         </label>
                     </div> */}
                     <div className="flex pr-2 align-middle border-0 border-green-600 flex-start text-primary mt-8">
-                        <button class="btn btn-xs" onClick={() => handleTestPrintCheckbox()}>Test Print</button>
+                        <button className="btn btn-xs" onClick={() => handleTestPrintCheckbox()}>Test Print</button>
                     </div>
                     {/* <div className="justify-between w-full mt-4 text-black form-control">
                         <label

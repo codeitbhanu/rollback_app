@@ -7,6 +7,8 @@ import inspect
 import eel
 import pyodbc
 import datetime
+import random
+from time import sleep
 # from util_order_items import order_items
 
 # ZEBRA ----------------------------------------------------------------
@@ -1606,7 +1608,7 @@ def get_all_prod_lines(deptDesc='Final Integration'):
 
 @eel.expose
 def get_device_info(pcb_sn):
-    print('[GET-PRODUCT-INFO] requested ', pcb_sn)
+    print('[GET-DEVICE-INFO] requested ', pcb_sn)
     global serverinstance
 
     response_data = {
@@ -1668,8 +1670,20 @@ def get_device_info(pcb_sn):
                             "device_info": device_info[0]
                         },
                     },
-                    "message": "Product Info Retrieved",
+                    "message": "Device Info Retrieved",
                     "status": CONST_SUCCESS,
+                }
+            elif len(results) == 0:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "pcb_sn": pcb_sn,
+                            "device_info": {}
+                        },
+                    },
+                    "message": "Device Info Not Found",
+                    "status": CONST_FAILURE,
                 }
 
         except pyodbc.DatabaseError as e:
@@ -1698,7 +1712,7 @@ def get_device_info(pcb_sn):
                     "data": {
                         "metadata": results,
                     },
-                    "message": "No Products Found with PCB/SN",
+                    "message": "device not found",
                     "status": CONST_FAILURE,
                 }
             return response_data
@@ -1837,7 +1851,7 @@ def update_mechanical(pcb_sn, fPanel="", PSU="", RS232="", prodLine="", userDesc
                     **response_data,
                     "data": {
                         "metadata": {
-                            "ErrorMessage": ret[0]["ErrorMessage"]
+                            "ErrorMessage": f'{ret[0]["ErrorMessage"]} [{pcb_sn}]'
                         },
                     },
                     "message": "Product Info Retrieved",
@@ -1897,7 +1911,7 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                 "target_status": INSTANT_STATUS_ID,
             },
         },
-        "message": "Default Message",
+        "message": f'Default Message: pcb_sn: [{pcb_sn}]',
         "status": CONST_FAILURE
     }
 
@@ -1919,6 +1933,10 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                 }
                 id_status = state_common["device_info"]["Status"]
                 if id_status in allowed_target_status:
+                    sleeptime = round(random.uniform(0.1, 0.9), 3)
+                    print("sleeping for:", sleeptime, "seconds")
+                    sleep(sleeptime)
+                    print("sleeping is over")
                     gen_sn = generate_stb_num(pcb_sn)
                     print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
                     print(gen_sn)
@@ -1951,16 +1969,16 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
 
                             # TODO: 1. Printer Name, 2. Get Real Template From Database
                             print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                            print_status = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                            printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
                             print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                            if print_status != CONST_SUCCESS:
+                            if printer_resp["status"] == CONST_FAILURE:
                                 print("Printing Failed")
                                 response_data = {
                                     **response_data,
                                     "data": {
                                         "metadata": state_common,
                                     },
-                                    "message": f'''PRINT STATUS {print_status}''',
+                                    "message": printer_resp["message"],
                                     "status": CONST_FAILURE,
                                 }
                             else:
@@ -2008,11 +2026,19 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                         "status": CONST_FAILURE,
                     }
                     pass
-            pass
+            else:
+                # print(device["message"])
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {},
+                    },
+                    "message": f'''ERROR,PCB: [{pcb_sn}] {device["message"]}''',
+                    "status": CONST_FAILURE,
+                }
         except Exception as e:
-            error = '\n'.join(e[0])
             print(
-                f'[ERROR: Exception - {error}, will skip this invalid cell value')
+                f'[ERROR: Exception - {str(e)}, will skip this invalid cell value')
             raise e
         else:
             pass
@@ -2035,21 +2061,45 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
 
 def printer_wrapper(v, template_file):
     print(f'printer_wrapper requested {v} {template_file}')
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "variables": v,
+                "template_file": template_file
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
     try:
         with open('./' + template_file, 'r') as fh:
             t = replace_prn_variables(
                 ''.join(c for c in fh.read() if ord(c) < 128), v)
             # print t
             send_prn(t)
-            return CONST_SUCCESS
+            response_data = {
+                **response_data,
+                "message": "Print was successful",
+                "status": CONST_SUCCESS
+            }
     except MissingVariableException as e:
         print(f'Some variables specified in the PRN text are not supplied in the {template_file} file.')
         print(f'These variables are not supplied: {e[0].sort()}')
         print('\n'.join(e[0]))
-        return CONST_FAILURE
+        response_data = {
+            **response_data,
+            "message": "Error: MissingVariableException",
+            "status": CONST_FAILURE
+        }
     except Exception as e:
-        print('\n'.join(e[0]))
-        return CONST_FAILURE
+        print(str(e))
+        response_data = {
+            **response_data,
+            "message": str(e),
+            "status": CONST_FAILURE
+        }
+    return response_data
 
 
 @eel.expose
@@ -2061,10 +2111,15 @@ def test_print(printer_name=''):
         'ETHERNET_MAC': "EFEFEFEFEFEF"
     }
 
+    sleeptime = round(random.uniform(0.1, 0.9), 3)
+    print("sleeping for:", sleeptime, "seconds")
+    sleep(sleeptime)
+    print("sleeping is over")
     # TODO: 1. Printer Name, 2. Get Real Template From Database
     print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-    print_status = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+    response_data = printer_wrapper(varDict, 'streama_mechanical_template.txt')
     print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+    return response_data
 
 
 @eel.expose

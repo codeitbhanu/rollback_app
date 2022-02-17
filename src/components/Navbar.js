@@ -234,7 +234,7 @@ function Navbar({
                                 ? "Development"
                                 : "Live"
                         } Server`}
-                        class="tooltip tooltip-primary tooltip-bottom rounded-full"
+                        className="tooltip tooltip-primary tooltip-bottom rounded-full"
                     >
                         <button
                             onClick={() => handleSwitchServer()}

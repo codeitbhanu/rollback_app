@@ -244,7 +244,7 @@ function BoxFastForward({ eel, params, setParams }) {
                             <label className="text-black label">
                                 <span className="text-black label-text">Hotkey</span>
                             </label>
-                            <kbd class="kbd">___SPACE___</kbd>
+                            <kbd className="kbd">___SPACE___</kbd>
                         </div> */}
                         {/* <div>
                             <label className="text-black label">
@@ -287,7 +287,7 @@ function BoxFastForward({ eel, params, setParams }) {
                         </div>
                     </div>
                 </div>
-                <div class="divider divider-vertical"></div>
+                <div className="divider divider-vertical"></div>
                 <div className="flex px-4 pt-0 border-0 border-red-500 w-2/5 max-w-1/2 overflow-x-hidden">
                     <div className="flex-1 overflow-y-scroll overflow-x-hidden">
                         <table className="flex table w-full overflow-x-hidden table-compact text-2xs overflow-y-scroll">

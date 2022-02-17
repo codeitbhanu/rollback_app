@@ -381,7 +381,7 @@ function OrderItems({ eel, params, setParams }) {
                 </div>
                 <div className="flex h-auto gap-2 px-4 pt-0 bg-gray-100 border stats border-base-300">
                     <div className="flex flex-col flex-1 mb-16 overflow-x-auto border-0 border-green-400">
-                        <div class="tabs">
+                        <div className="tabs">
                             {state.tabs.map((pd, idx) => (
                                 <a
                                     href="#/"
