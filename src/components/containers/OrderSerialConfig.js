@@ -94,6 +94,7 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
         valid_scanned: 0,
         active_products: [default_product],
         prod_id: -1,
+        prod_desc: "",
         selected_product: "",
         param_edit_mode: false,
         fraction_max_count: 8,
@@ -104,6 +105,10 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
         common_prod_id: -1,
         last_pallet: "",
         last_carton: "",
+        ord_num: undefined,
+        ord_start: undefined,
+        ord_end: undefined,
+        range_qty: 0
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -281,6 +286,129 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
     const handleMoveDown = (row) => {
         console.log("handleMoveDown " + row.order + row.sn_start + row.sn_end);
     }
+
+    const handleChangeOrderNum = (event) => {
+        console.log("handleChangeOrderNum called " + event.target.value);
+        const ord = event.target.value.trim();
+        setState((prevState) => ({
+            ...prevState,
+            ord_num: ord
+        }))
+    };
+
+    const updateQuantity = (start="", end="") => {
+        let qty = 0;
+        let ord_end = ""
+        let ord_start = ""
+        try {
+            ord_end = end.trim().match(/\d+$/)[0];
+            ord_start = start.trim().match(/\d+$/)[0];
+        }
+        catch (e) {
+            console.log("Error: " + e.message);
+        } 
+        if (ord_start !== "" && ord_end !== "" && ord_end.length === ord_start.length) {
+            qty = (ord_end - ord_start + 1)
+            console.log(`end: ${ord_end} start: ${ord_start} qty: ${qty}`)
+        }
+        return qty;
+    }
+
+    const handleChangeStartRange = (event) => {
+        console.log("handleChangeStartRange called " + event.target.value);
+        const start = event.target.value.trim();
+        setState((prevState) => ({
+            ...prevState,
+            ord_start: start,
+            range_qty: updateQuantity(start, state.ord_end)
+        }))
+        
+    };
+
+    const handleChangeEndRange = (event) => {
+        console.log("handleChangeEndRange called " + event.target.value);
+        const end = event.target.value.trim();
+        setState((prevState) => ({
+            ...prevState,
+            ord_end: end,
+            range_qty: updateQuantity(state.ord_start, end)
+        }))
+    };
+
+    const handleAddOrderSubmit = () => {
+        console.log("handleAddOrderSubmit called ");
+        console.log(state);
+        if (state.ord_num && state.ord_num.length !== 6) {
+            alert("Error: Order Number Incorrect")
+            return
+        } else if (state.range_qty <= 0) {
+            alert("Error: Range Cannot Be 0 or less")
+            return
+        } else if (state.prod_id <= 0) {
+            alert("Error: Product is incorrect")
+            return
+        } else {
+            try {
+                const prod_id = state.prod_id;
+                const prod_desc = state.prod_desc;
+                const ord_num = state.ord_num;
+                const ord_start =  state.ord_start;
+                const sn_length = state.ord_start.length;
+                const ord_end =  state.ord_end
+                const prefix = state.ord_end.match(/[a-zA-Z]+/g)[0];
+                console.log(`prefix: ${prefix}`)
+                const end_digits = String(parseInt(state.ord_end.match(/\d+$/)[0]) + 1);
+                console.log(`end_digits: ${end_digits}`)
+                const len_prefix = prefix.length;
+                const ord_end_plus_one = prefix + end_digits.padStart(sn_length, "0")
+                const full_len_sn_range = ord_num + ord_start + ord_end_plus_one
+                console.log(full_len_sn_range)
+                if (params.server.status) {
+                    eel.add_new_order_ranges(
+                        state?.prod_id,
+                        state?.prod_desc,
+                        ord_num,
+                        ord_start,
+                        ord_end,
+                        state?.range_qty,
+                        full_len_sn_range
+                    )((response) => {
+                        console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                        try {
+                            const function_name = response.function_name;
+                            const status = response.status;
+                            const message = response.message;
+                            const metadata = response.data.metadata;
+                            console.log(
+                                `${function_name} message got: ${JSON.stringify(
+                                    message
+                                )} metadata: ${JSON.stringify(metadata)}`
+                            );
+                            if (status === CONST_SUCCESS) {
+                                const data_list = updateDataSeparated(metadata.prod_data)
+                                setState((prevState) => ({
+                                    ...prevState,
+                                    data: data_list
+                                }));
+                            } else {
+                                setTimeout(() => {
+                                    alert(`RESPONSE ERROR: ${message}`);
+                                }, 200);
+                            }
+                        } catch (error) {
+                            setTimeout(() => {
+                                alert(`PARSE ${error}`);
+                            }, 200);
+                        }
+                    });
+                } else {
+                    throw Error(`Connect the server first`);
+                }
+            } catch (error) {
+                alert(`${error}`);
+            }
+        }
+    };
 
     const handleEditItem = (id, rownum, param) => {
         // console.log("params: " + JSON.stringify(params))
@@ -464,6 +592,13 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
             `onSelectProduct called prodId: ${prodObj?.prod_id} prodDesc: ${prodDesc}`
         );
 
+        setState((prevState) => ({
+            ...prevState,
+            prod_id: prodId,
+            prod_desc: prodDesc,
+            data: []
+        }));
+
         try {
             if (params.server.status) {
                 eel.get_prod_data_by_id(prodObj?.prod_id)((response) => {
@@ -516,8 +651,6 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
         <div className="absolute flex flex-col w-full mt-4 border-0 border-gray-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
                 <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
-                    <div className="">
-                    </div>
                     <div className="flex flex-col mt-2 border-0 border-red-600">
                         <label className="text-black label">
                             <span className="text-black label-text">
@@ -545,25 +678,120 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
                             )}
                         </select>
                     </div>
-
+                    <div className="flex flex-col justify-between mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Enter Order No.
+                            </span>
+                            {/* <span
+                                className={
+                                    state.valid_scanned === state.fraction_count
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600 font-bold"
+                                }
+                            >{`${state.valid_scanned} / ${state.fraction_count}`}</span> */}
+                        </label>
+                        <input
+                            type="text"
+                            value={state.ord_num}
+                            placeholder="Enter Order No. (6-digits)"
+                            className="border-double input input-primary input-bordered"
+                            onChange={(e) =>
+                                handleChangeOrderNum(e)
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col justify-between mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Start Range
+                            </span>
+                            {/* <span
+                                className={
+                                    state.valid_scanned === state.fraction_count
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600 font-bold"
+                                }
+                            >{`${state.valid_scanned} / ${state.fraction_count}`}</span> */}
+                        </label>
+                        <input
+                            type="text"
+                            value={state.ord_start}
+                            placeholder="Enter Start Range"
+                            className="border-double input input-primary input-bordered"
+                            onChange={(e) =>
+                                handleChangeStartRange(e)
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col justify-between mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                End Range (Last Inclusive)
+                            </span>
+                            {/* <span
+                                className={
+                                    state.valid_scanned === state.fraction_count
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600 font-bold"
+                                }
+                            >{`${state.valid_scanned} / ${state.fraction_count}`}</span> */}
+                        </label>
+                        <input
+                            type="text"
+                            value={state.ord_end}
+                            placeholder="Enter End Range"
+                            className="border-double input input-primary input-bordered"
+                            onChange={(e) =>
+                                handleChangeEndRange(e)
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col justify-between mt-2">
+                        <label className="text-black label">
+                            <span className="text-black label-text">
+                                Confirm and Add
+                            </span>
+                            {/* <span
+                                className={
+                                    state.valid_scanned === state.fraction_count
+                                        ? "text-green-600 font-bold"
+                                        : "text-red-600 font-bold"
+                                }
+                            >{`${state.valid_scanned} / ${state.fraction_count}`}</span> */}
+                        </label>
+                        <div className="flex w-full input-group">
+                            <input
+                                    value={state.range_qty}
+                                    type="text"
+                                    placeholder="Quantity"
+                                    className="w-3/4 input input-bordered"
+                                    disabled="disabled"
+                                />
+                            <button className="btn btn-square" onClick={handleAddOrderSubmit}>
+                                ADD
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
                 <div className="bottom-0 flex flex-1 px-4 pt-0 border-0 border-red-500">
                     <div className="flex-1 overflow-y-scroll">
-                    <MaterialTable
-                        title={`Orders For Product ${state.selected_product}`}
-                        tableRef={tableRef}
-                        icons={tableIcons}
-                        data={state.data}
-                        columns={columns}
-                        actions={actions}
-                        options={{
-                            sorting: false,
-                            search: false,
-                            paging: false,
-                            actionsColumnIndex: -1,
-                            draggable: false
-                        }}
-                    />
+                        <MaterialTable
+                            title={`Orders For Product ${state.selected_product}`}
+                            tableRef={tableRef}
+                            icons={tableIcons}
+                            data={state.data}
+                            columns={columns}
+                            actions={actions}
+                            options={{
+                                sorting: false,
+                                search: false,
+                                paging: false,
+                                actionsColumnIndex: -1,
+                                draggable: false,
+                            }}
+                        />
                     </div>
                 </div>
             </div>
