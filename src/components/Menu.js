@@ -105,15 +105,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconOrderSerialConfig = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="w-6 h-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
             />
         </svg>
@@ -121,15 +121,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconFastForward = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="w-6 h-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
             />
         </svg>
@@ -137,15 +137,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconStreamaMechanical = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="w-6 h-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                strokewidth="{2}"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
                 d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
             />
         </svg>
@@ -179,7 +179,30 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
 
             <ul className="py-3 menu bg-base-100">
-                {/* <li
+                <li
+                    className={
+                        menuState.selectedMenu === "streama_mechanical"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_mechanical",
+                                "Streama Mechanical",
+                                iconStreamaMechanical,
+                                StreamaMechanicalContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">
+                            {iconStreamaMechanical}
+                        </div>
+                        Streama Mechanical
+                    </a>
+                </li>{" "}
+                <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
                             ? "bordered"
@@ -200,7 +223,6 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Unit Rollback
                     </a>
                 </li>
-
                 <li
                     className={
                         menuState.selectedMenu === "frequent_param"
@@ -266,30 +288,9 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "order_serial_config" ?
-                        "bordered" : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "box_fast_forward",
-                                "Box Fast Forward",
-                                iconFastForward,
-                                BoxFastForwardContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
-                        Box Fast Forward
-
-                    </a>
-                </li> */}
-                {/* 
-                <li
-                    className={
-                        menuState.selectedMenu === "order_serial_config" ?
-                        "bordered" : ""
+                        menuState.selectedMenu === "order_serial_config"
+                            ? "bordered"
+                            : ""
                     }
                 >
                     <a
@@ -302,12 +303,13 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             )
                         }
                     >
-                        <div className="w-5 h-5 mr-2">{iconOrderSerialConfig}</div>
+                        <div className="w-5 h-5 mr-2">
+                            {iconOrderSerialConfig}
+                        </div>
                         Order Serial Config
-
                     </a>
                 </li>
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "rollback_pallet" ?
                         "bordered" : ""
@@ -347,27 +349,28 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
                         Fraction Pallet
                     </a>
-                </li> */}
+                </li>  */}
                 <li
                     className={
-                        menuState.selectedMenu === "streama_mechanical" ?
-                        "bordered" : ""
+                        menuState.selectedMenu === "box_fast_forward"
+                            ? "bordered"
+                            : ""
                     }
                 >
                     <a
                         onClick={() =>
                             onSelectMenu(
-                                "streama_mechanical",
-                                "Streama Mechanical",
-                                iconStreamaMechanical,
-                                StreamaMechanicalContainer
+                                "box_fast_forward",
+                                "Box Fast Forward",
+                                iconFastForward,
+                                BoxFastForwardContainer
                             )
                         }
                     >
-                        <div className="w-5 h-5 mr-2">{iconStreamaMechanical}</div>
-                        Streama Mechanical
+                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
+                        Box Fast Forward
                     </a>
-                </li> 
+                </li>
             </ul>
         </div>
     );

@@ -2656,7 +2656,7 @@ def get_frequent_params(prod_id, table, param_name, key):
 
 # FEATURE: Order Serial Config
 @eel.expose
-def get_prod_data_by_id(prod_id):
+def get_prod_data_by_id(prod_id=-1):
     print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
     global serverinstance
 
@@ -2675,9 +2675,10 @@ def get_prod_data_by_id(prod_id):
         cursor = serverinstance.cursor
         conn = serverinstance.conn
         try:
-            select_sql = f'''SELECT prod_id, data_value, priority, status
-                            FROM stb_production.dbo.production_data
-                            WHERE prod_id={prod_id} and data_name = \'order_stb_range\';
+            select_sql = f'''
+                            SELECT snr.prod_id, snr.ord_num, pd.data_value, snr.ord_start, snr.ord_end, snr.range_qty, snr.consumed_qty, pd.priority, pd.id_status  FROM stb_production.dbo.production_data pd
+                            INNER JOIN stb_production.dbo.serial_number_range snr ON snr.id_serial_number_range = pd.id_serial_number_range
+                            WHERE pd.prod_id={prod_id} and pd.data_name = \'order_stb_range\';
                             '''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
@@ -2692,7 +2693,7 @@ def get_prod_data_by_id(prod_id):
                 prod_data_list = []
                 for row in results:
                     print(row)
-                    prod_data_list.append({"prod_id": row[0], "data_value": row[1], "priority": row[2], "status": row[3]})
+                    prod_data_list.append({"prod_id": row[0], "ord_num": row[1], "data_value": row[2], "ord_start": row[3], "ord_end": row[4], "range_qty": row[5], "consumed_qty": row[6], "priority": row[7], "id_status": row[8]})
 
                 print("#######################################")
                 response_data = {
@@ -2710,11 +2711,13 @@ def get_prod_data_by_id(prod_id):
             print(
                 f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
             cursor.rollback()
+            results = []
             raise e
         except pyodbc.ProgrammingError as pe:
             cursor.rollback()
             print(
                 f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            results = []
             raise pe
         except KeyError as ke:
             print(
@@ -3657,6 +3660,119 @@ def mes_update_WIP(pcb_sn, gsn=''):
             print('VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV')
             print(response_data)
             print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+            return response_data
+
+
+@eel.expose
+def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', range_qty = 0, full_len_sn_range=''):
+    """Returns connection status if connected, else connects to the production server"""
+    print(f'[ADD-NEW-ORDER-RANGES] {prod_id} {prod_desc} {ord_num} {ord_start} {ord_end} {range_qty} {full_len_sn_range}')
+    global serverinstance
+
+    current_time = get_current_time()
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "prod_id": prod_id,
+                "prod_desc": prod_desc,
+                "ord_num": ord_num,
+                "ord_start": ord_start,
+                "ord_end": ord_end,
+                "range_qty": range_qty,
+                "full_len_sn_range": full_len_sn_range,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + ' Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''
+                        SELECT id_serial_number_range
+                        FROM stb_production.dbo.serial_number_range
+                        WHERE ord_num=N\'{ord_num}\' AND ord_start=N\'{ord_start}\' AND ord_end=N\'{ord_end}\'
+            '''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                response_data = {
+                    **response_data,
+                    "message": f'''{ord_num} Duplicate Order Range''',
+                    "status": CONST_FAILURE,
+                }
+                raise Exception("Duplicate Order Range")
+
+            insert_sql = f'''INSERT INTO stb_production.dbo.serial_number_range
+                                (prod_id, ord_num, ord_start, ord_end, range_qty, consumed_qty, entry_date, id_user)
+                                VALUES({prod_id}, N\'{ord_num}\', N\'{ord_start}\', N\'{ord_end}\', {range_qty}, 0, \'{current_time}\', 117);
+                                '''
+            print(f'[INSERT-SQL] {insert_sql}')
+            response_data = {
+                **response_data,
+                "insert_query": insert_sql,
+            }
+            # conn.autocommit = False
+            # results = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {results}')
+
+            conn.autocommit = False
+            wipdata_insert = cursor.execute(insert_sql)
+            cursor.commit()
+            conn.autocommit = True
+            print(f'[INSERT-SQL-ROWCOUNT] {wipdata_insert.rowcount}')
+
+            if (wipdata_insert.rowcount == 0):
+                response_data = {
+                    **response_data,
+                    "message": f'''{ord_num} could not be inserted''',
+                    "status": CONST_FAILURE,
+                }
+            elif (wipdata_insert.rowcount == 1):
+                queried_prod_data_response = get_prod_data_by_id(prod_id)
+                print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+                print(queried_prod_data_response)
+                print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+                response_data = {
+                    **response_data,
+                    "message": f'''{ord_num} successfully inserted''',
+                    "status": CONST_SUCCESS,
+                    "data": {
+                        **response_data["data"],
+                        "metadata": {
+                            **response_data["data"]["metadata"],
+                            **queried_prod_data_response["data"]["metadata"],
+                        }
+                    }
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except Exception as e:
+            print(
+                f'[ERROR: {str(e)}, will skip this invalid cell value')
+            raise e
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
             return response_data
 
 
