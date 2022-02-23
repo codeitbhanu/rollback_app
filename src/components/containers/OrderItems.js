@@ -224,6 +224,7 @@ function OrderItems({ eel, params, setParams }) {
             return {
                 tag: item.tag,
                 checked: item.tag === opt.tag ? !opt.checked : item.checked,
+                disabled: item.disabled
             };
         });
         setState((prevState) => ({
@@ -292,13 +293,11 @@ function OrderItems({ eel, params, setParams }) {
                             tabs.push(key);
                             items.push(value.items);
                             stats.push({
-                                qty_choice: value["qty_choice"],
-                                qty_target: value["qty_target"],
-                                qty_produced: value["qty_produced"],
-                                blacklisted: value["blacklisted"],
-                                total_qty_produced:
-                                    metadata["total_qty_produced"],
+                                total_qty_choice: metadata["total_qty_choice"],
                                 total_qty_target: metadata["total_qty_target"],
+                                total_qty_produced: metadata["total_qty_produced"],
+                                total_qty_scrapped: metadata["total_qty_scrapped"],
+                                total_qty_blacklisted: metadata["total_qty_blacklisted"],
                             });
                         }
                         console.log(`tabs: ${tabs}`);
@@ -384,6 +383,7 @@ function OrderItems({ eel, params, setParams }) {
                         <div className="tabs">
                             {state.tabs.map((pd, idx) => (
                                 <a
+                                    key={'suborder_' + idx}
                                     href="#/"
                                     onClick={() =>
                                         setState((prevState) => ({
@@ -480,7 +480,29 @@ function OrderItems({ eel, params, setParams }) {
                             <div className="stat-title">Found Units</div>
                             <div className="stat-value">
                                 {state.stats.length &&
-                                    state.stats[state.active_tab]["qty_choice"]}
+                                    state.stats[state.active_tab]["total_qty_choice"]}
+                            </div>
+                            <div className="mt-2 stat-desc">
+                                <progress className="hidden progress" />
+                            </div>
+                        </div>
+
+                        <div className="stat">
+                            <div className="stat-title">Blacklisted</div>
+                            <div className="stat-value">
+                                {state.stats.length &&
+                                    state.stats[state.active_tab]["total_qty_blacklisted"]}
+                            </div>
+                            <div className="mt-2 stat-desc">
+                                <progress className="hidden progress" />
+                            </div>
+                        </div>
+
+                        <div className="stat">
+                            <div className="stat-title">Scrapped</div>
+                            <div className="stat-value">
+                                {state.stats.length &&
+                                    state.stats[state.active_tab]["total_qty_scrapped"]}
                             </div>
                             <div className="mt-2 stat-desc">
                                 <progress className="hidden progress" />
@@ -520,9 +542,9 @@ function OrderItems({ eel, params, setParams }) {
     );
 }
 
-// "qty_choice": value["qty_choice"],
-// "qty_target": value["qty_target"],
-// "qty_produced": value["qty_produced"],
+// "total_qty_choice": value["total_qty_choice"],
+// "total_qty_target": value["total_qty_target"],
+// "total_qty_produced": value["total_qty_produced"],
 // "blacklisted": value["blacklisted"],
 // "total_qty_produced": metadata["total_qty_produced"]
 

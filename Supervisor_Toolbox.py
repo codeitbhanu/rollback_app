@@ -134,6 +134,7 @@ report_status_mapping = {
 
 # left_factory_status_str = ','.join(map(lambda status: str(status), report_status_mapping['LEFT_FACTORY']))
 blacklisted_str = ','.join(map(lambda status: str(status), report_status_mapping['BLACKLISTED']))
+scrapped_str = ','.join(map(lambda status: str(status), report_status_mapping['SCRAPPED']))
 
 status_desc_for_id_status = {
     0: 'False',
@@ -2389,8 +2390,11 @@ def get_order_items(ord, opt_list):
                         id_prod_data: {'start': delim + start, 'end': delim + end}
                     }
             # Find all ranges count
+            total_qty_choice = 0
             total_qty_produced = 0
             total_qty_target = 0
+            total_qty_blacklisted = 0
+            total_qty_scrapped = 0
             for id_prod_data in africa_orders[ord].keys():
                 # print(id_prod_data)
                 # print(f'{ord}_{id_prod_data}')
@@ -2475,6 +2479,20 @@ def get_order_items(ord, opt_list):
                 for row in cursor.execute(select_sql):
                     if(row):
                         africa_orders[ord][id_prod_data]['blacklisted'] = row[0]
+                        total_qty_blacklisted = total_qty_blacklisted + row[0]
+                    # break
+                select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
+                    WHERE stb_num BETWEEN \'{africa_orders[ord][id_prod_data]['start']}\' AND \'{africa_orders[ord][id_prod_data]['end']}\' AND id_status IN ({scrapped_str})'''
+                print(select_sql)
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                    "status": CONST_FAILURE
+                }
+                for row in cursor.execute(select_sql):
+                    if(row):
+                        africa_orders[ord][id_prod_data]['scrapped'] = row[0]
+                        total_qty_scrapped = total_qty_scrapped + row[0]
                     # break
                 # for row in cursor.execute(f'''SELECT pcb_num, prod_id, id_production_order, id_status, id_status, timestamp,stb_num FROM production_event
                 select_sql = f'''SELECT COUNT(id_production_event) FROM production_event
@@ -2488,27 +2506,34 @@ def get_order_items(ord, opt_list):
                 for row in cursor.execute(select_sql):
                     if(row):
                         africa_orders[ord][id_prod_data]['qty_produced'] = row[0]
+                        total_qty_produced = total_qty_produced + row[0]
                     # break
 
                 # missing = africa_orders[k]['missing']
                 qty_choice = len(items)
-                qty_produced = africa_orders[ord][id_prod_data]['qty_produced']
+                total_qty_choice = total_qty_choice + qty_choice
+                # qty_produced = africa_orders[ord][id_prod_data]['qty_produced']
                 africa_orders[ord][id_prod_data]['qty_choice'] = qty_choice
                 qty_target = africa_orders[ord][id_prod_data]['qty_target']
                 blacklisted = africa_orders[ord][id_prod_data]['blacklisted']
+                scrapped = africa_orders[ord][id_prod_data]['scrapped']
                 africa_orders[ord][id_prod_data]['items'] = items
-                total_qty_produced = total_qty_produced + qty_produced - blacklisted
+                total_qty_produced = total_qty_produced - blacklisted - scrapped
                 total_qty_target = qty_target if total_qty_target == 0 else total_qty_target
 
-                print(f'{ord}_{id_prod_data} qty_choice: {qty_choice} qty_choice: {qty_choice} qty_target: {qty_target} qty_produced: {qty_produced} blacklisted: {blacklisted}')
+                print(f'{ord}_{id_prod_data} qty_choice: {qty_choice} qty_choice: {qty_choice} qty_target: {qty_target} total_qty_produced: {total_qty_produced} blacklisted: {blacklisted} scrapped: {scrapped}')
 
+            print(f'[TOTAL] {ord} total_qty_choice: {total_qty_choice} total_qty_target: {total_qty_target} total_qty_produced: {total_qty_produced} total_qty_blacklisted: {total_qty_blacklisted} total_qty_scrapped: {total_qty_scrapped}')
             response_data = {
                 **response_data,
                 "data": {
                     "metadata": {
                         "order_data": africa_orders[ord],
+                        "total_qty_choice": total_qty_choice,
+                        "total_qty_target": total_qty_target,
                         "total_qty_produced": total_qty_produced,
-                        "total_qty_target": total_qty_target
+                        "total_qty_scrapped": total_qty_scrapped,
+                        "total_qty_blacklisted": total_qty_blacklisted
                     },
                 },
                 "message": "Successfully Retrieved Data",
@@ -2656,6 +2681,93 @@ def get_frequent_params(prod_id, table, param_name, key):
 
 # FEATURE: Order Serial Config
 @eel.expose
+def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
+    print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''
+                            SELECT snr.prod_id, snr.ord_num, pd.data_value, snr.ord_start, snr.ord_end, snr.range_qty, snr.consumed_qty, pd.priority, pd.id_status, snr.id_serial_number_range  FROM stb_production.dbo.production_data pd
+                            INNER JOIN stb_production.dbo.serial_number_range snr ON snr.id_serial_number_range = pd.id_serial_number_range
+                            WHERE pd.prod_id={prod_id} and pd.data_name = \'order_stb_range\'
+                            ORDER BY pd.priority;
+                            '''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                prod_data_list = []
+                for row in results:
+                    print(row)
+                    prod_data_list.append({"prod_id": row[0], "ord_num": row[1], "data_value": row[2], "ord_start": row[3], "ord_end": row[4], "range_qty": row[5], "consumed_qty": row[6], "priority": row[7], "id_status": row[8], "id_serial_number_range": row[9]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_data": prod_data_list,
+                        },
+                    },
+                    "message": "Production Data for Product",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            results = []
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            results = []
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "Production Data Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+# FEATURE: Order Serial Config
+@eel.expose
 def get_prod_data_by_id(prod_id=-1):
     print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
     global serverinstance
@@ -2676,9 +2788,10 @@ def get_prod_data_by_id(prod_id=-1):
         conn = serverinstance.conn
         try:
             select_sql = f'''
-                            SELECT snr.prod_id, snr.ord_num, pd.data_value, snr.ord_start, snr.ord_end, snr.range_qty, snr.consumed_qty, pd.priority, pd.id_status  FROM stb_production.dbo.production_data pd
+                            SELECT snr.prod_id, snr.ord_num, pd.data_value, snr.ord_start, snr.ord_end, snr.range_qty, snr.consumed_qty, pd.priority, pd.id_status, snr.id_serial_number_range  FROM stb_production.dbo.production_data pd
                             INNER JOIN stb_production.dbo.serial_number_range snr ON snr.id_serial_number_range = pd.id_serial_number_range
-                            WHERE pd.prod_id={prod_id} and pd.data_name = \'order_stb_range\';
+                            WHERE pd.prod_id={prod_id} and pd.data_name = \'order_stb_range\'
+                            ORDER BY pd.priority;
                             '''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
@@ -2693,7 +2806,7 @@ def get_prod_data_by_id(prod_id=-1):
                 prod_data_list = []
                 for row in results:
                     print(row)
-                    prod_data_list.append({"prod_id": row[0], "ord_num": row[1], "data_value": row[2], "ord_start": row[3], "ord_end": row[4], "range_qty": row[5], "consumed_qty": row[6], "priority": row[7], "id_status": row[8]})
+                    prod_data_list.append({"prod_id": row[0], "ord_num": row[1], "data_value": row[2], "ord_start": row[3], "ord_end": row[4], "range_qty": row[5], "consumed_qty": row[6], "priority": row[7], "id_status": row[8], "id_serial_number_range": row[9]})
 
                 print("#######################################")
                 response_data = {
@@ -3730,18 +3843,18 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
             # print(f'[SELECT-SQL-RESULTS] {results}')
 
             conn.autocommit = False
-            wipdata_insert = cursor.execute(insert_sql)
+            snr_insert = cursor.execute(insert_sql)
             cursor.commit()
             conn.autocommit = True
-            print(f'[INSERT-SQL-ROWCOUNT] {wipdata_insert.rowcount}')
+            print(f'[INSERT-SQL-ROWCOUNT] {snr_insert.rowcount}')
 
-            if (wipdata_insert.rowcount == 0):
+            if (snr_insert.rowcount == 0):
                 response_data = {
                     **response_data,
                     "message": f'''{ord_num} could not be inserted''',
                     "status": CONST_FAILURE,
                 }
-            elif (wipdata_insert.rowcount == 1):
+            elif (snr_insert.rowcount == 1):
                 queried_prod_data_response = get_prod_data_by_id(prod_id)
                 print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
                 print(queried_prod_data_response)
@@ -3758,6 +3871,48 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
                         }
                     }
                 }
+                if (queried_prod_data_response["data"]["metadata"]["id_serial_number_range"]["prod_data"] > 0):
+                    try:
+                        ref_snr = queried_prod_data_response["data"]["metadata"]["id_serial_number_range"]
+                        data_value = queried_prod_data_response["data"]["metadata"]["data_value"]
+                        prod_data_list = queried_prod_data_response["data"]["metadata"]["prod_data"]
+                        ord_priority = 1
+                        ord_status = 4
+                        if (len(prod_data_list) > 0):
+                            max_priority = prod_data_list[-1]["priority"]
+                            print(f'max_priority: {max_priority}')
+                            ord_priority = max_priority + 1
+                            ord_status = 5
+
+                        proddata_insert_sql = f'''INSERT INTO stb_production.dbo.production_data
+                            (prod_id, data_name, data_value, data_description, priority, id_status, id_serial_number_range)
+                            VALUES({prod_id}, N'order_stb_range', N\'{data_value}\', N'Skyworth internal order number and the STB range for the order number.', {ord_priority}, {ord_status}, {ref_snr});
+                        '''
+
+                        print(f'[INSERT-SQL] {proddata_insert_sql}')
+                        response_data = {
+                            **response_data,
+                            "insert_query_production_data": proddata_insert_sql,
+                        }
+
+                        conn.autocommit = False
+                        proddata_insert = cursor.execute(proddata_insert_sql)
+                        cursor.commit()
+                        conn.autocommit = True
+                        print(f'[INSERT-SQL-ROWCOUNT] {proddata_insert.rowcount}')
+                        response_data = {
+                            **response_data,
+                            "insert_query_production_data_count": proddata_insert.rowcount,
+                        }
+                    except Exception as e:
+                        conn.autocommit = True
+                        print(f'[ERROR: {str(e)}, will skip this invalid cell value')
+                        response_data = {
+                            **response_data,
+                            "status": CONST_FAILURE,
+                            "message": str(e),
+                        }
+                        raise e
 
         except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
             print(
