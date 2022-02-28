@@ -2681,7 +2681,7 @@ def get_frequent_params(prod_id, table, param_name, key):
 
 # FEATURE: Order Serial Config
 @eel.expose
-def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
+def get_id_by_serial_number_ranges(prod_id= -1, ord_num= '', ord_start= '', ord_end=''):
     print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
     global serverinstance
 
@@ -2690,7 +2690,7 @@ def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
         "data": {
             "metadata": None,
         },
-        "message": "Default Message",
+        "message": "FAILED: get_id_by_serial_number_ranges",
         "status": CONST_FAILURE
     }
 
@@ -2700,11 +2700,8 @@ def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
         cursor = serverinstance.cursor
         conn = serverinstance.conn
         try:
-            select_sql = f'''
-                            SELECT snr.prod_id, snr.ord_num, pd.data_value, snr.ord_start, snr.ord_end, snr.range_qty, snr.consumed_qty, pd.priority, pd.id_status, snr.id_serial_number_range  FROM stb_production.dbo.production_data pd
-                            INNER JOIN stb_production.dbo.serial_number_range snr ON snr.id_serial_number_range = pd.id_serial_number_range
-                            WHERE pd.prod_id={prod_id} and pd.data_name = \'order_stb_range\'
-                            ORDER BY pd.priority;
+            select_sql = f'''SELECT id_serial_number_range  FROM stb_production.dbo.serial_number_range
+                            WHERE prod_id={prod_id} AND ord_num=N\'{ord_num}\' AND ord_start=N\'{ord_start}\' AND ord_end=N\'{ord_end}\'
                             '''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
@@ -2712,25 +2709,37 @@ def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
                 "select_query": select_sql,
             }
             conn.autocommit = False
+            results = []
             results = cursor.execute(select_sql).fetchall()
             print(f'[SELECT-SQL-RESULTS] {results}')
 
-            if len(results) > 0:
-                prod_data_list = []
+            if len(results) == 1:
+                id_serial_number_range = 0
                 for row in results:
                     print(row)
-                    prod_data_list.append({"prod_id": row[0], "ord_num": row[1], "data_value": row[2], "ord_start": row[3], "ord_end": row[4], "range_qty": row[5], "consumed_qty": row[6], "priority": row[7], "id_status": row[8], "id_serial_number_range": row[9]})
+                    id_serial_number_range = row[0]
 
                 print("#######################################")
                 response_data = {
                     **response_data,
                     "data": {
                         "metadata": {
-                            "prod_data": prod_data_list,
+                            "id_serial_number_range": id_serial_number_range,
                         },
                     },
                     "message": "Production Data for Product",
                     "status": CONST_SUCCESS,
+                }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "results": results,
+                        },
+                    },
+                    "message": "Required single entry",
+                    "status": CONST_FAILURE,
                 }
 
         except pyodbc.DatabaseError as e:
@@ -2769,6 +2778,7 @@ def get_id_by_serial_number_ranges(ord_num= '', ord_start= '', ord_end=''):
 # FEATURE: Order Serial Config
 @eel.expose
 def get_prod_data_by_id(prod_id=-1):
+    # CAUTION: This function will not through error, on list is blank, it will result an empty list.
     print(f'[GET-PROD-DATA-BY-ID] requested prod_id: {prod_id}')
     global serverinstance
 
@@ -2819,6 +2829,18 @@ def get_prod_data_by_id(prod_id=-1):
                     "message": "Production Data for Product",
                     "status": CONST_SUCCESS,
                 }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_data": [],
+                            "results": results,
+                        },
+                    },
+                    "message": "Production Data Unavailable for Product: " + str(prod_id),
+                    "status": CONST_SUCCESS,
+                }
 
         except pyodbc.DatabaseError as e:
             print(
@@ -2841,16 +2863,16 @@ def get_prod_data_by_id(prod_id=-1):
         finally:
             conn.autocommit = True
             print(response_data)
-            if len(results) == 0:
-                # raise ValueError("record not found")
-                response_data = {
-                    **response_data,
-                    "data": {
-                        "metadata": results,
-                    },
-                    "message": "Production Data Found",
-                    "status": CONST_FAILURE,
-                }
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "Production Data Found",
+            #         "status": CONST_FAILURE,
+            #     }
             return response_data
 
 @eel.expose
@@ -3829,21 +3851,21 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
                 }
                 raise Exception("Duplicate Order Range")
 
-            insert_sql = f'''INSERT INTO stb_production.dbo.serial_number_range
+            snr_insert_sql = f'''INSERT INTO stb_production.dbo.serial_number_range
                                 (prod_id, ord_num, ord_start, ord_end, range_qty, consumed_qty, entry_date, id_user)
                                 VALUES({prod_id}, N\'{ord_num}\', N\'{ord_start}\', N\'{ord_end}\', {range_qty}, 0, \'{current_time}\', 117);
                                 '''
-            print(f'[INSERT-SQL] {insert_sql}')
+            print(f'[INSERT-SQL] {snr_insert_sql}')
             response_data = {
                 **response_data,
-                "insert_query": insert_sql,
+                "snr_insert_query": snr_insert_sql,
             }
             # conn.autocommit = False
             # results = cursor.execute(select_sql).fetchall()
             # print(f'[SELECT-SQL-RESULTS] {results}')
 
             conn.autocommit = False
-            snr_insert = cursor.execute(insert_sql)
+            snr_insert = cursor.execute(snr_insert_sql)
             cursor.commit()
             conn.autocommit = True
             print(f'[INSERT-SQL-ROWCOUNT] {snr_insert.rowcount}')
@@ -3855,64 +3877,104 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
                     "status": CONST_FAILURE,
                 }
             elif (snr_insert.rowcount == 1):
-                queried_prod_data_response = get_prod_data_by_id(prod_id)
-                print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-                print(queried_prod_data_response)
-                print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
-                response_data = {
-                    **response_data,
-                    "message": f'''{ord_num} successfully inserted''',
-                    "status": CONST_SUCCESS,
-                    "data": {
-                        **response_data["data"],
-                        "metadata": {
-                            **response_data["data"]["metadata"],
-                            **queried_prod_data_response["data"]["metadata"],
+                print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&')
+                verify_serial_range_added = get_id_by_serial_number_ranges(prod_id, ord_num, ord_start, ord_end)
+                print(verify_serial_range_added)
+                if verify_serial_range_added["status"] == CONST_SUCCESS:
+                    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+                    queried_prod_data_response = get_prod_data_by_id(prod_id)
+                    print(queried_prod_data_response)
+                    ord_priority = 1
+                    ord_status = 4
+                    data_value = full_len_sn_range
+                    ref_snr = verify_serial_range_added["data"]["metadata"]["id_serial_number_range"]
+                    prod_data_list = []
+                    if queried_prod_data_response["status"] == CONST_SUCCESS:
+                        print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+                        try:
+                            # TODO: Update the production data table with the new order range
+                            if (len(queried_prod_data_response["data"]["metadata"]["prod_data"]) > 0):
+                                prod_data_list = queried_prod_data_response["data"]["metadata"]["prod_data"]
+                                if (len(prod_data_list) > 0):
+                                    max_priority = prod_data_list[-1]["priority"]
+                                    print(f'max_priority: {max_priority}')
+                                    ord_priority = max_priority + 1
+                                    ord_status = 5
+
+                            print(f'[INSERTING-PROD-DATA] ref_snr {ref_snr} data_value {data_value} prod_data_list {prod_data_list} ord_priority {ord_priority} ord_status {ord_status}')
+                            proddata_insert_sql = f'''INSERT INTO stb_production.dbo.production_data
+                                (prod_id, data_name, data_value, data_description, priority, id_status, id_serial_number_range)
+                                VALUES({prod_id}, N'order_stb_range', N\'{data_value}\', N'Skyworth internal order number and the STB range for the order number.', {ord_priority}, {ord_status}, {ref_snr});
+                            '''
+
+                            print(f'[INSERT-SQL] {proddata_insert_sql}')
+                            response_data = {
+                                **response_data,
+                                "insert_query_production_data": proddata_insert_sql,
+                            }
+
+                            conn.autocommit = False
+                            proddata_insert = cursor.execute(proddata_insert_sql)
+                            cursor.commit()
+                            conn.autocommit = True
+                            print(f'[INSERT-SQL-ROWCOUNT] {proddata_insert.rowcount}')
+                            response_data = {
+                                **response_data,
+                                "insert_query_production_data_count": proddata_insert.rowcount,
+                            }
+                            if (snr_insert.rowcount == 0):
+                                response_data = {
+                                    **response_data,
+                                    "message": '''Failed to retreive production data info''',
+                                    "status": CONST_FAILURE,
+                                }
+                            else:
+                                print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+                                queried_prod_data_response = {}
+                                queried_prod_data_response = get_prod_data_by_id(prod_id)
+                                print(queried_prod_data_response)
+                                response_data = {
+                                    **response_data,
+                                    "data": {
+                                        **response_data["data"],
+                                        "metadata": queried_prod_data_response["data"]["metadata"],
+                                        "message": "Successfully added order range",
+                                        "status": CONST_FAILURE,
+                                    },
+                                }
+                        except Exception as e:
+                            conn.autocommit = True
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(e).__name__, e.args)
+                            print(f'[ERROR: {message}, will skip this invalid cell value')
+                            response_data = {
+                                **response_data,
+                                "status": CONST_FAILURE,
+                                "message": str(e),
+                            }
+                            raise e
+                    else:
+                        print('*********************************')
+                        raise Exception("Product Data could not be queried")
+                    print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+                    response_data = {
+                        **response_data,
+                        "message": f'''{ord_num} successfully inserted''',
+                        "status": CONST_SUCCESS,
+                        "data": {
+                            **response_data["data"],
+                            "metadata": {
+                                **response_data["data"]["metadata"],
+                                **queried_prod_data_response["data"]["metadata"],
+                            }
                         }
                     }
-                }
-                if (queried_prod_data_response["data"]["metadata"]["id_serial_number_range"]["prod_data"] > 0):
-                    try:
-                        ref_snr = queried_prod_data_response["data"]["metadata"]["id_serial_number_range"]
-                        data_value = queried_prod_data_response["data"]["metadata"]["data_value"]
-                        prod_data_list = queried_prod_data_response["data"]["metadata"]["prod_data"]
-                        ord_priority = 1
-                        ord_status = 4
-                        if (len(prod_data_list) > 0):
-                            max_priority = prod_data_list[-1]["priority"]
-                            print(f'max_priority: {max_priority}')
-                            ord_priority = max_priority + 1
-                            ord_status = 5
-
-                        proddata_insert_sql = f'''INSERT INTO stb_production.dbo.production_data
-                            (prod_id, data_name, data_value, data_description, priority, id_status, id_serial_number_range)
-                            VALUES({prod_id}, N'order_stb_range', N\'{data_value}\', N'Skyworth internal order number and the STB range for the order number.', {ord_priority}, {ord_status}, {ref_snr});
-                        '''
-
-                        print(f'[INSERT-SQL] {proddata_insert_sql}')
-                        response_data = {
-                            **response_data,
-                            "insert_query_production_data": proddata_insert_sql,
-                        }
-
-                        conn.autocommit = False
-                        proddata_insert = cursor.execute(proddata_insert_sql)
-                        cursor.commit()
-                        conn.autocommit = True
-                        print(f'[INSERT-SQL-ROWCOUNT] {proddata_insert.rowcount}')
-                        response_data = {
-                            **response_data,
-                            "insert_query_production_data_count": proddata_insert.rowcount,
-                        }
-                    except Exception as e:
-                        conn.autocommit = True
-                        print(f'[ERROR: {str(e)}, will skip this invalid cell value')
-                        response_data = {
-                            **response_data,
-                            "status": CONST_FAILURE,
-                            "message": str(e),
-                        }
-                        raise e
+                else:
+                    print('*********************************')
+                    raise Exception("Serial Range not added")
+                print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                
+                
 
         except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
             print(

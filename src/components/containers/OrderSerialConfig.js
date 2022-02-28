@@ -229,7 +229,7 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
     // }
 
     const updateDataSeparated = (data) => {
-        return data.map((item, index) => ({
+        const ret = data.map((item, index) => ({
             id: index,
             order: item["data_value"].slice(0,6),
             sn_start: item["data_value"].slice(6,16),
@@ -238,6 +238,8 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
             priority: item["priority"],
             status: item["status"],
         }))
+        console.log(ret)
+        return ret
     }
 
     const updateDataCombined = (data) => {
@@ -360,9 +362,16 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
                 const end_digits = String(parseInt(state.ord_end.match(/\d+$/)[0]) + 1);
                 console.log(`end_digits: ${end_digits}`)
                 const len_prefix = prefix.length;
-                const ord_end_plus_one = prefix + end_digits.padStart(sn_length, "0")
+                const ord_end_plus_one = prefix + end_digits.padStart(sn_length - prefix.length, "0")
                 const full_len_sn_range = ord_num + ord_start + ord_end_plus_one
                 console.log(full_len_sn_range)
+                setState((prevState) => ({
+                    ...prevState,
+                    ord_num: "",
+                    ord_start: "",
+                    ord_end: "",
+                    range_qty: updateQuantity()
+                }))
                 if (params.server.status) {
                     eel.add_new_order_ranges(
                         state?.prod_id,
@@ -783,7 +792,7 @@ function OrderSerialConfig({ eel, params, setParams, config_data }) {
                             icons={tableIcons}
                             data={state.data}
                             columns={columns}
-                            actions={actions}
+                            // actions={actions}
                             options={{
                                 sorting: false,
                                 search: false,
