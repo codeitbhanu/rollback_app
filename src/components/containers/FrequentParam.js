@@ -194,6 +194,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             case "min_weight":
             case "max_weight":
             case "oqc_counter":
+            case "production_target_count":
             case "software_version":
             case "load_sequence_number":
                 try {
@@ -370,6 +371,7 @@ function FrequentParam({ eel, params, setParams, config_data }) {
             case "min_weight":
             case "max_weight":
             case "oqc_counter":
+            case "production_target_count":
             case "software_version":
             case "load_sequence_number":
                 try {
