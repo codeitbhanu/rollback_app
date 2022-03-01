@@ -78,9 +78,9 @@
             "id_config_param": 74
         },
         {
-            "table": "production_data",
-            "param_name": "oqc_counter",
-            "data_name": "oqc_counter"
+            "table": "prod_config",
+            "param_name": "oqc_target_count",
+            "id_config_param": 65
         },
         {
             "table": "test_parameter",
