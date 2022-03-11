@@ -205,7 +205,7 @@ function OrderItems({ eel, params, setParams }) {
             {
                 tag: "TOTAL",
                 checked: false,
-                disabled: false,
+                disabled: true,
             },
         ],
         action_btns: default_action_btns,

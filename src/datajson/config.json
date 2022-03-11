@@ -1,9 +1,9 @@
 {
-    "app_version": "v5.7",
+    "app_version": "v5.9",
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
     "default_host": "172.20.10.103\\PRODUCTION",
-    "development_host": "HOMEPC\\SQLEXPRESS",
+    "development_host": "172.20.10.149\\PRODUCTION",
     "users": [
         {
             "id_user": 1,
@@ -49,6 +49,15 @@
             "email" : "Vanesh.Naicker@myskyworth.com",
             "id_status" : 4,
             "password": "Password234"
+        },
+        {
+            "id_user" : 117,
+            "user_desc" : "kathy.thaver",
+            "id_title" : 9,
+            "id_department" : 11,
+            "email" : "Kathy.Thaver@myskyworth.com",
+            "id_status" : 4,
+            "password": "Password667"
         }
     ],
     "frequent_param": [

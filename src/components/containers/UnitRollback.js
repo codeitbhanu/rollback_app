@@ -308,6 +308,9 @@ function UnitRollback({ eel, params, setParams }) {
                             <span className="text-black label-text">
                                 Select Reason Of Rollback
                             </span>
+                            <span className="text-red-500 label-text">
+                                (*Only DSD 41XX) 
+                            </span>
                         </label>
                         <select
                             className="flex min-w-full select select-bordered select-primary"

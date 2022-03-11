@@ -179,7 +179,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
 
             <ul className="py-3 menu bg-base-100">
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "streama_mechanical"
                             ? "bordered"
@@ -222,7 +222,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconUnitRollback}</div>
                         Unit Rollback
                     </a>
-                </li>
+                </li> */}
                 <li
                     className={
                         menuState.selectedMenu === "frequent_param"
@@ -286,7 +286,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Items
                     </a>
                 </li>
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
@@ -309,7 +309,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Serial Config
                     </a>
                 </li>
-                {/* <li
+                <li
                     className={
                         menuState.selectedMenu === "rollback_pallet" ?
                         "bordered" : ""
@@ -349,7 +349,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
                         Fraction Pallet
                     </a>
-                </li>  */}
+                </li>
                 <li
                     className={
                         menuState.selectedMenu === "box_fast_forward"
@@ -370,7 +370,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconFastForward}</div>
                         Box Fast Forward
                     </a>
-                </li>
+                </li>   */}
             </ul>
         </div>
     );
