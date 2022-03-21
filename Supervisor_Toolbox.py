@@ -2519,7 +2519,7 @@ def get_order_items(ord, opt_list):
                 scrapped = africa_orders[ord][id_prod_data]['scrapped']
                 africa_orders[ord][id_prod_data]['items'] = items
                 total_qty_produced = total_qty_produced - blacklisted - scrapped
-                total_qty_target = total_qty_target + qty_target
+                total_qty_target = total_qty_target + qty_target - blacklisted - scrapped
 
                 print(f'{ord}_{id_prod_data} qty_choice: {qty_choice} qty_choice: {qty_choice} qty_target: {qty_target} total_qty_produced: {total_qty_produced} blacklisted: {blacklisted} scrapped: {scrapped}')
 

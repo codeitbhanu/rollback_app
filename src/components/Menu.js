@@ -201,7 +201,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         </div>
                         Streama Mechanical
                     </a>
-                </li>{" "}
+                </li> */}
                 <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
@@ -222,7 +222,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconUnitRollback}</div>
                         Unit Rollback
                     </a>
-                </li> */}
+                </li>
                 <li
                     className={
                         menuState.selectedMenu === "frequent_param"
@@ -267,7 +267,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "pcb_report"
+                        menuState.selectedMenu === "order_items"
                             ? "bordered"
                             : ""
                     }
