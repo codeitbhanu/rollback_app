@@ -1683,7 +1683,7 @@ def get_device_info(pcb_sn):
                             "device_info": {}
                         },
                     },
-                    "message": "Device Info Not Found",
+                    "message": "Device Info Not Found " + pcb_sn,
                     "status": CONST_FAILURE,
                 }
 
@@ -1955,65 +1955,282 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                             # 1. CSN
                             csn_ret = mes_update_WIPData(pcb_sn, state_common["device_info"]["STB_Num"], 'CSN')
                             print(csn_ret)
-                            # 2. MAC
-                            mac_ret = mes_update_WIPData(pcb_sn, state_common["device_info"]["Custom_String_1"], 'MAC')
-                            print(mac_ret)
-                            # 3 mes_update_WIP
-                            wip_ret = mes_update_WIP(pcb_sn, state_common["device_info"]["STB_Num"])
-                            print(wip_ret)
-                            # PRINT THE VALUES
-                            # =============== PRINT =====================
-                            varDict = {
-                                'STB_NUM': state_common["device_info"]["STB_Num"],
-                                'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
-                            }
-
-                            # TODO: 1. Printer Name, 2. Get Real Template From Database
-                            print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                            printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
-                            print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                            if printer_resp["status"] == CONST_FAILURE:
-                                print("Printing Failed")
+                            if csn_ret["status"] == CONST_FAILURE:
+                                print("csn_ret Failed")
                                 response_data = {
                                     **response_data,
                                     "data": {
                                         "metadata": state_common,
                                     },
-                                    "message": printer_resp["message"],
+                                    "message": csn_ret["message"],
                                     "status": CONST_FAILURE,
                                 }
                             else:
-                                print("Printing Successful")
-                                # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
-                                mech_status = update_mechanical(pcb_sn, '', '', '', production_line, user_desc, '', False, '')
-                                print(mech_status)
-                                mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
-                                if mech_message.startswith(CONST_SUCCESS):
+                                # 2. MAC
+                                mac_ret = mes_update_WIPData(pcb_sn, state_common["device_info"]["Custom_String_1"], 'MAC')
+                                print(mac_ret)
+                                if mac_ret["status"] == CONST_FAILURE:
+                                    print("mac_ret Failed")
                                     response_data = {
                                         **response_data,
                                         "data": {
                                             "metadata": state_common,
                                         },
-                                        "message": f'''{mech_message}''',
-                                        "status": CONST_SUCCESS,
-                                    }
-                                else:
-                                    response_data = {
-                                        **response_data,
-                                        "data": {
-                                            "metadata": state_common,
-                                        },
-                                        "message": f'''ERROR, {mech_message}''',
+                                        "message": mac_ret["message"],
                                         "status": CONST_FAILURE,
                                     }
-
+                                else:
+                                    # 3 mes_update_WIP
+                                    wip_ret = mes_update_WIP(pcb_sn, state_common["device_info"]["STB_Num"])
+                                    print(wip_ret)
+                                    if wip_ret["status"] == CONST_FAILURE:
+                                        print("wip_ret Failed")
+                                        response_data = {
+                                            **response_data,
+                                            "data": {
+                                                "metadata": state_common,
+                                            },
+                                            "message": wip_ret["message"],
+                                            "status": CONST_FAILURE,
+                                        }
+                                    else:
+                                        # PRINT THE VALUES
+                                        # =============== PRINT =====================
+                                        varDict = {
+                                            'STB_NUM': state_common["device_info"]["STB_Num"],
+                                            'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
+                                        }
+                                        # TODO: 1. Printer Name, 2. Get Real Template From Database
+                                        print('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                                        printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                                        print('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                                        if printer_resp["status"] == CONST_FAILURE:
+                                            print("Printing Failed")
+                                            response_data = {
+                                                **response_data,
+                                                "data": {
+                                                    "metadata": state_common,
+                                                },
+                                                "message": printer_resp["message"],
+                                                "status": CONST_FAILURE,
+                                            }
+                                        else:
+                                            print("Printing Successful")
+                                            # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
+                                            mech_status = update_mechanical(pcb_sn, '', '', '', production_line, user_desc, '', False, '')
+                                            print(mech_status)
+                                            mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
+                                            if mech_message.startswith(CONST_SUCCESS):
+                                                response_data = {
+                                                    **response_data,
+                                                    "data": {
+                                                        "metadata": state_common,
+                                                    },
+                                                    "message": f'''{mech_message}''',
+                                                    "status": CONST_SUCCESS,
+                                                }
+                                            else:
+                                                response_data = {
+                                                    **response_data,
+                                                    "data": {
+                                                        "metadata": state_common,
+                                                    },
+                                                    "message": f'''ERROR, {mech_message}''',
+                                                    "status": CONST_FAILURE,
+                                                }
+                        else:
+                            response_data = {
+                                **response_data,
+                                "data": {
+                                    "metadata": state_common,
+                                },
+                                "message": f'''{device["message"]}''',
+                                "status": CONST_FAILURE,
+                            }
                     else:
                         response_data = {
                             **response_data,
                             "data": {
                                 "metadata": state_common,
                             },
-                            "message": f'''{gen_sn["data"]["metadata"]["ErrorMessage"]}''',
+                            "message": f'''{device["data"]["metadata"]["device_info"]}''',
+                            "status": CONST_FAILURE,
+                        }
+                else:
+                    # TODO: Set proper failure message that status is not allowed
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": state_common,
+                        },
+                        "message": f'''PCB: {pcb_sn} IS IN NOT ALLOWED STATUS {status_desc_for_id_status[id_status]}, ALLOWED {','.join(map(lambda id_status: status_desc_for_id_status[id_status], allowed_target_status))}''',
+                        "status": CONST_FAILURE,
+                    }
+                    pass
+            else:
+                # print(device["message"])
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {},
+                    },
+                    "message": f'''ERROR,PCB: [{pcb_sn}] {device["message"]}''',
+                    "status": CONST_FAILURE,
+                }
+        except Exception as e:
+            print(
+                f'[ERROR: Exception - {str(e)}, will skip this invalid cell value')
+            raise e
+        else:
+            pass
+            # cursor.commit()
+        finally:
+            # conn.autocommit = True
+            print(response_data)
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Products Found with PCB/SN",
+            #         "status": CONST_FAILURE,
+            #     }
+            return response_data
+
+@eel.expose
+def update_streama_mes_data(pcb_sn):
+    print(f'[UPDATE-STREAMA-MES-DATA] requested {pcb_sn}')
+    global serverinstance
+
+    state_common = {}
+
+    # ZEBRA.setqueue(printer_name)
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": f'Default Message: pcb_sn: [{pcb_sn}]',
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        # cursor = serverinstance.cursor
+        # conn = serverinstance.conn
+        try:
+            # Wrapper for all sub-methods for processing streama mechanical
+            allowed_target_status = [16]
+            device = get_device_info(pcb_sn)
+            print(device)
+            if device["status"] == CONST_SUCCESS:
+                # TODO: Handle StoredProcedure's failure codes also
+                state_common = {
+                    **state_common,
+                    **device["data"]["metadata"]
+                }
+                id_status = state_common["device_info"]["Status"]
+                if id_status in allowed_target_status:
+                    # sleeptime = round(random.uniform(0.1, 0.9), 3)
+                    # print("sleeping for:", sleeptime, "seconds")
+                    # sleep(sleeptime)
+                    # print("sleeping is over")
+                    # gen_sn = generate_stb_num(pcb_sn)
+                    # print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                    # print(gen_sn)
+                    if (device["data"]["metadata"]["device_info"]["Pcb_Num"]):
+                        print(f'############################## {device["data"]["metadata"]["device_info"]["STB_Num"]}')
+                        device = get_device_info(pcb_sn)
+                        if device["status"] == CONST_SUCCESS:
+                            # TODO: Handle StoredProcedure's failure codes also
+                            state_common = {
+                                **state_common,
+                                **device["data"]["metadata"]
+                            }
+                            # =============== NOW WE HAVE THE STB NUMBER, WITH PCB =====================
+                            # DONE_TODO: Update SQL07 MES System for binding STB Number
+                            # 1. CSN
+                            csn_ret = mes_update_WIPData(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["STB_Num"], 'CSN')
+                            print(csn_ret)
+                            if csn_ret["status"] == CONST_FAILURE:
+                                print("csn_ret Failed")
+                                response_data = {
+                                    **response_data,
+                                    "data": {
+                                        "metadata": state_common,
+                                    },
+                                    "message": csn_ret["message"],
+                                    "status": CONST_FAILURE,
+                                }
+                            else:
+                                # 2. MAC
+                                mac_ret = mes_update_WIPData(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["Custom_String_1"], 'MAC')
+                                print(mac_ret)
+                                if mac_ret["status"] == CONST_FAILURE:
+                                    print("mac_ret Failed")
+                                    response_data = {
+                                        **response_data,
+                                        "data": {
+                                            "metadata": state_common,
+                                        },
+                                        "message": mac_ret["message"],
+                                        "status": CONST_FAILURE,
+                                    }
+                                else:
+                                    # 3 mes_update_WIP
+                                    wip_ret = mes_update_WIP(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["STB_Num"])
+                                    print(wip_ret)
+                                    if wip_ret["status"] == CONST_FAILURE:
+                                        print("wip_ret Failed")
+                                        response_data = {
+                                            **response_data,
+                                            "data": {
+                                                "metadata": state_common,
+                                            },
+                                            "message": wip_ret["message"],
+                                            "status": CONST_FAILURE,
+                                        }
+                                    else:
+                                        wip_message = 'Mes Update Successful'
+                                        response_data = {
+                                                    **response_data,
+                                                    "data": {
+                                                        "metadata": state_common,
+                                                    },
+                                                    "message": f'''{wip_message} for {pcb_sn}''',
+                                                    "status": CONST_SUCCESS,
+                                                }
+                            # csn_ret = mes_update_WIPData(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["STB_Num"], 'CSN')
+                            # print(csn_ret)
+                            # # 2. MAC
+                            # mac_ret = mes_update_WIPData(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["Custom_String_1"], 'MAC')
+                            # print(mac_ret)
+                            # # 3 mes_update_WIP
+                            # wip_ret = mes_update_WIP(state_common["device_info"]["Pcb_Num"], state_common["device_info"]["STB_Num"])
+                            # print(wip_ret)
+                        else:
+                            response_data = {
+                                **response_data,
+                                "data": {
+                                    "metadata": state_common,
+                                },
+                                "message": f'''{device["message"]}''',
+                                "status": CONST_FAILURE,
+                            }
+                    else:
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": f'''{device["data"]["metadata"]}''',
                             "status": CONST_FAILURE,
                         }
                 else:

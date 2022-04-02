@@ -12,6 +12,8 @@ import OrderItemsContainer from "./components/containers/OrderItems";
 import OrderSerialConfigContainer from "./components/containers/OrderSerialConfig";
 import BoxFastForwardContainer from "./components/containers/BoxFastForward";
 import StreamaMechanicalContainer from "./components/containers/StreamaMechanical";
+import StreamaMesUpdateContainer from "./components/containers/StreamaMesUpdate";
+import TPVAssemblyContainer from "./components/containers/TPVAssembly";
 
 import config_data from "./datajson/config.json";
 import Menu from "./components/Menu";
@@ -66,42 +68,42 @@ function App() {
             timeout: 60,
         },
     });
-    const defaultMenu = "unit_rollback";
-    const defaultTitle = "Unit Rollback";
-    const defaultIcon = (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-6 h-6"
-            fill="#8AE9FF"
-            viewBox="0 0 24 24"
-            stroke="#343434"
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="{2}"
-                d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
-            />
-        </svg>
-    );
-    // const defaultMenu = "order_serial_config";
-    // const defaultTitle = "Order Serial Config";
+    // const defaultMenu = "unit_rollback";
+    // const defaultTitle = "Unit Rollback";
     // const defaultIcon = (
     //     <svg
     //         xmlns="http://www.w3.org/2000/svg"
     //         className="w-6 h-6"
-    //         fill="none"
+    //         fill="#8AE9FF"
     //         viewBox="0 0 24 24"
-    //         stroke="currentColor"
+    //         stroke="#343434"
     //     >
     //         <path
     //             strokeLinecap="round"
     //             strokeLinejoin="round"
     //             strokeWidth="{2}"
-    //             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+    //             d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"
     //         />
     //     </svg>
     // );
+    const defaultMenu = "streama_mechanical";
+    const defaultTitle = "Streama Mechanical";
+    const defaultIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+            />
+        </svg>
+    );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
@@ -218,6 +220,22 @@ function App() {
             )}
             {menuState.selectedMenu === "streama_mechanical" && (
                 <StreamaMechanicalContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "streama_mes_update" && (
+                <StreamaMesUpdateContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "tpv_assembly" && (
+                <TPVAssemblyContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}
