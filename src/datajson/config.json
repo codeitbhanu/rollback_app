@@ -1,5 +1,5 @@
 {
-    "app_version": "v5.10",
+    "app_version": "v5.11",
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
     "default_host": "172.20.10.103\\PRODUCTION",
