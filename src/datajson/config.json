@@ -42,6 +42,24 @@
             "password": "Password123"
         },
         {
+            "id_user" : 86,
+            "user_desc" : "donavin.david2",
+            "id_title" : 8,
+            "id_department" : 4,
+            "email" : "donavin.david@uec.co.za",
+            "id_status" : 4,
+            "password": "Password667"
+        },
+        {
+            "id_user" : 148,
+            "user_desc" : "neville.naidoo",
+            "id_title" : 8,
+            "id_department" : 4,
+            "email" : "Sky.Production@myskyworth.com",
+            "id_status" : 4,
+            "password": "Password887"
+        },
+        {
             "id_user" : 142,
             "user_desc" : "vanesh.naicker",
             "id_title" : 5,
