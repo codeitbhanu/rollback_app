@@ -1,5 +1,5 @@
 {
-    "app_version": "v5.11",
+    "app_version": "v5.12",
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
     "default_host": "172.20.10.103\\PRODUCTION",
@@ -76,6 +76,15 @@
             "email" : "Kathy.Thaver@myskyworth.com",
             "id_status" : 4,
             "password": "Password667"
+        },
+        {
+            "id_user" : 28,
+            "user_desc" : "mduduzi.ntobela",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "mduduzi.ntobela@uec.co.za",
+            "id_status" : 5,
+            "password": "Password981"
         }
     ],
     "frequent_param": [

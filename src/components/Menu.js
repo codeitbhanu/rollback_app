@@ -217,7 +217,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
             
             <ul className="py-3 menu bg-base-100">
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "streama_mechanical"
                             ? "bordered"
@@ -262,8 +262,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         </div>
                         Streama Mes Update
                     </a>
-                </li>
-                {/* <li
+                    </li> */}
+                <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
                             ? "bordered"
@@ -346,8 +346,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
-                </li>
-                <li
+                    </li>
+                {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
