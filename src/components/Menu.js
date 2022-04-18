@@ -9,6 +9,7 @@ import BoxFastForwardContainer from "./containers/BoxFastForward";
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
 import TPVAssemblyContainer from "./containers/TPVAssembly";
+import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -173,6 +174,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             />
         </svg>
     );
+    const iconStramaValidateTests = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+        </svg>
+    );
     const iconTPVAssembly = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +234,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
             
             <ul className="py-3 menu bg-base-100">
-                {/* <li
+                <li
                     className={
                         menuState.selectedMenu === "streama_mechanical"
                             ? "bordered"
@@ -242,7 +259,28 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>
                 <li
                     className={
-                        menuState.selectedMenu === "streama_mechanical"
+                        menuState.selectedMenu === "streama_validate_tests"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_validate_tests",
+                                "Streama Validate Tests",
+                                iconStramaValidateTests,
+                                StreamaValidateTestsContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
+                        Streama Validate Tests
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "streama_mes_update"
                             ? "bordered"
                             : ""
                     }
@@ -262,7 +300,28 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         </div>
                         Streama Mes Update
                     </a>
-                    </li> */}
+                    </li>
+                {/* <li
+                    className={
+                        menuState.selectedMenu === "box_fast_forward"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "box_fast_forward",
+                                "Box Fast Forward",
+                                iconFastForward,
+                                BoxFastForwardContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
+                        Box Fast Forward
+                    </a>
+                </li>
                 <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
@@ -347,7 +406,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Items
                     </a>
                     </li>
-                {/* <li
+                <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
@@ -411,27 +470,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Fraction Pallet
                     </a>
                 </li>
-                <li
-                    className={
-                        menuState.selectedMenu === "box_fast_forward"
-                            ? "bordered"
-                            : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "box_fast_forward",
-                                "Box Fast Forward",
-                                iconFastForward,
-                                BoxFastForwardContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
-                        Box Fast Forward
-                    </a>
-                </li>
+                
                 <li
                     className={
                         menuState.selectedMenu === "tpv_assembly"

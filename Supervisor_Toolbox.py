@@ -2277,6 +2277,314 @@ def update_streama_mes_data(pcb_sn):
             return response_data
 
 
+def get_pallet_stb_list(pallet_num):
+    function_name = inspect.currentframe().f_code.co_name,
+    print(f'[{function_name}] requested {pallet_num}')
+    global serverinstance
+
+    response_data = {
+        "function_name": function_name,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message pallet_num: " + pallet_num,
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''SELECT stb_num FROM stb_production.dbo.production_event
+                            WHERE pallet_num = \'{pallet_num}\'
+                            ORDER BY stb_num'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                stb_list = []
+                for row in results:
+                    # print(row)
+                    stb_list.append(row[0])
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_list": stb_list,
+                        },
+                    },
+                    "message": "Stb List Retreived for Pallet Num: " + pallet_num,
+                    "status": CONST_SUCCESS,
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {function_name} {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {function_name} {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            # print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No stbs found in pallet",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+def mes_check_tests(stb_list):
+    function_name = inspect.currentframe().f_code.co_name
+        
+    """Returns connection status if connected, else connects to the production server"""
+    print(f'[{function_name}] with stb count: {len(stb_list)}')
+    global messerverinstance
+
+    response_data = {
+        "function_name": function_name,
+        "data": {
+            "metadata": {
+                "autotest_details_rows": []
+            }
+        },
+        "message": "NOT TESTED",
+        "status": CONST_FAILURE
+    }
+
+    # mes_status_dict = {
+    #     152: "motherboardbinding",
+    #     31: "interfacetest",
+    #     34: "wirelesstest",
+    #     36: "infocheck",
+    #     146: "factoryinspection"
+    # }
+
+    if not messerverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + ' Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = messerverinstance.cursor
+        conn = messerverinstance.conn
+        try:
+            select_sql = f'''SELECT barcode,
+                                SUM(CASE WHEN processcode = 'interfacetest' THEN 1 ELSE 0 END) AS interfacetest,
+                                SUM(CASE WHEN processcode = 'wirelesstest' THEN 1 ELSE 0 END) AS wirelesstest,
+                                SUM(CASE WHEN processcode = 'infocheck' THEN 1 ELSE 0 END) AS infocheck,
+                                SUM(CASE WHEN processcode = 'factoryinspection' THEN 1 ELSE 0 END) AS factoryinspection
+                                FROM SDTMESV2DIGITAL.dbo.AutoTestRecord_All
+                                WHERE barcode IN {tuple(stb_list)} and [result] = 'PASS'
+                                GROUP BY barcode
+                                ORDER BY barcode
+                            '''
+            # print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            autotest_details_rows = cursor.execute(select_sql).fetchall()
+            # print(f'[SELECT-SQL-RESULTS] {autotest_details_rows}')
+
+            # conn.autocommit = False
+            # autotest_details_rows = cursor.execute(select_sql)
+            # cursor.commit()
+            # conn.autocommit = True
+            row_count = len(autotest_details_rows)
+            print(f'[SELECT-SQL-ROWCOUNT] {row_count}')
+
+            # if (row_count != len(stb_list)):
+            #     response_data = {
+            #         **response_data,
+            #         "message": '''Not all pallet stbs were passed tests''',
+            #         "status": CONST_FAILURE,
+            #         "data": {"metadata": {
+            #             "stb_list": stb_list,
+            #             "autotest_details_rows": autotest_details_rows
+            #         }},
+            #     }
+            # else:
+            if (row_count):
+                response_data = {
+                    **response_data,
+                    "message": '''Test Results Retrieved for all stbs''',
+                    "status": CONST_SUCCESS,
+                    "data": {"metadata": {
+                        "autotest_details_rows": autotest_details_rows
+                    }},
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {function_name} {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {function_name} {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            # print(response_data)
+            return response_data
+
+
+@eel.expose
+def streama_validate_mes_tests(pallet_num):
+    print(f'[STREAMA-VALIDATE-MES-TESTS] requested {pallet_num}')
+    global serverinstance
+
+    # ZEBRA.setqueue(printer_name)
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "pallet_num": pallet_num
+            },
+        },
+        "message": f'Default Message: pallet_num: [{pallet_num}]',
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": {}}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        # cursor = serverinstance.cursor
+        # conn = serverinstance.conn
+        try:
+            # Wrapper for all sub-methods for processing streama mechanical
+            ret_stbs = get_pallet_stb_list(pallet_num)
+            # print(ret_stbs)
+            if ret_stbs["status"] == CONST_SUCCESS:
+                # print("----------------success")
+                stb_list = ret_stbs["data"]["metadata"]["stb_list"]
+                # print("----------------stb_list")
+                response_data = {
+                    **response_data,
+                    "data": {"metadata": {
+                        "stb_list": stb_list
+                    }},
+                    "status": CONST_SUCCESS,
+                    "message": ret_stbs["message"],
+                }
+                # print("----------------before mes_check_tests")
+                ret_test_results = mes_check_tests(stb_list)
+                tuples_results = ret_test_results["data"]["metadata"]["autotest_details_rows"]
+                stb_tests_dict = {}
+                items = []
+                for item in tuples_results:
+                    stb_tests_dict[item[0]] = list(item[1:])
+
+                index = 0
+                passed = 0
+                failed = 0
+                not_tested = 0
+                for stb in stb_list:
+                    index = index + 1
+                    item = {}
+                    item["index"] = index
+                    item["stb_num"] = stb
+                    
+                    if (stb in stb_tests_dict):
+                        item["interfacetest"] = '✔' if stb_tests_dict[stb][0] > 0 else '❌'
+                        item["wirelesstest"] = '✔' if stb_tests_dict[stb][1] > 0 else '❌'
+                        item["infocheck"] = '✔' if stb_tests_dict[stb][2] > 0 else '❌'
+                        item["factoryinspection"] = '✔' if stb_tests_dict[stb][3] > 0 else '❌'
+                        if all(v > 0 for v in stb_tests_dict[stb]):
+                            passed = passed + 1
+                        else:
+                            failed = failed + 1
+                            items.append(item)
+                    else:
+                        item["interfacetest"] = '❌'
+                        item["wirelesstest"] = '❌'
+                        item["infocheck"] = '❌'
+                        item["factoryinspection"] = '❌'
+                        not_tested = not_tested + 1
+                        items.append(item)
+
+                # print("----------------after mes_check_tests" + ret_test_results)
+                if ret_test_results["status"] == CONST_SUCCESS:
+                    response_data = {
+                        **response_data,
+                        "data": {"metadata": {
+                            "pallet_num": pallet_num,
+                            "pallet_size": len(stb_list),
+                            "passed": passed,
+                            "failed": failed,
+                            "not_tested": not_tested,
+                            "stb_list": stb_list,
+                            "autotest_details_rows": items
+                        }},
+                        "status": CONST_SUCCESS,
+                        "message": ret_test_results["message"],
+                    }
+                else:
+                    response_data = {
+                        **response_data,
+                        "data": {"metadata": {
+                            "stb_list": stb_list,
+                            "autotest_details_rows": items
+                        }},
+                        "status": CONST_FAILURE,
+                        "message": ret_test_results["message"],
+                    }
+            else:
+                # print(device["message"])
+                response_data = {
+                    **response_data,
+                    "status": CONST_FAILURE,
+                    "message": f'''[{pallet_num}] does not contains anything''',
+                }
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        except Exception as e:
+            print(
+                f'[ERROR: Exception - {str(e)}, will skip this invalid cell value')
+            raise e
+        else:
+            pass
+            # cursor.commit()
+        finally:
+            # conn.autocommit = True
+            # print(response_data)
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Products Found with PCB/SN",
+            #         "status": CONST_FAILURE,
+            #     }
+            return response_data
+
+
 def printer_wrapper(v, template_file):
     print(f'printer_wrapper requested {v} {template_file}')
     response_data = {
