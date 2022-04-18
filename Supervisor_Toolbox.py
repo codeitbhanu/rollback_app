@@ -2299,7 +2299,7 @@ def get_pallet_stb_list(pallet_num):
         cursor = serverinstance.cursor
         conn = serverinstance.conn
         try:
-            select_sql = f'''SELECT stb_num, status_desc, [timestamp] FROM stb_production.dbo.production_event pe
+            select_sql = f'''SELECT stb_num, status_desc, carton_num, [timestamp] FROM stb_production.dbo.production_event pe
                             INNER JOIN status s ON s.id_status = pe.id_status 
                             WHERE pallet_num = \'{pallet_num}\'
                             ORDER BY stb_num'''
@@ -2319,7 +2319,8 @@ def get_pallet_stb_list(pallet_num):
                     stb_list.append({
                         "stb_num": row[0],
                         "status": row[1],
-                        "timestamp": str(row[2]).split('.')[0]
+                        "carton": row[2],
+                        "timestamp": str(row[3]).split('.')[0]
                     })
 
                 print("#######################################")
@@ -2365,8 +2366,8 @@ def mes_check_tests(stb_list):
     function_name = inspect.currentframe().f_code.co_name
         
     """Returns connection status if connected, else connects to the production server"""
-    # print(f'[{function_name}] with stb count: {len(stb_list)}')
-    print(f'[{function_name}] with stb count: {stb_list}')
+    print(f'[{function_name}] with stb count: {len(stb_list)}')
+    # print(f'[{function_name}] with stb count: {stb_list}')
     global messerverinstance
 
     response_data = {
@@ -2516,6 +2517,7 @@ def streama_validate_mes_tests(pallet_num):
                     item["index"] = index
                     item["stb_num"] = stb_num
                     item["status"] = stb["status"]
+                    item["carton"] = stb["carton"]
                     item["timestamp"] = stb["timestamp"]
                     if (stb_num in stb_tests_dict):
                         item["interfacetest"] = '✔' if stb_tests_dict[stb_num][0] > 0 else '❌'

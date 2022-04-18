@@ -104,6 +104,7 @@ function StreamaValidateTests({ eel, params, setParams }) {
         { title: "infocheck", field: 'infocheck'},
         { title: "factoryinspection", field: 'factoryinspection'},
         { title: "status", field: "status" },
+        { title: "carton", field: "carton" },
         { title: "timestamp", field: "timestamp" }
     ]
 
