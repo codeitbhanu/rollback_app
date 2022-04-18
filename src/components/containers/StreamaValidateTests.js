@@ -102,7 +102,9 @@ function StreamaValidateTests({ eel, params, setParams }) {
         { title: "interfacetest", field: 'interfacetest'},
         { title: "wirelesstest", field: 'wirelesstest'},
         { title: "infocheck", field: 'infocheck'},
-        { title: "factoryinspection", field: 'factoryinspection'}
+        { title: "factoryinspection", field: 'factoryinspection'},
+        { title: "status", field: "status" },
+        { title: "timestamp", field: "timestamp" }
     ]
 
     // const getOptionList = () => {

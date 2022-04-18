@@ -2285,7 +2285,9 @@ def get_pallet_stb_list(pallet_num):
     response_data = {
         "function_name": function_name,
         "data": {
-            "metadata": None,
+            "metadata": {
+                "stb_list": []
+            },
         },
         "message": "Default Message pallet_num: " + pallet_num,
         "status": CONST_FAILURE
@@ -2297,7 +2299,8 @@ def get_pallet_stb_list(pallet_num):
         cursor = serverinstance.cursor
         conn = serverinstance.conn
         try:
-            select_sql = f'''SELECT stb_num FROM stb_production.dbo.production_event
+            select_sql = f'''SELECT stb_num, status_desc, [timestamp] FROM stb_production.dbo.production_event pe
+                            INNER JOIN status s ON s.id_status = pe.id_status 
                             WHERE pallet_num = \'{pallet_num}\'
                             ORDER BY stb_num'''
             print(f'[SELECT-SQL] {select_sql}')
@@ -2313,7 +2316,11 @@ def get_pallet_stb_list(pallet_num):
                 stb_list = []
                 for row in results:
                     # print(row)
-                    stb_list.append(row[0])
+                    stb_list.append({
+                        "stb_num": row[0],
+                        "status": row[1],
+                        "timestamp": str(row[2]).split('.')[0]
+                    })
 
                 print("#######################################")
                 response_data = {
@@ -2358,7 +2365,8 @@ def mes_check_tests(stb_list):
     function_name = inspect.currentframe().f_code.co_name
         
     """Returns connection status if connected, else connects to the production server"""
-    print(f'[{function_name}] with stb count: {len(stb_list)}')
+    # print(f'[{function_name}] with stb count: {len(stb_list)}')
+    print(f'[{function_name}] with stb count: {stb_list}')
     global messerverinstance
 
     response_data = {
@@ -2478,9 +2486,10 @@ def streama_validate_mes_tests(pallet_num):
             ret_stbs = get_pallet_stb_list(pallet_num)
             # print(ret_stbs)
             if ret_stbs["status"] == CONST_SUCCESS:
-                # print("----------------success")
-                stb_list = ret_stbs["data"]["metadata"]["stb_list"]
-                # print("----------------stb_list")
+                stb_dict_list = ret_stbs["data"]["metadata"]["stb_list"]
+                stb_list = []
+                for stb in stb_dict_list:
+                    stb_list.append(stb["stb_num"])
                 response_data = {
                     **response_data,
                     "data": {"metadata": {
@@ -2489,7 +2498,6 @@ def streama_validate_mes_tests(pallet_num):
                     "status": CONST_SUCCESS,
                     "message": ret_stbs["message"],
                 }
-                # print("----------------before mes_check_tests")
                 ret_test_results = mes_check_tests(stb_list)
                 tuples_results = ret_test_results["data"]["metadata"]["autotest_details_rows"]
                 stb_tests_dict = {}
@@ -2501,18 +2509,20 @@ def streama_validate_mes_tests(pallet_num):
                 passed = 0
                 failed = 0
                 not_tested = 0
-                for stb in stb_list:
+                for stb in stb_dict_list:
+                    stb_num = stb["stb_num"]
                     index = index + 1
                     item = {}
                     item["index"] = index
-                    item["stb_num"] = stb
-                    
-                    if (stb in stb_tests_dict):
-                        item["interfacetest"] = '✔' if stb_tests_dict[stb][0] > 0 else '❌'
-                        item["wirelesstest"] = '✔' if stb_tests_dict[stb][1] > 0 else '❌'
-                        item["infocheck"] = '✔' if stb_tests_dict[stb][2] > 0 else '❌'
-                        item["factoryinspection"] = '✔' if stb_tests_dict[stb][3] > 0 else '❌'
-                        if all(v > 0 for v in stb_tests_dict[stb]):
+                    item["stb_num"] = stb_num
+                    item["status"] = stb["status"]
+                    item["timestamp"] = stb["timestamp"]
+                    if (stb_num in stb_tests_dict):
+                        item["interfacetest"] = '✔' if stb_tests_dict[stb_num][0] > 0 else '❌'
+                        item["wirelesstest"] = '✔' if stb_tests_dict[stb_num][1] > 0 else '❌'
+                        item["infocheck"] = '✔' if stb_tests_dict[stb_num][2] > 0 else '❌'
+                        item["factoryinspection"] = '✔' if stb_tests_dict[stb_num][3] > 0 else '❌'
+                        if all(v > 0 for v in stb_tests_dict[stb_num]):
                             passed = passed + 1
                         else:
                             failed = failed + 1
