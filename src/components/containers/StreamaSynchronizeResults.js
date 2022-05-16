@@ -46,7 +46,7 @@ const getFormattedDateTime = (dt) => {
     return dateTime.toLocaleDateString("en-ZA", options).replace(/[.,]/g, "");
 };
 
-function BoxFastForward({ eel, params, setParams }) {
+function StreamaSynchronizeResults({ eel, params, setParams }) {
     console.log(params);
     const CONST_SUCCESS = "SUCCESS";
     const CONST_FAILURE = "FAILURE";
@@ -81,12 +81,16 @@ function BoxFastForward({ eel, params, setParams }) {
             // },
         ], //fake_data,
         tests: [
+            {name: 'Motherboard Binding', tag: 'motherboardbinding', passed: false},
             {name: 'Interface Test', tag: 'interfacetest', passed: false},
             {name: 'Wireless | Throughput Test', tag: 'wirelesstest', passed: false},
             {name: 'Information check', tag: 'infocheck', passed: false},
             {name: 'Factory inspection', tag: 'factoryinspection', passed: false},
         ],
-        status: false
+        status: false,
+        log: 'PASS',
+        scanned_stb: '',
+        testname: ''
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -135,6 +139,7 @@ function BoxFastForward({ eel, params, setParams }) {
                     // data: [],
                     status: false,
                     tests: [
+                        {name: 'Motherboard Binding', tag: 'motherboardbinding', passed: false},
                         {name: 'Interface Test', tag: 'interfacetest', passed: false},
                         {name: 'Wireless | Throughput Test', tag: 'wirelesstest', passed: false},
                         {name: 'Information check', tag: 'infocheck', passed: false},
@@ -144,8 +149,8 @@ function BoxFastForward({ eel, params, setParams }) {
                 // for ( const test in state.tests) {
                 //     console.log("::: test.name: " + state.tests[test] + " :::");
                     // eel.set_test_status_ott(pcb_sn, state.tests[test].tag)((response) => {
-                    const lTests = ['interfacetest','wirelesstest','infocheck','factoryinspection']
-                    eel.mes_get_sn_status(pcb_sn,params.session.userdata.id_user)((response) => {
+                    const lTests = ['motherboardbinding','interfacetest','wirelesstest','infocheck','factoryinspection']
+                    eel.mes_box_retrieve_sync_results(pcb_sn,params.session.userdata.id_user)((response) => {
                         console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
                         try {
                             let status = response.status;
@@ -156,21 +161,38 @@ function BoxFastForward({ eel, params, setParams }) {
                                 id: uuidv4(),
                                 ...updated_data,
                                 stb_num: metadata.stb_num,
-                                status: metadata.status,
+                                status: metadata.testname,
+                                log: metadata.log,
+                                failcount: metadata.failcount
                             });
                             const otl = []
                             for (let tIndex in state.tests) {
-                                otl.push({
-                                    ...state.tests[tIndex],
-                                    passed: tIndex <= lTests.indexOf(metadata.status)
-                                })
+                                console.log(metadata.result + ' ' + tIndex + ' vs ' +  lTests.indexOf(metadata.testname))
+                                if ((metadata.result === 'FAIL' || metadata.result === 'NT') && parseInt(tIndex) === lTests.indexOf(metadata.testname)) {
+                                    console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+                                    otl.push({
+                                        ...state.tests[tIndex],
+                                        passed: false
+                                    })
+                                } else {
+                                    console.log("=========================================")
+                                    otl.push({
+                                        ...state.tests[tIndex],
+                                        passed: tIndex <= lTests.indexOf(metadata.testname) 
+                                    })    
+                                }
                             }
                             
                             setState({
                                 ...state,
+                                scanned_stb: metadata.stb_num,
+                                testname: metadata.testname,
                                 data: updated_data,
                                 tests: otl,
-                                status: metadata.status === lTests[lTests.length - 1]
+                                status:  metadata.result === 'PASS' && metadata.testname === 'factoryinspection',
+                                // status:  metadata.log === 'PASS' && metadata.status === lTests[lTests.length - 1],
+                                log: metadata.log,
+                                failcount: metadata.failcount
                             });
     
                             
@@ -215,6 +237,24 @@ function BoxFastForward({ eel, params, setParams }) {
     //         }));
     //     }
     // },[state.tests])
+    const getMessageBoxText = (stb, testname, status, log, failcount) => {
+        if (!stb) return 'ERROR, PLEASE SCAN AN STB'
+        if (!log && testname) return `PENDING, ${testname} NOT ATTEMPTED FOR ${stb}, TAKE TO TESTING STATION.`
+
+        if (log !== 'PASS' && failcount < 3) {
+            return `ERROR, ${stb} FAILED ON ${testname} (${failcount}/3) TIMES, PLEASE RE-TEST.`
+        }
+        if (log !== 'PASS' && failcount >= 3) {
+            return `ERROR, ${stb} FAILED ON ${testname} (${failcount}/3) TIMES, SEND TO REPAIRS.`
+        }
+        else {
+            if (status) {
+                return `SUCCESS, ${stb} PROCEED TO GIFTBOX.`
+            } else {
+                return testname !== 'motherboardbinding' ? `PENDING, ${testname} ATTEMPTED (${failcount}/3) FOR ${stb}, TAKE TO TESTING STATION.` : `PENDING, ${'interfacetest'} NOT ATTEMPTED FOR ${stb}, TAKE TO TESTING STATION.`
+            }
+        }
+    }
 
     return (
         <div className="absolute flex flex-col w-full mt-2 border-0 border-red-600 h-1/2">
@@ -260,17 +300,17 @@ function BoxFastForward({ eel, params, setParams }) {
                         </div> */}
                     </div>
 
-                    <div className="border-0 flex flex-col gap-8 border-blue-500 mt-8 max-h-96">
+                    <div className="border-0 flex flex-col gap-4 border-blue-500 mt-8 max-h-96">
                         {state.tests.map((test, index) => 
                             <div className="border-0 flex select-none border-red-500">
                                 <div className="flex place-content-between">
                                     <div className="flex border-0 border-yellow-500">
-                                        {test.passed ? <kbd className="w-12 h-12 text-3xl kbd mx-2">✔️</kbd> : <kbd className="w-12 h-12 text-3xl kbd mx-2">❌</kbd>}
-                                        <kbd className="w-12 h-12 text-3xl kbd mx-2">{index + 1}</kbd>
+                                        {test.passed ? <kbd className="w-8 h-8 text-xl kbd mx-2">✔️</kbd> : <kbd className="w-8 h-8 text-xl kbd mx-2">❌</kbd>}
+                                        <kbd className="w-8 h-8 text-xl kbd mx-2">{index + 1}</kbd>
                                     </div>
                                     <div className="flex border-0 border-green-500">
                                         <div className="divider-vertical"></div>
-                                        <div className="text-3xl py-4">                  
+                                        <div className="text-xl py-4">                  
                                             {test.name}
                                         </div>
                                     </div>
@@ -281,24 +321,26 @@ function BoxFastForward({ eel, params, setParams }) {
 
                     <div className="shadow stats mt-8">
                         <div className="stat">
-                            <div className={`stat-value text-left ${state.status ? "text-green-500" : "text-red-500"}`}>
-                                {state.status ? "Proceed to Giftbox Pairing" : "Retest / Continue Testing From Status"}
+                            <div className={`stat-value text-lg text-left ${state.status ? "text-green-500" : "text-red-500"}`}>
+                                {getMessageBoxText(state.scanned_stb, state.testname, state.status, state.log, state.failcount)}
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="divider divider-vertical"></div>
-                <div className="flex px-4 pt-0 border-0 border-red-500 w-2/5 max-w-1/2 overflow-x-hidden">
-                    <div className="flex-1 overflow-y-scroll overflow-x-hidden">
-                        <table className="flex table w-full overflow-x-hidden table-compact text-2xs overflow-y-scroll">
+                <div className="flex px-4 pt-0 border-0 border-red-500 w-1/2 max-w-1/2 overflow-x-hidden">
+                    <div className="flex-1 overflow-y-scroll">
+                        <table className="flex table w-full overflow-x-scroll table-compact text-2xs overflow-y-scroll">
                             <thead className="overflow-x-hidden rounded-tl-none rounded-bl-none border-0 border-red-500">
                                 <tr className="bg-gray-400">
                                     <th className="overflow-x-hidden round"></th>
                                     <th>STB NUM</th>
                                     <th>STATUS</th>
+                                    <th>LOG</th>
+                                    <th>FAIL COUNT</th>
                                 </tr>
                             </thead>
-                            <tbody className="overflow-y-scroll max-h-3/4 overflow-x-hidden border-0 border-green-500">
+                            <tbody className=" max-h-3/4 overflow-x-hidden border-0 border-green-500">
                                 {state.data.map((resp, index) => (
                                     <tr
                                         key={resp.id}
@@ -312,6 +354,8 @@ function BoxFastForward({ eel, params, setParams }) {
                                         </th>
                                         <td>{resp.stb_num}</td>
                                         <td>{resp.status}</td>
+                                        <td>{resp.log}</td>
+                                        <td>{resp.failcount}</td>
                                         {/* <td>{resp.pcb_for}</td>
                                         <td>{getFormattedDateTime(resp.pcb_ts)}</td>
                                         <td>{resp.sn_from}</td>
@@ -347,4 +391,4 @@ function BoxFastForward({ eel, params, setParams }) {
     );
 }
 
-export default BoxFastForward;
+export default StreamaSynchronizeResults;

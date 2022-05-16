@@ -10,10 +10,9 @@ import FractionPalletContainer from "./components/containers/FractionPallet";
 import PcbReportContainer from "./components/containers/PcbReport";
 import OrderItemsContainer from "./components/containers/OrderItems";
 import OrderSerialConfigContainer from "./components/containers/OrderSerialConfig";
-import BoxFastForwardContainer from "./components/containers/BoxFastForward";
+import StreamaSynchronizeResultsContainer from "./components/containers/StreamaSynchronizeResults";
 import StreamaMechanicalContainer from "./components/containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./components/containers/StreamaMesUpdate";
-import TPVAssemblyContainer from "./components/containers/TPVAssembly";
 import StreamaValidateTestsContainer from "./components/containers/StreamaValidateTests";
 
 import config_data from "./datajson/config.json";
@@ -87,6 +86,7 @@ function App() {
     //         />
     //     </svg>
     // );
+    ////////////////////////////////////////////////////////////////////////////
     const defaultMenu = "streama_mechanical";
     const defaultTitle = "Streama Mechanical";
     const defaultIcon = (
@@ -105,6 +105,25 @@ function App() {
             />
         </svg>
     );
+    ///////////
+    // const defaultMenu = "mes_status_sync";
+    // const defaultTitle = "Mes Status Sync";
+    // const defaultIcon = (
+    //     <svg
+    //         xmlns="http://www.w3.org/2000/svg"
+    //         className="w-6 h-6"
+    //         fill="none"
+    //         viewBox="0 0 24 24"
+    //         stroke="currentColor"
+    //     >
+    //         <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="{2}"
+    //             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+    //         />
+    //     </svg>
+    // );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
@@ -211,8 +230,8 @@ function App() {
                     config_data={config_data}
                 />
             )}
-            {menuState.selectedMenu === "box_fast_forward" && (
-                <BoxFastForwardContainer
+            {menuState.selectedMenu === "mes_status_sync" && (
+                <StreamaSynchronizeResultsContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}
@@ -229,14 +248,6 @@ function App() {
             )}
             {menuState.selectedMenu === "streama_mes_update" && (
                 <StreamaMesUpdateContainer
-                    eel={eel}
-                    params={appState}
-                    setParams={setAppState}
-                    config_data={config_data}
-                />
-            )}
-            {menuState.selectedMenu === "tpv_assembly" && (
-                <TPVAssemblyContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

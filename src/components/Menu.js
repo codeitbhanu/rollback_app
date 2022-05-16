@@ -5,10 +5,9 @@ import FrequentParamContainer from "./containers/FrequentParam";
 import PcbReportContainer from "./containers/PcbReport";
 import OrderItemsContainer from "./containers/OrderItems";
 import OrderSerialConfigContainer from "./containers/OrderSerialConfig";
-import BoxFastForwardContainer from "./containers/BoxFastForward";
+import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeResults";
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
-import TPVAssemblyContainer from "./containers/TPVAssembly";
 import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
@@ -121,19 +120,18 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             />
         </svg>
     );
-    const iconFastForward = (
+
+    const iconMesStatusSync = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
         >
             <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="{2}"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                fillRule="evenodd"
+                d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
+                clipRule="evenodd"
             />
         </svg>
     );
@@ -187,21 +185,6 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-        </svg>
-    );
-    const iconTPVAssembly = (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            classname="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-        >
-            <path d="M13 7H7v6h6V7z" />
-            <path
-                fillrule="evenodd"
-                d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z"
-                cliprule="evenodd"
             />
         </svg>
     );
@@ -268,14 +251,14 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         onClick={() =>
                             onSelectMenu(
                                 "streama_validate_tests",
-                                "Streama Validate Tests",
+                                "Streama Validate Pallet",
                                 iconStramaValidateTests,
                                 StreamaValidateTestsContainer
                             )
                         }
                     >
-                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
-                        Streama Validate Tests
+                        <div className="w-5 h-5 mr-2">{iconStramaValidateTests}</div>
+                        Streama Validate Pallet
                     </a>
                 </li>
                 <li
@@ -301,9 +284,9 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Streama Mes Update
                     </a>
                     </li>
-                {/* <li
+                <li
                     className={
-                        menuState.selectedMenu === "box_fast_forward"
+                        menuState.selectedMenu === "mes_status_sync"
                             ? "bordered"
                             : ""
                     }
@@ -311,18 +294,18 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     <a
                         onClick={() =>
                             onSelectMenu(
-                                "box_fast_forward",
-                                "Box Fast Forward",
-                                iconFastForward,
-                                BoxFastForwardContainer
+                                "mes_status_sync",
+                                "Streama Synchronize Results",
+                                iconMesStatusSync,
+                                StreamaSynchronizeResultsContainer
                             )
                         }
                     >
-                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
-                        Box Fast Forward
+                        <div className="w-5 h-5 mr-2">{iconMesStatusSync}</div>
+                        Streama Synchronize Results
                     </a>
                 </li>
-                <li
+                 {/* <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
                             ? "bordered"
@@ -405,8 +388,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
-                    </li>
-                <li
+                    </li> */}
+                {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
@@ -468,28 +451,6 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
                         Fraction Pallet
-                    </a>
-                </li>
-                
-                <li
-                    className={
-                        menuState.selectedMenu === "tpv_assembly"
-                            ? "bordered"
-                            : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "tpv_assembly",
-                                "TPV Assembly",
-                                iconTPVAssembly,
-                                TPVAssemblyContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconFastForward}</div>
-                        TPV Assembly
                     </a>
                 </li> */}
             </ul>

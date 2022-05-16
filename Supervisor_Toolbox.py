@@ -3626,10 +3626,12 @@ def set_frequent_params(prod_id, table, param_name, key, param_value):
 
 
 @eel.expose
-def set_test_status_ott(sn, testname, user=52):
+def set_test_status_ott(sn, testname, testdate=None, user=52):
     print(f'[SET-TEST-STATUS-OTT] sn: {sn} test: {testname}')
     global serverinstance
-    current_time = get_current_time()
+    print('-----1')
+    current_time = testdate.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3] if testdate else get_current_time()
+    print('-----2')
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
@@ -3638,14 +3640,19 @@ def set_test_status_ott(sn, testname, user=52):
         "message": "Default Message",
         "status": CONST_FAILURE
     }
+    print('-----3')
     if not serverinstance:
         return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
     else:
+        print('1')
         cursor = serverinstance.cursor
         conn = serverinstance.conn
         try:
             try:
-                # Find and update the target_status
+                # Find and up
+                print('2')
+                # date the target_status
+                STATUS_MECHANICAL_PASSED = 16
                 REQUIRED_STATUS_FOR_PCBA_TEST_PASSED = 16
                 STATUS_PCBA_TEST_PASSED = 13
                 REQUIRED_STATUS_WIRELESS_TEST_PASSED = 13
@@ -3665,26 +3672,33 @@ def set_test_status_ott(sn, testname, user=52):
                 update_sql = ""
                 pe_required_status = -1
                 pe_update = -1
+                if (testname == "motherboardbinding"):
+                    print('********3')
+                    # pe_required_status = (13,86,88,18)
+                    # pe_required_status = ','.join(map(lambda status: str(status), pe_required_status))
+                    update_sql = f'''UPDATE stb_production.dbo.production_event
+                                    SET id_status = {STATUS_MECHANICAL_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
+                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,88,18)'''
                 if (testname == "interfacetest"):
                     pe_required_status = REQUIRED_STATUS_FOR_PCBA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status IN (86,88,18)'''
                 if (testname == "wirelesstest"):
                     pe_required_status = REQUIRED_STATUS_WIRELESS_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,88,18)'''
                 if (testname == "infocheck"):
                     pe_required_status = REQUIRED_STATUS_KEY_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,18)'''
                 if (testname == "factoryinspection"):
                     pe_required_status = REQUIRED_STATUS_CA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_CA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status = {pe_required_status}'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,88)'''
                 print(f'[{testname}][UPDATE-SQL] {update_sql}')
                 response_data = {
                     **response_data,
@@ -3712,32 +3726,31 @@ def set_test_status_ott(sn, testname, user=52):
                 newdb_required_status = None
                 newdb_update = -1
                 if (pe_update.rowcount == 1):
-                    # if (testname == "motherboardbinding"):
-                    #     newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
-                    #     update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
-                    #                     SET Field28 = \'NT\', [LastEditDate] = N\'{current_time}\'
-                    #                     WHERE SN = N\'{sn}\' AND Field28 = NULL'''
-                    # WHERE SN = 'MD00055559' AND (Field28 IS NULL OR Field28 = 'NT')
+                    if (testname == "motherboardbinding"):
+                        # newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
+                        update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
+                                        SET Field28 = \'NT\', [LastEditDate] = N\'{current_time}\'
+                                        WHERE SN = N\'{sn}\''''
                     if (testname == "interfacetest"):
                         newdb_required_status = REQUIRED_STATUS_INTERFACE_TEST
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                                         SET Field28 = \'{STATUS_INTERFACE_TEST}\', [LastEditDate] = N\'{current_time}\'
-                                        WHERE SN = N\'{sn}\' AND (Field28 IS NULL OR Field28 = \'{newdb_required_status}\')'''
+                                        WHERE SN = N\'{sn}\''''
                     if (testname == "wirelesstest"):
                         newdb_required_status = REQUIRED_STATUS_WIRELESS_TEST
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                                         SET Field28 = \'{STATUS_WIRELESS_TEST}\', [LastEditDate] = N\'{current_time}\'
-                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                                        WHERE SN = N\'{sn}\''''
                     if (testname == "infocheck"):
                         newdb_required_status = REQUIRED_STATUS_INFO_CHECK
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                                         SET Field28 = \'{STATUS_INFO_CHECK}\', [LastEditDate] = N\'{current_time}\'
-                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                                        WHERE SN = N\'{sn}\''''
                     if (testname == "factoryinspection"):
                         newdb_required_status = REQUIRED_STATUS_FACTORY_INSPECTION
                         update_sql = f'''UPDATE [NEWDB].[dbo].[SNRecord]
                                         SET Field28 = \'{STATUS_FACTORY_INSPECTION}\', [LastEditDate] = N\'{current_time}\'
-                                        WHERE SN = N\'{sn}\' AND Field28 = \'{newdb_required_status}\''''
+                                        WHERE SN = N\'{sn}\''''
                     conn.autocommit = False
                     newdb_update = cursor.execute(update_sql)
                     cursor.commit()
@@ -4006,7 +4019,7 @@ def mes_disconnect_db():
 
 
 @eel.expose
-def mes_get_sn_status(pcb_sn, user=52):
+def mes_box_retrieve_sync_results(pcb_sn, user=52):
     """Returns connection status if connected, else connects to the production server"""
     print(f'[APP] requested get_sn_status {pcb_sn} {user}')
     global messerverinstance
@@ -4015,8 +4028,12 @@ def mes_get_sn_status(pcb_sn, user=52):
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
             "metadata": {
-                "stb_num": None,
-                "status": None
+                "stb_num": pcb_sn,
+                "testname": 'motherboardbinding',
+                "result": 'PASS',
+                "timestamp": str(None),
+                "log": "PASS",
+                "failcount": 0,
             },
         },
         "message": "NOT TESTED",
@@ -4037,9 +4054,9 @@ def mes_get_sn_status(pcb_sn, user=52):
         cursor = messerverinstance.cursor
         conn = messerverinstance.conn
         try:
-            select_sql = f'''SELECT gsn,curprocessid, lastupdate
-                            FROM SDTMESV2DIGITAL.dbo.MESProc_WIP
-                            WHERE gsn  = \'{pcb_sn}\''''
+            select_sql = f'''SELECT barcode, processcode, [result], testdate, testlog
+                            FROM SDTMESV2DIGITAL.dbo.AutoTestRecord_All
+                            WHERE barcode  = \'{pcb_sn}\''''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
                 **response_data,
@@ -4049,32 +4066,111 @@ def mes_get_sn_status(pcb_sn, user=52):
             results = cursor.execute(select_sql).fetchall()
             print(f'[SELECT-SQL-RESULTS] {results}')
 
-            if len(results) == 1:
-                lTests = ['motherboardbinding', 'interfacetest', 'wirelesstest', 'infocheck', 'factoryinspection']
+            # set_test_status_ott(pcb_sn, 'factoryinspection', None, user)
+
+            if len(results) == 0:
+                print('....empty results')
+                response_data = {
+                    **response_data,
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+            else:
+                print("*********************************************")
+                lTests = {
+                    'interfacetest': {"ts": None, "status": "NT", "log": "", "failcount": 0},
+                    'wirelesstest': {"ts": None, "status": "NT", "log": "", "failcount": 0},
+                    'infocheck': {"ts": None, "status": "NT", "log": "", "failcount": 0},
+                    'factoryinspection': {"ts": None, "status": "NT", "log": "", "failcount": 0}
+                }
                 for row in results:
                     print(row)
-                    print("#######################################")
-                    mes_status = mes_status_dict[row[1]]
-                    stb_num = row[0]
-                    print(f'mes_status: {mes_status} stb_num: {stb_num}')
-                    for test in lTests:
-                        set_test_status_ott(stb_num, test, user)
-                        if (mes_status == test):
-                            break
+                    print("------------------------------------------------------")
+                    testname = row[1]
+                    result = row[2]
+                    testdate = row[3]
+                    log = row[4]
+                    lTests[testname]["ts"] = testdate
+                    lTests[testname]["status"] = result
+                    lTests[testname]["log"] = log
+                    if result == 'FAIL':
+                        lTests[testname]["failcount"] = lTests[testname]["failcount"] + 1
 
-                    response_data = {
-                        **response_data,
-                        "data": {
-                            "metadata": {
-                                "stb_num": stb_num,
-                                "status": mes_status,
-                                "timestamp": row[2]
-                            },
+                # print(lTests)
+                retResult = 'PASS'
+                retTestName = 'motherboardbinding'
+                timeStamp = None
+                logText = ""
+                failCount = 0
+                for testname in ['interfacetest', 'wirelesstest', 'infocheck', 'factoryinspection']:
+                    print(f'''$ {testname} # {lTests[testname]["status"]}''')
+                    if lTests[testname]["status"] == 'PASS':
+                        retResult = 'PASS'
+                        set_test_status_ott(pcb_sn, testname, lTests[testname]["ts"], user)
+                        retTestName = testname
+                        timeStamp = lTests[testname]["ts"]
+                        logText = lTests[testname]["log"]
+                    elif lTests[testname]["status"] == 'FAIL' or lTests[testname]["status"] == 'NT':
+                        retResult = lTests[testname]["status"]
+                        retTestName = testname
+                        timeStamp = lTests[testname]["ts"]
+                        logText = lTests[testname]["log"]
+                        failCount = lTests[testname]["failcount"]
+                        if testname == 'interfacetest':
+                            print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
+                            set_test_status_ott(pcb_sn, 'motherboardbinding', None, user)
+                        if testname == 'wirelesstest':
+                            print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
+                            set_test_status_ott(pcb_sn, 'interfacetest', None, user)
+                        if testname == 'infocheck':
+                            print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
+                            set_test_status_ott(pcb_sn, 'wirelesstest', None, user)
+                        if testname == 'factoryinspection':
+                            print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
+                            set_test_status_ott(pcb_sn, 'infocheck', None, user)
+                        break
+                    # else:
+                    #     print(">>>>>>>>>>>> NOT TESTED CASE <<<<<<<<<<<<<<")
+                    #     retResult = 'NT'
+                    #     retTestName = testname
+                    #     timeStamp = lTests[testname]["ts"]
+                    #     logText = lTests[testname]["log"]
+                    #     failCount = lTests[testname]["failcount"]
+                # stb_num = results[0][0]
+                # lTests = ['motherboardbinding', 'interfacetest', 'wirelesstest', 'infocheck', 'factoryinspection']
+                # set_test_status_ott(stb_num, 'factoryinspection', None, user)
+                # return
+                # for row in results:
+                #     print(row)
+                #     print("#######################################")
+                #     mes_status = mes_status_dict[row[1]]
+                #     stb_num = row[0]
+                #     print(f'mes_status: {mes_status} stb_num: {stb_num}')
+                #     for test in lTests:
+                #         set_test_status_ott(stb_num, test, None, user) #TODO, update with correct timestamp
+                #         if (mes_status == test):
+                #             break
+                print(f'''$000 {retTestName} # {retResult} ^ {timeStamp}''')
+                print(f'''$-1- {pcb_sn}''')
+                print(f'''$-2- {str(timeStamp).split('.')[0]}''')
+                print(f'''$-3- {logText} ^''')
+                print(f'''$-4- {failCount} ''')
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": pcb_sn,
+                            "testname": retTestName,
+                            "result": retResult,
+                            "timestamp": str(timeStamp).split('.')[0],
+                            "log": logText,
+                            "failcount": failCount if failCount else 0,
                         },
-                        "message": "Product Info Retrieved",
-                        "status": CONST_SUCCESS,
-                    }
-
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+                print(f'''$111 {response_data}''')
         except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
             print(
                 f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
@@ -4089,16 +4185,16 @@ def mes_get_sn_status(pcb_sn, user=52):
         finally:
             conn.autocommit = True
             print(response_data)
-            if len(results) == 0:
-                # raise ValueError("record not found")
-                response_data = {
-                    **response_data,
-                    "data": {
-                        "metadata": results,
-                    },
-                    "message": "No Products Found with PCB/SN",
-                    "status": CONST_FAILURE,
-                }
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Products Found with PCB/SN",
+            #         "status": CONST_FAILURE,
+            #     }
             return response_data
 
 
