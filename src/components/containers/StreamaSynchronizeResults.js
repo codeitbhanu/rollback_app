@@ -264,12 +264,12 @@ function StreamaSynchronizeResults({ eel, params, setParams }) {
                         <div className="flex flex-col flex-1">
                             <label className="text-black label">
                                 <span className="text-black label-text">
-                                    Scan STB number
+                                    Scan PCB or STB number
                                 </span>
                             </label>
                             <input
                                 type="text"
-                                placeholder="Scan STB number"
+                                placeholder="Scan PCB or STB number"
                                 className="border-double input input-primary input-bordered w-2/3"
                                 // onChange={() => setState((prevState) => ({
                                 //     ...prevState,

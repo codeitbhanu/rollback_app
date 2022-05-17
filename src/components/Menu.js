@@ -346,7 +346,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconFrequentParam}</div>
                         Edit Common Params
                     </a>
-                </li>
+                </li> */}
                 <li
                     className={
                         menuState.selectedMenu === "pcb_report"
@@ -388,7 +388,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
-                    </li> */}
+                    </li>
                 {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"

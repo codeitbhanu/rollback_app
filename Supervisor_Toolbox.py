@@ -4056,7 +4056,7 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
         try:
             select_sql = f'''SELECT barcode, processcode, [result], testdate, testlog
                             FROM SDTMESV2DIGITAL.dbo.AutoTestRecord_All
-                            WHERE barcode  = \'{pcb_sn}\''''
+                            WHERE barcode  = \'{pcb_sn}\' OR fuid = \'{pcb_sn}\''''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
                 **response_data,
