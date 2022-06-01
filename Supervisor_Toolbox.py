@@ -8,6 +8,7 @@ import eel
 import pyodbc
 import datetime
 import random
+import socket
 from time import sleep
 # from util_order_items import order_items
 
@@ -3678,27 +3679,27 @@ def set_test_status_ott(sn, testname, testdate=None, user=52):
                     # pe_required_status = ','.join(map(lambda status: str(status), pe_required_status))
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_MECHANICAL_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,88,18)'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status NOT IN (19,80,20,21,23,24,35,40)'''
                 if (testname == "interfacetest"):
                     pe_required_status = REQUIRED_STATUS_FOR_PCBA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_PCBA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status IN (86,88,18)'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status NOT IN (19,80,20,21,23,24,35,40)'''
                 if (testname == "wirelesstest"):
                     pe_required_status = REQUIRED_STATUS_WIRELESS_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_WIRELESS_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,88,18)'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status NOT IN (19,80,20,21,23,24,35,40)'''
                 if (testname == "infocheck"):
                     pe_required_status = REQUIRED_STATUS_KEY_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_KEY_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,18)'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status NOT IN (19,80,20,21,23,24,35,40)'''
                 if (testname == "factoryinspection"):
                     pe_required_status = REQUIRED_STATUS_CA_TEST_PASSED
                     update_sql = f'''UPDATE stb_production.dbo.production_event
                                     SET id_status = {STATUS_CA_TEST_PASSED}, [timestamp] = N\'{current_time}\', id_user = {user}
-                                    WHERE stb_num = N\'{sn}\' AND id_status IN (13,86,88)'''
+                                    WHERE stb_num = N\'{sn}\' AND id_status NOT IN (19,80,20,21,23,24,35,40)'''
                 print(f'[{testname}][UPDATE-SQL] {update_sql}')
                 response_data = {
                     **response_data,
@@ -3855,8 +3856,11 @@ def start_eel(develop):
     eel.show_log(
         'https://github.com/samuelhwilliams/Eel/issues/363 (show_log)')
 
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    print("HOSTING IP > " + local_ip)
     eel_kwargs = dict(
-        host='localhost',
+        host=local_ip,
         port=8888,
         size=(1280, 800),
     )
@@ -4078,10 +4082,10 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
             else:
                 print("*********************************************")
                 lTests = {
-                    'interfacetest': {"ts": None, "status": "NT", "log": "", "failcount": 0},
-                    'wirelesstest': {"ts": None, "status": "NT", "log": "", "failcount": 0},
-                    'infocheck': {"ts": None, "status": "NT", "log": "", "failcount": 0},
-                    'factoryinspection': {"ts": None, "status": "NT", "log": "", "failcount": 0}
+                    'interfacetest': {"ts": None, "status": "NT", "log": "", "failcount": 0, "passcount": 0},
+                    'wirelesstest': {"ts": None, "status": "NT", "log": "", "failcount": 0, "passcount": 0},
+                    'infocheck': {"ts": None, "status": "NT", "log": "", "failcount": 0, "passcount": 0},
+                    'factoryinspection': {"ts": None, "status": "NT", "log": "", "failcount": 0, "passcount": 0}
                 }
                 for row in results:
                     print(row)
@@ -4091,10 +4095,13 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
                     testdate = row[3]
                     log = row[4]
                     lTests[testname]["ts"] = testdate
-                    lTests[testname]["status"] = result
                     lTests[testname]["log"] = log
-                    if result == 'FAIL':
+                    if lTests[testname]["passcount"] == 0 and result == 'FAIL':
+                        lTests[testname]["status"] = result
                         lTests[testname]["failcount"] = lTests[testname]["failcount"] + 1
+                    if result == 'PASS':
+                        lTests[testname]["status"] = result
+                        lTests[testname]["passcount"] = lTests[testname]["passcount"] + 1
 
                 # print(lTests)
                 retResult = 'PASS'
@@ -4110,7 +4117,7 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
                         retTestName = testname
                         timeStamp = lTests[testname]["ts"]
                         logText = lTests[testname]["log"]
-                    elif lTests[testname]["status"] == 'FAIL' or lTests[testname]["status"] == 'NT':
+                    elif lTests[testname]["passcount"] == 0 or lTests[testname]["status"] == 'NT':
                         retResult = lTests[testname]["status"]
                         retTestName = testname
                         timeStamp = lTests[testname]["ts"]

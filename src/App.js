@@ -22,7 +22,10 @@ import Menu from "./components/Menu";
 export const eel = window.eel;
 const eel_load = () => {
     try {
-        eel.set_host("ws://localhost:8888");
+        // const local_ip = '10.10.0.100';
+        const local_ip = 'localhost';
+        console.log("WEBSITE IP > " + local_ip)
+        eel.set_host("ws://" + local_ip + ":8888");
 
         // Expose the `sayHelloJS` function to Python as `say_hello_js`
         function sayHelloJS(x) {
