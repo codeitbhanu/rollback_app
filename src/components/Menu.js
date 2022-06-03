@@ -9,6 +9,7 @@ import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeR
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
+import TPVPrepStationContainer from "./containers/TPVPrepStation";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconUnitRollback = (
@@ -188,6 +189,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             />
         </svg>
     );
+    const iconTpvPrepStation = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+            />
+        </svg>
+    );
     return (
         <div className="absolute z-50 min-h-screen overflow-hidden rounded-none shadow-lg artboard bg-base-200 w-96">
             <div className="flex justify-between p-4 border-b-2 border-gray-300">
@@ -303,6 +320,27 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconMesStatusSync}</div>
                         Streama Synchronize Results
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "mes_status_sync"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "tpv_prep_station",
+                                "TV Prep Assembly",
+                                iconTpvPrepStation,
+                                TPVPrepStationContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconTpvPrepStation}</div>
+                        TV Prep Assembly
                     </a>
                 </li>
                   <li

@@ -1442,11 +1442,13 @@ def send_fraction_print(printer_name="", pallet_num="", stb_num_list=[]):
 
 @eel.expose
 def get_active_products():
-    print('[GET-ACTIVE-PRODUCTS] requested')
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.capitalize()}] requested')
     global serverinstance
 
     response_data = {
-        "function_name": inspect.currentframe().f_code.co_name,
+        "function_name": fname,
         "data": {
             "metadata": None,
         },
@@ -1520,6 +1522,495 @@ def get_active_products():
                     "message": "No Active Products Found",
                     "status": CONST_FAILURE,
                 }
+            return response_data
+
+
+@eel.expose
+def get_active_jobs_by_prod_desc(prodDesc= ""):
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.capitalize()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            # select_sql = f'''SELECT 0 AS id_production_order, 'Select Order' AS ord_num
+            # UNION SELECT production_order.id_production_order, production_order.ord_num
+            select_sql = f'''SELECT production_order.id_production_order, production_order.ord_num
+            FROM production_order
+            INNER JOIN product ON production_order.prod_id = product.prod_id
+            LEFT OUTER JOIN production_event ON production_order.id_production_order = production_event.id_production_order
+            WHERE (product.prod_desc = \'{prodDesc}\') AND (production_order.id_status = 2)
+            GROUP BY production_order.ord_num, production_order.target_qty, production_order.id_production_order
+            HAVING (COUNT(production_event.id_production_event) < production_order.target_qty)'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                job_list = []
+                for row in results:
+                    print(row)
+                    job_list.append({"job_id": row[0], "job_desc": row[1]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "job_list": job_list,
+                        },
+                    },
+                    "message": "Active Jobs List",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Active Jobs Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def get_active_prep_by_prod_desc(prodDesc= ""):
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.capitalize()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            # select_sql = f'''SELECT 0 AS id_production_order, 'Select Order' AS ord_num
+            # UNION SELECT production_order.id_production_order, production_order.ord_num
+            select_sql = f'''SELECT po.id_production_order, po.ord_num, COUNT(DISTINCT(pre.prep_num)) as prep_qty, po.target_qty
+                            FROM production_order po 
+                            INNER JOIN product p ON po.prod_id = p.prod_id
+                            LEFT OUTER JOIN prep_record_event pre ON pre.id_production_order = po.id_production_order  
+                            WHERE (p.prod_desc = \'{prodDesc}\') AND (po.id_status = 2)
+                            GROUP BY po.id_production_order, po.ord_num, po.target_qty
+                            HAVING (COUNT(DISTINCT(pre.prep_num)) < po.target_qty)'''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                job_list = []
+                for row in results:
+                    print(row)
+                    job_list.append({
+                        "job_id": row[0],
+                        "job_desc": row[1],
+                        "prep_qty": row[2],
+                        "target_qty": row[3]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "job_list": job_list,
+                        },
+                    },
+                    "message": "Active Prep List",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Active Jobs Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def get_prep_list_by_prod_desc(prodDesc="", jobDesc=""):
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.capitalize()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            # select_sql = f'''SELECT 0 AS id_production_order, 'Select Order' AS ord_num
+            # UNION SELECT production_order.id_production_order, production_order.ord_num
+            select_sql = f'''SELECT ppp.prod_id, pp.[parameter], stock_code, description, flag_unique, seq_num
+                        FROM stb_production.dbo.prep_partnum_prefix ppp
+                        INNER JOIN stb_production.dbo.prep_parameter pp ON pp.id_prep_parameter = ppp.id_prep_parameter
+                        INNER JOIN stb_production.dbo.product p ON p.prod_id = ppp.prod_id
+                        WHERE p.prod_desc = \'{prodDesc}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                prep_list = []
+                for row in results:
+                    print(row)
+                    prep_list.append(
+                        {
+                            "seq_num": row[5],
+                            "item": row[1],
+                            "stock_code": row[2],
+                            "description": row[3],
+                            "flag_unique": row[4]
+                        })
+
+                print("#######################################")
+                lastPrepIdResp = get_last_prep_id_by_prod_desc(prodDesc)
+                if (lastPrepIdResp["status"] == CONST_FAILURE):
+                    # On failed getting last prep id
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {},
+                        },
+                        "message": "Retrieved Prep List",
+                        "status": CONST_FAILURE,
+                    }
+                else:
+                    # On Succeess
+                    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+                    print(lastPrepIdResp["data"]["metadata"]["last_prep"])
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "prep_list": prep_list,
+                                "last_prep": lastPrepIdResp["data"]["metadata"]["last_prep"]
+                            },
+                        },
+                        "message": "Retrieved Prep List",
+                        "status": CONST_SUCCESS,
+                    }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Prep List Found",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def get_last_prep_id_by_prod_desc(prodDesc=""):
+    fname = inspect.currentframe().f_code.co_name
+    print(f'[{fname.capitalize()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print("PREP STATION IP > " + local_ip)
+        try:
+            storedProc = '''EXEC spLocal_RPTGetActivePrepNum @prodDesc  = ?, @ip  = ?'''
+            params = (prodDesc, local_ip)
+            print(f'[SELECT-SQL] {storedProc} {prodDesc} {local_ip}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                ret = []
+                for row in results:
+                    print(row)
+                    ret.append({
+                        "ErrorMessage": row[0]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "last_prep": results[0][0],
+                        },
+                    },
+                    "message": "Last Prep ID Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def prep_check_duplicate(param_value):
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.upper()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": None,
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            # select_sql = f'''SELECT 0 AS id_production_order, 'Select Order' AS ord_num
+            # UNION SELECT production_order.id_production_order, production_order.ord_num
+            select_sql = f'''SELECT p.prod_desc, pre.prep_num, pp.[parameter], pre.param_value, pre.[timestamp]
+                            FROM stb_production.dbo.prep_record_event pre
+                            INNER JOIN stb_production.dbo.prep_parameter pp ON pp.id_prep_parameter = pre.id_prep_parameter
+                            INNER JOIN stb_production.dbo.product p ON p.prod_id = pre.prod_id
+                            WHERE pre.param_value = \'{param_value}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            prep_list = []
+            if len(results) > 0:
+                for row in results:
+                    print(row)
+                    prep_list.append(
+                        {
+                            "prod_desc": row[0],
+                            "prep_num": row[1],
+                            "prep_item": row[2],
+                            "prep_value": row[3],
+                            "timestamp": row[4]
+                        })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prep_list": prep_list,
+                        },
+                    },
+                    "message": "Error, Found dupicate barcode, need unique",
+                    "status": CONST_FAILURE,
+                }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prep_list": prep_list,
+                        },
+                    },
+                    "message": "No duplicates found",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Prep List Found",
+            #         "status": CONST_FAILURE,
+            #     }
             return response_data
 
 
@@ -3860,7 +4351,8 @@ def start_eel(develop):
     local_ip = socket.gethostbyname(hostname)
     print("HOSTING IP > " + local_ip)
     eel_kwargs = dict(
-        host=local_ip,
+        # host=local_ip,
+        host='localhost',
         port=8888,
         size=(1280, 800),
     )
