@@ -1818,6 +1818,7 @@ def get_prep_list_by_prod_desc(prodDesc="", jobDesc=""):
                 }
             return response_data
 
+
 @eel.expose
 def get_last_prep_id_by_prod_desc(prodDesc=""):
     fname = inspect.currentframe().f_code.co_name
@@ -1904,6 +1905,219 @@ def get_last_prep_id_by_prod_desc(prodDesc=""):
                         "metadata": results,
                     },
                     "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def get_updated_prep_stats(prodDesc="", ordNum="", prepNum="", local_ip=""):
+    fname = inspect.currentframe().f_code.co_name
+    print(f'[{fname.capitalize()}] requested')
+    global serverinstance
+
+    response_data = {
+        "function_name": fname,
+        "data": {
+            "metadata": {
+                "ErrorMessage": 'ERROR, UNKOWN ISSUE',
+                "last_prep": "",
+                "prep_qty": -1,
+                "target_qty": -1,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print("PREP STATION IP > " + local_ip)
+        try:
+            storedProc = '''EXEC spLocal_UPDPrepEventStats @prodDesc = ?, @ordNum = ?, @prepNum = ?, @ip = ?'''
+            params = (prodDesc, ordNum, prepNum, local_ip)
+            print(f'[SELECT-SQL] {storedProc} {prodDesc}, {ordNum}, {prepNum}, {local_ip}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "ErrorMessage": results[0][0],
+                            "last_prep": results[0][1],
+                            "prep_qty": results[0][2],
+                            "target_qty": results[0][3],
+                        },
+                    },
+                    "message": "Last Prep ID Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            return response_data
+
+
+
+@eel.expose
+def json_example(prodDesc="", ordNum="", prepNum="", tests={}):
+    frame = inspect.currentframe()
+    print(f'>>>>>>>>>>>>>>>> [{frame.f_code.co_name}] >>>>>>>>>>>>>>>>')
+    args, _, _, values = inspect.getargvalues(frame)
+    for i in args:
+        print("    %s = %s" % (i, values[i]))
+    print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    
+    return {
+        "function_name": frame.f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+# EXEC spLocal_UPDCreatePrepEventGeneric  'PH-65PUT8215/73','1270000','PH-55PUT-PREP-900002', 'manual_prep', 'X41G22DV81305C', 'bhanu.pratap'
+
+
+
+@eel.expose
+def create_prep_event(prodDesc="", ordNum="", prepNum="", tests=[], userDesc=""):
+    frame = inspect.currentframe()
+    print(f'>>>>>>>>>>>>>>>> [{frame.f_code.co_name}] >>>>>>>>>>>>>>>>')
+    args, _, _, values = inspect.getargvalues(frame)
+    for i in args:
+        print("    %s = %s" % (i, values[i]))
+    print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+    
+    global serverinstance
+
+    response_data = {
+        "function_name": frame.f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print("PREP STATION IP > " + local_ip)
+        try:
+            storedProc = '''EXEC spLocal_UPDCreatePrepEventGeneric
+                            @prodDesc = ?,
+                            @ordNum = ?,
+                            @prepNum = ?,
+                            @parameter = ?,
+                            @paramValue = ?,
+                            @userDesc = ?'''
+            ret_result = {}
+            conn.autocommit = False
+            count_success = 0
+            for i, test in enumerate(tests):
+                print("::: TEST > ", i, " ::: ", test)
+                parameter = test['item'].replace(' ', '_').lower()
+                paramValue = test['scanned']
+                params = (prodDesc, ordNum, prepNum, parameter, paramValue, userDesc)
+                results = cursor.execute(storedProc, params).fetchall()
+                print(f'[SELECT-SQL-RESULTS] {results}')
+                if len(results) == 1:
+                    ret_result[parameter] = results[0][0]
+                    count_success = count_success + 1 if results[0][0].startswith('SUCCESS') else count_success
+                else:
+                    ret_result[parameter] = "ERROR, COULD NOT INSERT VALUE"
+                print("::: ::: ::: ::: ::: ::: ::: ::: ")
+
+            if len(tests) == count_success:
+                print("#######################################")
+                retPrepResult = get_updated_prep_stats(prodDesc, ordNum, prepNum, local_ip)
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "submitted_list": ret_result,
+                            "prep_qty": retPrepResult["data"]["metadata"]["prep_qty"],
+                            "target_qty": retPrepResult["data"]["metadata"]["target_qty"],
+                            "last_prep": retPrepResult["data"]["metadata"]["last_prep"]
+                        },
+                    },
+                    "message": "Successfully Created Event" if retPrepResult["status"].startswith('SUCCESS') else 'All entries added but could not get stats',
+                    "status": retPrepResult["status"],
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "submitted_list": ret_result,
+                            "prep_qty": -1,
+                            "target_qty": -1,
+                        },
+                    },
+                    "message": "Error, Failed to update all records.",
                     "status": CONST_FAILURE,
                 }
             return response_data

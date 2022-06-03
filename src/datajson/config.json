@@ -1,8 +1,8 @@
 {
-    "app_version": "v5.15",
+    "app_version": "v5.16",
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
-    "default_host": "172.20.10.149\\PRODUCTION",
+    "default_host": "172.20.10.103\\PRODUCTION",
     "development_host": "172.20.10.149\\PRODUCTION",
     "users": [
         {
@@ -94,6 +94,15 @@
             "email" : "Shivar.Dhurgaduth@myskyworth.com",
             "id_status" : 4,
             "password": "Password777"
+        },
+        {
+            "id_user" : 22,
+            "user_desc" : "theo.rungasamy2",
+            "id_title" : 8,
+            "id_department" : 4,
+            "email" : "theo.rungasamy@uec.co.za",
+            "id_status" : 4,
+            "password": "Password521"
         }
     ],
     "frequent_param": [

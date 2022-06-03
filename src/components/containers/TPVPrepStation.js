@@ -38,7 +38,7 @@ function SimpleDialog(props) {
         onClose(selectedValue);
     };
   
-    const handleListItemClick = (value) => {
+    const handleSubmitChoice = (value) => {
         console.log(value + ' selected')
         onClose(value);
     };
@@ -58,14 +58,14 @@ function SimpleDialog(props) {
             </DialogTitle>
             <DialogActions className={classes.dialog_actions}>
                 <Button
-                    onClick={() => handleListItemClick("yes")}
+                    onClick={() => handleSubmitChoice("yes")}
                     key={"yes"}
                     className={classes.yes_btn}
                 >
                     YES
                 </Button>
                 <Button
-                    onClick={() => handleListItemClick("no")}
+                    onClick={() => handleSubmitChoice("no")}
                     key={"no"}
                     className={classes.no_btn}
                 >
@@ -120,15 +120,82 @@ function TPVPrepStation({ eel, params, setParams }) {
         // path: defPath,
     });
 
-    const handleClose = (value) => {
-        console.log("handleClose called .... " + value)
+    const handleDialogSubmit = (value) => {
+        console.log("handleDialogSubmit called .... " + value)
         console.log(state)
-        setState((prevState) => ({
-            ...prevState,
-            all_validated: false
-        }))
+
+        if (value === 'yes')
+        {
+            try {
+                if (params.server.status) {
+                    eel.create_prep_event(
+                        state.selected_product,
+                        state.selected_job,
+                        state.last_prep,
+                        state.tests,
+                        params.session.userdata.user_desc
+                    )((response) => {
+                        console.log(
+                            `[PY]: ${JSON.stringify(response, null, 2)}`
+                        );
+                        try {
+                            const function_name = response.function_name;
+                            const status = response.status;
+                            const message = response.message;
+                            const metadata = response.data.metadata;
+                            console.log(
+                                `${function_name} message got: ${JSON.stringify(
+                                    message
+                                )} metadata: ${JSON.stringify(metadata)}`
+                            );
+                            if (status === CONST_SUCCESS) {
+                                setState((prevState) => ({
+                                    ...prevState,
+                                    submitted_list: metadata["submitted_list"],
+                                    last_prep: metadata["last_prep"],
+                                    prep_qty: metadata["prep_qty"],
+                                    target_qty: metadata["target_qty"],
+                                    status: CONST_NONE,
+                                    all_validated: false
+                                }));
+                                scanCycleReset();
+                                
+                            } else {
+                                setState((prevState) => ({
+                                    ...prevState,
+                                    all_validated: false
+                                }))
+                                scanCycleReset();
+
+                                setTimeout(() => {
+                                    alert(`RESPONSE ERROR: ${message}`);
+                                }, 200);
+                            }
+                            
+                            
+                        } catch (error) {
+                            setState((prevState) => ({
+                                ...prevState,
+                                all_validated: false
+                            }))
+                            scanCycleReset();
+
+                            setTimeout(() => {
+                                alert(`PARSE ${error}`);
+                            }, 200);
+                        }
+                    });
+                } else {
+                    throw Error(`Connect the server first`);
+                }
+            } catch (error) {
+                alert(`${error}`);
+            }
+        }
+
+
+        
         setSelectedValue(value);
-        scanCycleReset();
     };
     /** */
     // console.log(params);
@@ -438,9 +505,9 @@ function TPVPrepStation({ eel, params, setParams }) {
         console.log(state);
         console.log(`$$$ Validating... ${prep_item} ${prep_scanned} against stock_code: ${stock_code}`)
         if (prep_scanned.startsWith(stock_code) === false) {
-            setTimeout(() => {
-                alert(`Error: Scanned barcode does not belongs to stock code!`);
-            }, 200);
+            // setTimeout(() => {
+            //     alert(`Error: Scanned barcode does not belongs to stock code!`);
+            // }, 200);
             console.log(state)
             setState((prevState) => {
                 return {
@@ -453,6 +520,18 @@ function TPVPrepStation({ eel, params, setParams }) {
         }
         if (flag_unique) 
         {
+            if (stock_code === prep_scanned) 
+            {
+                console.log(state)
+                setState((prevState) => {
+                    return {
+                        ...prevState,
+                        status: CONST_FAILURE,
+                        scanned_value: prep_scanned
+                    }
+                })
+                return;
+            }
             //TODO, query database against existing values
             eel.prep_check_duplicate(prep_scanned)((response) => {
                 console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
@@ -486,14 +565,27 @@ function TPVPrepStation({ eel, params, setParams }) {
         }
         else {
             if (stock_code === prep_scanned) 
-            console.log(state)
-            setState((prevState) => {
-                return {
-                    ...prevState,
-                    status: CONST_SUCCESS,
-                    scanned_value: prep_scanned
-                }
-            })
+            {
+                console.log(state)
+                setState((prevState) => {
+                    return {
+                        ...prevState,
+                        status: CONST_SUCCESS,
+                        scanned_value: prep_scanned
+                    }
+                })
+            }
+            else 
+            {
+                console.log(state)
+                setState((prevState) => {
+                    return {
+                        ...prevState,
+                        status: CONST_FAILURE,
+                        scanned_value: prep_scanned
+                    }
+                })
+            }
         }
     }
 
@@ -503,6 +595,12 @@ function TPVPrepStation({ eel, params, setParams }) {
             alert("Error: Blank input not accepted!");
                 return;
         }
+
+        if (state.prep_qty >= state.target_qty) {
+            alert("Error: Job target matched !!!");
+                return;
+        }
+
         event.target.value = ""
         console.log(state)
         setState((prevState) => {
@@ -625,7 +723,7 @@ function TPVPrepStation({ eel, params, setParams }) {
 
                     <div className="border-b-2 border-purple-400 border-dashed mb-2 mt-2"></div>
 
-                    <div className="flex gap-8 h-24 ml-1 border-0 border-yellow-600">
+                    <div className="flex gap-8 h-24 border-0 border-yellow-600">
                         <div className="flex flex-1">
                             <label className="text-black label w-48 justify-start">
                                 <span className="text-black label-text">
@@ -653,7 +751,7 @@ function TPVPrepStation({ eel, params, setParams }) {
                         
                     </div>
 
-                    <div className="border-0 flex flex-col gap-2 border-blue-500 mt-2 max-h-96">
+                    <div className="border-0 flex flex-col gap-2 border-blue-500 mt-2">
                         <div className="overflow-x-auto">
                             <table className="table table-compact w-full">
                                 <thead>
@@ -697,7 +795,7 @@ function TPVPrepStation({ eel, params, setParams }) {
             <SimpleDialog
                 selectedValue={selectedValue}
                 open={state.all_validated}
-                onClose={handleClose}
+                onClose={handleDialogSubmit}
             />
         </div>
     );
