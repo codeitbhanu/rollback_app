@@ -88,7 +88,7 @@ function StreamaMechanical({ eel, params, setParams }) {
 
     const [mechanicalState, setMechanicalState] = useState({
         status: false,
-        message: "Please scan PCB",
+        message: "Please scan PCB or SN",
         testprint: false
     });
 
@@ -863,7 +863,7 @@ function StreamaMechanical({ eel, params, setParams }) {
                     <div className="flex flex-col justify-between mt-2">
                         <label className="text-black label">
                             <span className="text-black label-text">
-                                Scan PCB_Num
+                                Scan PCB_Num or SN
                             </span>
                             {/* <span
                                 className={
@@ -875,7 +875,7 @@ function StreamaMechanical({ eel, params, setParams }) {
                         </label>
                         <input
                             type="text"
-                            placeholder="Scan PCB_Num"
+                            placeholder="Scan PCB_Num or SN"
                             className="border-double input input-primary input-bordered"
                             onKeyDown={(e) =>
                                 e.key === "Enter" && handleBarcodeInput(e)

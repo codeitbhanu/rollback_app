@@ -16,6 +16,16 @@ from time import sleep
 import re
 from zebra import Zebra
 
+def get_linenumber():
+    cf = inspect.currentframe()
+    return cf.f_back.f_lineno
+
+def logprint(text=None):
+    cf = inspect.currentframe()
+    function_name = cf.f_code.co_name
+    line_no = cf.f_back.f_lineno
+    print(f'{function_name}:{line_no} {text}')
+
 ZEBRA = Zebra()
 
 
@@ -2629,7 +2639,7 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
         # conn = serverinstance.conn
         try:
             # Wrapper for all sub-methods for processing streama mechanical
-            allowed_target_status = [85, 45, 47]
+            allowed_target_status = [85, 45, 47, 16, 13, 86, 88, 18]
             device = get_device_info(pcb_sn)
             # print(device)
             if device["status"] == CONST_SUCCESS:
@@ -2644,10 +2654,67 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                     print("sleeping for:", sleeptime, "seconds")
                     sleep(sleeptime)
                     print("sleeping is over")
-                    gen_sn = generate_stb_num(pcb_sn)
+                    devInfoHasSN = False
+                    gen_sn = None
+                    if state_common["device_info"]["STB_Num"]:
+                        devInfoHasSN = True
+                    else:
+                        gen_sn = generate_stb_num(pcb_sn)
                     print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-                    print(gen_sn)
-                    if gen_sn["data"]["metadata"]["ErrorMessage"].startswith(CONST_SUCCESS):
+                    logprint(gen_sn)
+                    if devInfoHasSN or (gen_sn and "STB ALREADY HAS STB NUMBER" in gen_sn["data"]["metadata"]["ErrorMessage"]):
+                        device = get_device_info(pcb_sn)
+                        if device["status"] == CONST_SUCCESS:
+                            # TODO: Handle StoredProcedure's failure codes also
+                            state_common = {
+                                **state_common,
+                                **device["data"]["metadata"]
+                            }
+                            # PRINT THE VALUES
+                            # =============== PRINT =====================
+                            varDict = {
+                                'STB_NUM': state_common["device_info"]["STB_Num"],
+                                'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
+                            }
+                            # TODO: 1. Printer Name, 2. Get Real Template From Database
+                            logprint('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                            printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                            logprint('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                            if printer_resp["status"] == CONST_FAILURE:
+                                logprint("Printing Failed")
+                                response_data = {
+                                    **response_data,
+                                    "data": {
+                                        "metadata": state_common,
+                                    },
+                                    "message": printer_resp["message"],
+                                    "status": CONST_FAILURE,
+                                }
+                            else:
+                                print("Printing Successful")
+                                # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
+                                mech_status = update_mechanical(state_common["device_info"]["Pcb_Num"], '', '', '', production_line, user_desc, '', False, '')
+                                logprint(mech_status)
+                                mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
+                                if mech_message.startswith(CONST_SUCCESS):
+                                    response_data = {
+                                        **response_data,
+                                        "data": {
+                                            "metadata": state_common,
+                                        },
+                                        "message": f'''{mech_message}''',
+                                        "status": CONST_SUCCESS,
+                                    }
+                                else:
+                                    response_data = {
+                                        **response_data,
+                                        "data": {
+                                            "metadata": state_common,
+                                        },
+                                        "message": f'''ERROR, {mech_message}''',
+                                        "status": CONST_FAILURE,
+                                    }
+                    elif gen_sn and gen_sn["data"]["metadata"]["ErrorMessage"].startswith(CONST_SUCCESS):
                         print(f'############################## {gen_sn["data"]["metadata"]["ErrorMessage"]}')
                         device = get_device_info(pcb_sn)
                         if device["status"] == CONST_SUCCESS:
@@ -2723,7 +2790,7 @@ def process_streama_mechanical(pcb_sn, printer_name='', production_line='', user
                                         else:
                                             print("Printing Successful")
                                             # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
-                                            mech_status = update_mechanical(pcb_sn, '', '', '', production_line, user_desc, '', False, '')
+                                            mech_status = update_mechanical(state_common["device_info"]["Pcb_Num"], '', '', '', production_line, user_desc, '', False, '')
                                             print(mech_status)
                                             mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
                                             if mech_message.startswith(CONST_SUCCESS):
