@@ -9,6 +9,8 @@ import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeR
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
+import StreamaRepairLoginContainer from "./containers/StreamaRepairLogin";
+import StreamaRepairLogoutContainer from "./containers/StreamaRepairLogout";
 import TPVPrepStationContainer from "./containers/TPVPrepStation";
 
 function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
@@ -205,6 +207,38 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             />
         </svg>
     );
+    const iconStreamaRepairLogin = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokewidth="{2}"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+            />
+        </svg>
+    );
+    const iconStreamaRepairLogout = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokewidth="{2}"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+        </svg>
+    );
     return (
         <div className="absolute z-50 min-h-screen overflow-hidden rounded-none shadow-lg artboard bg-base-200 w-96">
             <div className="flex justify-between p-4 border-b-2 border-gray-300">
@@ -234,7 +268,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
             
             <ul className="py-3 menu bg-base-100">
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "streama_mechanical"
                             ? "bordered"
@@ -321,8 +355,50 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconMesStatusSync}</div>
                         Streama Synchronize Results
                     </a>
+                </li> */}
+                <li
+                    className={
+                        menuState.selectedMenu === "streama_repair_login"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_repair_login",
+                                "Streama Repair Login",
+                                iconStreamaRepairLogin,
+                                StreamaRepairLoginContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconStreamaRepairLogin}</div>
+                        Streama Repair Login
+                    </a>
                 </li>
                 <li
+                    className={
+                        menuState.selectedMenu === "streama_repair_logout"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_repair_logout",
+                                "Streama Repair Logout",
+                                iconStreamaRepairLogout,
+                                StreamaRepairLogoutContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconStreamaRepairLogout}</div>
+                        Streama Repair Logout
+                    </a>
+                </li>
+                {/* <li
                     className={
                         menuState.selectedMenu === "mes_status_sync"
                             ? "bordered"
@@ -343,7 +419,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         TV Prep Assembly
                     </a>
                 </li>
-                  <li
+                <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
                             ? "bordered"
@@ -426,8 +502,8 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
                     </a>
-                    </li>
-                {/* <li
+                </li>
+                <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"

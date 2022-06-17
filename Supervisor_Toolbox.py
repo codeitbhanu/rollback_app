@@ -4831,6 +4831,8 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
         cursor = messerverinstance.cursor
         conn = messerverinstance.conn
         try:
+            id_status = get_id_status(pcb_sn)
+            repair_statuses = (12,42,44,45,46,47,48,49,50,51,52,65,66,68,69,78)
             select_sql = f'''SELECT barcode, processcode, [result], testdate, testlog
                             FROM SDTMESV2DIGITAL.dbo.AutoTestRecord_All
                             WHERE barcode  = \'{pcb_sn}\' OR fuid = \'{pcb_sn}\''''
@@ -4886,7 +4888,8 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
                     print(f'''$ {testname} # {lTests[testname]["status"]}''')
                     if lTests[testname]["status"] == 'PASS':
                         retResult = 'PASS'
-                        set_test_status_ott(pcb_sn, testname, lTests[testname]["ts"], user)
+                        if id_status not in repair_statuses:
+                            set_test_status_ott(pcb_sn, testname, lTests[testname]["ts"], user)
                         retTestName = testname
                         timeStamp = lTests[testname]["ts"]
                         logText = lTests[testname]["log"]
@@ -4898,16 +4901,20 @@ def mes_box_retrieve_sync_results(pcb_sn, user=52):
                         failCount = lTests[testname]["failcount"]
                         if testname == 'interfacetest':
                             print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
-                            set_test_status_ott(pcb_sn, 'motherboardbinding', None, user)
+                            if id_status not in repair_statuses:
+                                set_test_status_ott(pcb_sn, 'motherboardbinding', None, user)
                         if testname == 'wirelesstest':
                             print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
-                            set_test_status_ott(pcb_sn, 'interfacetest', None, user)
+                            if id_status not in repair_statuses:
+                                set_test_status_ott(pcb_sn, 'interfacetest', None, user)
                         if testname == 'infocheck':
                             print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
-                            set_test_status_ott(pcb_sn, 'wirelesstest', None, user)
+                            if id_status not in repair_statuses:
+                                set_test_status_ott(pcb_sn, 'wirelesstest', None, user)
                         if testname == 'factoryinspection':
                             print(f'''$ {testname} # {lTests[testname]["status"]} ==> Updating production event and SNRecord to sync''')
-                            set_test_status_ott(pcb_sn, 'infocheck', None, user)
+                            if id_status not in repair_statuses:
+                                set_test_status_ott(pcb_sn, 'infocheck', None, user)
                         break
                     # else:
                     #     print(">>>>>>>>>>>> NOT TESTED CASE <<<<<<<<<<<<<<")
@@ -5403,6 +5410,335 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
         finally:
             conn.autocommit = True
             print(response_data)
+            return response_data
+
+@eel.expose
+def update_repair_login(serialNum, workstation="", fCode="", user="", stationIP="::1"):
+    print(f'[UPDATE-REPAIR-LOGIN] requested {serialNum} {workstation} {fCode} {user} {stationIP}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            print("REPAIR LOGIN STATION IP > " + local_ip)
+            storedProc = '''EXEC spLocal_UPDRepairLogin @serialNum = ?, @workstation = ?, @fCode = ?, @user = ?, @stationIP = ?'''
+            params = (serialNum, workstation, fCode, user, local_ip)
+            print(f'[UPDATE-SQL] {storedProc} {serialNum}')
+            response_data = {
+                **response_data,
+                "update_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[UPDATE-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                ret = []
+                for row in results:
+                    print(row)
+                    ret.append({
+                        "ErrorMessage": row[0]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": serialNum,
+                            "ErrorMessage": f'{ret[0]["ErrorMessage"]} [{serialNum}]'
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def update_repair_logout(serialNum, workstation="", user=""):
+    print(f'[UPDATE-REPAIR-LOGOUT] requested {serialNum} {workstation} {user}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            print("REPAIR LOGOUT STATION IP > " + local_ip)
+            storedProc = '''EXEC spLocal_UPD_OTT_RepairLogout @serialNum = ?, @workstation = ?, @user = ?'''
+            params = (serialNum, workstation, user)
+            print(f'[UPDATE-SQL] {storedProc} {serialNum}')
+            response_data = {
+                **response_data,
+                "update_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[UPDATE-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                ret = []
+                for row in results:
+                    print(row)
+                    ret.append({
+                        "ErrorMessage": row[0]
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": serialNum,
+                            "ErrorMessage": f'{ret[0]["ErrorMessage"]} [{serialNum}]'
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+@eel.expose
+def get_id_status(serialNum=""):
+    fname = inspect.currentframe().f_code.co_name
+
+    print(f'[{fname.capitalize()}] requested with {serialNum}')
+    global serverinstance
+
+    id_status = -1
+
+    if not serverinstance:
+        return id_status
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            # select_sql = f'''SELECT 0 AS id_production_order, 'Select Order' AS ord_num
+            # UNION SELECT production_order.id_production_order, production_order.ord_num
+            select_sql = f'''SELECT id_status FROM [production_event] WHERE pcb_num = \'{serialNum}\' OR stb_num = \'{serialNum}\''''
+            print(f'[SELECT-SQL] {select_sql} {serialNum}')
+
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                id_status = results[0][0]
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            return id_status
+
+@eel.expose
+def get_device_repair_info(pcb_sn):
+    print('[GET-DEVICE-INFO] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            storedProc = '''EXEC sp_RPT_GetDeviceRepairInfo @serialNum  = ?'''
+            params = (pcb_sn)
+            print(f'[SELECT-SQL] {storedProc} {pcb_sn}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) >= 1:
+                repair_info = []
+                for row in results:
+                    print(row)
+                    repair_info.append({
+                        "id_repair": row[0],
+                        "product": row[1],
+                        "checkin_date": str(row[2]).split('.')[0],
+                        "failure": row[3],
+                        "failure_desc": row[4],
+                        "checkin_user": row[5],
+                        "checkin_station": row[6],
+                    })
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": pcb_sn,
+                            "repair_info": repair_info
+                        },
+                    },
+                    "message": "Repair Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": pcb_sn,
+                            "repair_info": {}
+                        },
+                    },
+                    "message": "Repair Info Not Found " + pcb_sn,
+                    "status": CONST_FAILURE,
+                }
+
+        except pyodbc.DatabaseError as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except pyodbc.ProgrammingError as pe:
+            cursor.rollback()
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
+            raise pe
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "device not found",
+                    "status": CONST_FAILURE,
+                }
             return response_data
 
 

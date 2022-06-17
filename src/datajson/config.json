@@ -1,9 +1,10 @@
 {
-    "app_version": "v5.16",
+    "app_version": "v5.17",
     "default_database": "stb_production",
     "default_driver": "{ODBC Driver 17 for SQL Server}",
     "default_host": "172.20.10.103\\PRODUCTION",
     "development_host": "172.20.10.149\\PRODUCTION",
+    "website_host_ip": "172.20.10.102",
     "users": [
         {
             "id_user": 1,
@@ -103,6 +104,303 @@
             "email" : "theo.rungasamy@uec.co.za",
             "id_status" : 4,
             "password": "Password521"
+        },
+        {
+            "id_user" : 16,
+            "user_desc" : "lindelwa.nyathi",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "lindelwa.nyathi@uec.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 23,
+            "user_desc" : "tnt.operator",
+            "id_title" : 5,
+            "id_department" : 5,
+            "email" : null,
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 25,
+            "user_desc" : "seelen.pillay",
+            "id_title" : 5,
+            "id_department" : 5,
+            "email" : "seelen.pillay@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 26,
+            "user_desc" : "storeman",
+            "id_title" : 5,
+            "id_department" : 5,
+            "email" : null,
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 27,
+            "user_desc" : "vikesh.singh3",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "vikesh.singh@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 34,
+            "user_desc" : "precious.ncane2",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "precious.ncane@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 35,
+            "user_desc" : "thabani.ngubane1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "eric.ngubane@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 39,
+            "user_desc" : "siphiwe.mdlalose",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "siphiwe.mdlalose@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 47,
+            "user_desc" : "lynette.lazarus",
+            "id_title" : 5,
+            "id_department" : 3,
+            "email" : "lynette.lazarus@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 80,
+            "user_desc" : "vinod.singh2",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "vinod.singh@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 81,
+            "user_desc" : "all",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : null,
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 88,
+            "user_desc" : "aoi.repairs",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "wayne.frederick@altech-multimedia.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 108,
+            "user_desc" : "precious.mlaba1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "wayne.frederick@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 109,
+            "user_desc" : "storeman1",
+            "id_title" : 5,
+            "id_department" : 5,
+            "email" : "shivar.dhurgaduth@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 113,
+            "user_desc" : "SkyworthRepairTech",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "shivar.dhurgaduth@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 114,
+            "user_desc" : "yvonne.naidoo",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "shivar.dhurgaduth@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 123,
+            "user_desc" : "mbuyazi",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "farhanah.kathoria@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 124,
+            "user_desc" : "testrepairtech",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "farhanah.kathoria@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 125,
+            "user_desc" : "philani",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "farhanah.kathoria@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 126,
+            "user_desc" : "philani.mbuyazi",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "farhanah.kathoria@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 128,
+            "user_desc" : "adrian.pillay",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "adrian.pillay@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 129,
+            "user_desc" : "nishan.pooran",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "Nishan.Pooran@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 130,
+            "user_desc" : "andile.mseleku2",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "andile.mseleku@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 131,
+            "user_desc" : "mduduzi.xulu1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "mduduzi.xulu@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 132,
+            "user_desc" : "philani.mbuyazi1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "philani.mbuyazi@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 133,
+            "user_desc" : "sbusiso.shezi1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "sbusiso.shezi@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 139,
+            "user_desc" : "mduduzi.xulu2",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "mduduzi.xulu@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 140,
+            "user_desc" : "busie.ndziba",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "busie.ndziba@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 141,
+            "user_desc" : "nobusi.ndzida",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "nobusi.ndzida@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 144,
+            "user_desc" : "sbusiso.shezi2",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "sbusiso.shezi@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 145,
+            "user_desc" : "sbusiso.shezi3",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "sbusiso.shezi@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 147,
+            "user_desc" : "suraya.kadir1",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "Suraya.Kadir@uec.co.za",
+            "id_status" : 4,
+            "password" : "Password909"
+        },
+        {
+            "id_user" : 150,
+            "user_desc" : "avinash.sankerpersadh",
+            "id_title" : 5,
+            "id_department" : 9,
+            "email" : "avinash.sankerpersadh@myskyworth.com",
+            "id_status" : 4,
+            "password" : "Password909"
         }
     ],
     "frequent_param": [

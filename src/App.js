@@ -14,6 +14,8 @@ import StreamaSynchronizeResultsContainer from "./components/containers/StreamaS
 import StreamaMechanicalContainer from "./components/containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./components/containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./components/containers/StreamaValidateTests";
+import StreamaRepairLoginContainer from "./components/containers/StreamaRepairLogin";
+import StreamaRepairLogoutContainer from "./components/containers/StreamaRepairLogout";
 import TPVPrepStationContainer from "./components/containers/TPVPrepStation";
 
 import config_data from "./datajson/config.json";
@@ -109,22 +111,22 @@ function App() {
     //         />
     //     </svg>
     // );
-    ///////////
-    const defaultMenu = "tpv_prep_station";
-    const defaultTitle = "TV Prep Assembly";
+    /////////
+    const defaultMenu = "streama_repair_login";
+    const defaultTitle = "Streama Repair Login";
     const defaultIcon = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            classname="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={2}
+            strokewidth="{2}"
         >
             <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                strokelinecap="round"
+                strokelinejoin="round"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
             />
         </svg>
     );
@@ -260,6 +262,22 @@ function App() {
             )}
             {menuState.selectedMenu === "streama_validate_tests" && (
                 <StreamaValidateTestsContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "streama_repair_login" && (
+                <StreamaRepairLoginContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "streama_repair_logout" && (
+                <StreamaRepairLogoutContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}
