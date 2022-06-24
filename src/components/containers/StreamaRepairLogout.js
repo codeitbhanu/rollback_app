@@ -444,7 +444,7 @@ function StreamaRepairLogout({ eel, params, setParams }) {
                                 disabled={state?.data?.length ? "" : "disabled"}
                                 onClick={onClickRepairLogout}
                             >
-                                Repair Logout
+                                {state.selected_failure.includes('Repair') ? "Repair Logout" : "Component Change"}
                             </button>
                         </div>
                         <div className="shadow mt-8 rounded-2xl bg-white p-4 align-middle">
