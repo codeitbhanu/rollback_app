@@ -236,19 +236,6 @@ function StreamaMechanical({ eel, params, setParams }) {
         // Are Status Valid for All STBs
     };
 
-    const sendPrint = () => {
-        console.log(state);
-        if (validateInputParams()) {
-            const stb_list = state.data.map((item) => item.stb_num);
-            console.log(`list of stbs: ${stb_list}`);
-            eel.send_fraction_print(
-                state.selectedPrinter,
-                state.last_pallet,
-                stb_list
-            );
-        }
-    };
-
     useEffect(() => {
         console.log("useEffect called #1");
         try {

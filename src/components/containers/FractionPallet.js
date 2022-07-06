@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import ActionButtons from "../ActionButtons";
@@ -22,6 +22,10 @@ function FractionPallet({ eel, params, setParams }) {
     const ACTION_BUTTON_SAVE = "save";
     const ACTION_BUTTON_CANCEL = "cancel";
     const ACTION_BUTTON_DELETE = "delete";
+
+    const refBarcodeScan = useRef(null);
+    const refWeight = useRef(null);
+    const refPallet = useRef(null);
 
     const handleDeleteItem = (id, rownum, serial) => {
         console.log("handleRemoveItem called ");
@@ -62,7 +66,7 @@ function FractionPallet({ eel, params, setParams }) {
         fraction_weight: 0.0,
         validation_fraction_weight: false,
         quantity_group: [],
-        common_prod_id: -1,
+        common_prod_desc: -1,
         last_pallet: "",
         last_carton: "",
         // message: `Click button to choose a random file from the user's system`,
@@ -82,6 +86,7 @@ function FractionPallet({ eel, params, setParams }) {
             last_pallet: "",
             last_carton: "",
         });
+        refBarcodeScan.current.focus();
     };
 
     const onSelectFractionQty = (id = -1) => {
@@ -121,6 +126,7 @@ function FractionPallet({ eel, params, setParams }) {
                     fraction_weight: result ? result[0] : undefined,
                     validation_fraction_weight: result?.length > 0,
                 }));
+                // if (state.validation_fraction_weight) refPallet.current.focus();
         } catch (e) {
             console.log("Error: " + e.message);
         }
@@ -185,7 +191,8 @@ function FractionPallet({ eel, params, setParams }) {
             eel.send_fraction_print(
                 state.selectedPrinter,
                 state.last_pallet,
-                stb_list
+                stb_list,
+                state.fraction_weight
             );
         }
     };
@@ -245,9 +252,10 @@ function FractionPallet({ eel, params, setParams }) {
     useEffect(() => {
         console.log("useEffect called #2");
         if (state.valid_scanned === state.fraction_count) {
-            fetchLastCartonPallet(state.common_prod_id);
+            fetchLastCartonPallet(state.common_prod_desc);
+            refWeight.current.focus();
         }
-    }, [state.valid_scanned, state.fraction_count, state.common_prod_id]);
+    }, [state.valid_scanned, state.fraction_count, state.common_prod_desc]);
 
     const modeInstant = () => {
         setState({ ...state, mode: MODE_INSTANT });
@@ -313,7 +321,7 @@ function FractionPallet({ eel, params, setParams }) {
                         const status = response.status;
                         const message = response.message;
                         const metadata = response.data.metadata;
-                        // let prod_id = metadata.prod_id;
+                        // let prod_id = metadata.prod_desc;
                         console.log(
                             `${function_name} message got: ${JSON.stringify(
                                 message
@@ -321,12 +329,12 @@ function FractionPallet({ eel, params, setParams }) {
                         );
 
                         if (
-                            metadata.prod_id !== -1 &&
+                            metadata.prod_desc &&
                             state.data.length &&
-                            state.common_prod_id !== metadata.prod_id
+                            state.common_prod_desc !== metadata.prod_desc
                         ) {
                             console.log(
-                                `${metadata.prod_id} conflict with previous scanned product ${state.data[0].prod_id} \nPlease scan similar product`
+                                `${metadata.prod_desc} conflict with previous scanned product ${state.data[0].prod_id} \nPlease scan similar product`
                             );
                             throw new Error(
                                 `${metadata.prod_desc} conflict with previous scanned product ${state.data[0].prod_desc} \nPlease scan similar product`
@@ -339,33 +347,35 @@ function FractionPallet({ eel, params, setParams }) {
                                 parseInt(metadata.current_status)
                         )[0];
                         const updated_data = state.data;
-                        updated_data.unshift({
-                            id: uuidv4(),
-                            prod_id: metadata.prod_id,
-                            stb_num: metadata.stb_num,
-                            pcb_num: metadata.pcb_num,
-                            cdsn_iuc: metadata.cdsn_iuc,
-                            prod_desc: metadata.prod_desc,
-                            current_status: current_status,
-                            carton_num: metadata.carton_num,
-                            pallet_num: metadata.pallet_num,
-                            message: message,
-                            status: status,
-                            valid: status === CONST_SUCCESS,
-                        });
-                        setState((prevState) => ({
-                            ...prevState,
-                            data: updated_data,
-                            common_prod_id:
-                                state.valid_scanned === 0 &&
-                                status === CONST_SUCCESS
-                                    ? metadata.prod_id
-                                    : state.common_prod_id,
-                            valid_scanned:
-                                status === CONST_SUCCESS
-                                    ? state.valid_scanned + 1
-                                    : state.valid_scanned,
-                        }));
+                        if (metadata.stb_num) {
+                            updated_data.push({
+                                id: uuidv4(),
+                                // prod_id: metadata.prod_desc,
+                                stb_num: metadata.stb_num,
+                                pcb_num: metadata.pcb_num,
+                                cdsn_iuc: metadata.cdsn_iuc,
+                                prod_desc: metadata.prod_desc,
+                                current_status: current_status,
+                                carton_num: metadata.carton_num,
+                                pallet_num: metadata.pallet_num,
+                                message: message,
+                                status: status,
+                                valid: status === CONST_SUCCESS,
+                            });
+                            setState((prevState) => ({
+                                ...prevState,
+                                data: updated_data,
+                                common_prod_desc:
+                                    state.valid_scanned === 0 &&
+                                    status === CONST_SUCCESS
+                                        ? metadata.prod_desc
+                                        : state.common_prod_desc,
+                                valid_scanned:
+                                    status === CONST_SUCCESS
+                                        ? state.valid_scanned + 1
+                                        : state.valid_scanned,
+                            }));
+                        }
                         if (status === CONST_SUCCESS) {
                             console.log(metadata);
                         } else {
@@ -421,9 +431,9 @@ function FractionPallet({ eel, params, setParams }) {
         }));
     };
 
-    const fetchLastCartonPallet = (prod_id, choice = "") => {
+    const fetchLastCartonPallet = (prod_desc, choice = 'pallet') => {
         // const pallet_num = event.target.value.trim();
-        console.log(`${eel}___${prod_id}___`);
+        console.log(`${eel}___${prod_desc}___`);
 
         try {
             if (params.session.active === false) {
@@ -431,9 +441,9 @@ function FractionPallet({ eel, params, setParams }) {
                 return;
             }
             if (params.server.status) {
-                // let prod_id = 115;
+                // let prod_desc = 115;
                 eel.get_last_pallet_carton(
-                    prod_id,
+                    prod_desc,
                     choice
                 )((response) => {
                     console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
@@ -494,7 +504,7 @@ function FractionPallet({ eel, params, setParams }) {
             ...state,
             selectedPrinter: printerName,
         });
-        // alert(JSON.stringify(event.target.value));
+        refBarcodeScan.current.focus();
     };
 
     const handleChangeTextBox = (event) => {
@@ -612,7 +622,7 @@ function FractionPallet({ eel, params, setParams }) {
                     <div className="flex flex-col justify-between mt-2">
                         <label className="text-black label">
                             <span className="text-black label-text">
-                                Scan PCB_Num or STB_Num
+                                Scan giftbox
                             </span>
                             <span
                                 className={
@@ -623,8 +633,9 @@ function FractionPallet({ eel, params, setParams }) {
                             >{`${state.valid_scanned} / ${state.fraction_count}`}</span>
                         </label>
                         <input
+                            ref={refBarcodeScan}
                             type="text"
-                            placeholder="Scan PCB_Num or STB_Num"
+                            placeholder="Scan giftbox"
                             className="border-double input input-primary input-bordered"
                             onKeyDown={(e) =>
                                 e.key === "Enter" && handleBarcodeInput(e)
@@ -646,6 +657,7 @@ function FractionPallet({ eel, params, setParams }) {
                         >
                             <span className="text-sm">Weight (in kgs.)</span>
                             <input
+                                ref={refWeight}
                                 type="text"
                                 placeholder="eg. 9.12"
                                 className="flex-shrink input input-bordered input-md"
@@ -661,6 +673,7 @@ function FractionPallet({ eel, params, setParams }) {
                             </span>
                         </label>
                         <input
+                            ref={refPallet}
                             type="text"
                             placeholder="Enter Fraction Pallet"
                             className="border-double input input-primary input-bordered"
@@ -719,7 +732,7 @@ function FractionPallet({ eel, params, setParams }) {
                                     >
                                         <th>
                                             {state.data.length !== 0
-                                                ? state.data.length - index
+                                                ? index + 1
                                                 : 0}
                                         </th>
                                         <td>{resp.stb_num}</td>

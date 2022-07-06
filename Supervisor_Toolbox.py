@@ -952,9 +952,9 @@ def rollback(pcb_sn='', mode=MODE_INSTANT, target_status_id=INSTANT_MODE_STATUS_
 
 
 @eel.expose
-def get_last_pallet_carton(prod_id=-1, choice="pallet"):
+def get_last_pallet_carton(prod_desc='', choice='pallet'):
     global serverinstance
-    print(f'[get_last_pallet] requested last pallet for {prod_id}')
+    print(f'[get_last_pallet] requested last pallet for {prod_desc} choice: {choice}')
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
         "data": {
@@ -979,15 +979,17 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
         if (choice == "pallet"):
             select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
                         WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
-                        WHERE prod_id = {prod_id} and id_config_param = {choice_pallet})'''
-        elif (choice == "carton"):
+                        INNER JOIN product p ON p.prod_id = pc.prod_id
+                        WHERE prod_desc = \'{prod_desc}\' and id_config_param = {choice_pallet})'''
+        else:
             select_sql = f'''SELECT cd_data FROM stb_production.dbo.config_data cd
                         WHERE id_config_data = (SELECT id_config_data FROM stb_production.dbo.prod_config pc
-                        WHERE prod_id = {prod_id} and id_config_param = {choice_carton})'''
-        else:
-            select_sql = f'''SELECT cd.cd_data FROM stb_production.dbo.config_data cd
-                        WHERE id_config_data IN (SELECT id_config_data FROM stb_production.dbo.prod_config pc
-                        WHERE prod_id = {prod_id} and (id_config_param = {choice_carton} OR id_config_param = {choice_pallet}))'''
+                        INNER JOIN product p ON p.prod_id = pc.prod_id
+                        WHERE p.prod_desc = \'{prod_desc}\' and id_config_param = {choice_carton})'''
+        # else:
+        #     select_sql = f'''SELECT cd.cd_data FROM stb_production.dbo.config_data cd
+        #                 WHERE id_config_data IN (SELECT id_config_data FROM stb_production.dbo.prod_config pc
+        #                 WHERE prod_desc = {prod_desc} and (id_config_param = {choice_carton} OR id_config_param = {choice_pallet}))'''
         print(f'[SELECT-SQL] {select_sql}')
 
         try:
@@ -1004,7 +1006,7 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
                 k = "last_pallet" if choice == "pallet" else "last_carton"
                 response_data = {
                     **response_data,
-                    "message": "Last pallet: {row.cd_data} for prod_id: {prod_id}",
+                    "message": "Last pallet: {row.cd_data} for prod_desc: {prod_desc}",
                     "data": {
                         "metadata": {
                             "select_count": len(results),
@@ -1019,7 +1021,7 @@ def get_last_pallet_carton(prod_id=-1, choice="pallet"):
                 # k = "last_pallet" if choice == "pallet" else "last_carton"
                 response_data = {
                     **response_data,
-                    "message": "Last pallet: {row.cd_data} for prod_id: {prod_id}",
+                    "message": "Last pallet: {row.cd_data} for prod_desc: {prod_desc}",
                     "data": {
                         "metadata": {
                             "select_count": len(results),
@@ -1087,60 +1089,55 @@ def is_valid_unit(application="", allowed_status=[], pcb_sn="", is_ott=False):
             f'[is_valid_unit] {application} - {allowed_status} requested for pcb_sn: {pcb_sn}')
 
         try:
-            select_sql = ""
-            if (is_ott):
-                select_sql = f'''SELECT stb_num, pe.pcb_num, snr.Field2 as cdsn_iuc, pro.prod_id, pro.prod_desc, pe.id_status, status_desc, carton_num, pallet_num
-                                    FROM stb_production.dbo.production_event pe
-                                        INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
-                                        INNER JOIN NEWDB.dbo.SNRecord snr ON snr.SN = pe.stb_num
-                                        INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
-                                        WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
-            else:
-                # TODO: Currently the proudct iuc will be fetched only for 4140, to be made generic
-                select_sql = f'''SELECT stb_num, pe.pcb_num, dsd.cdsn_iuc as cdsn_iuc, pro.prod_id, pro.prod_desc, pe.id_status, status_desc, carton_num, pallet_num
-                                    FROM stb_production.dbo.production_event pe
-                                        INNER JOIN stb_production.dbo.status st ON st.id_status = pe.id_status
-                                        INNER JOIN stb_production.dbo.device_state_dsd_4140 dsd ON dsd.id_production_event = pe.id_production_event
-                                        INNER JOIN stb_production.dbo.product pro ON pro.prod_id = pe.prod_id
-                                        WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
-            print(f'[SELECT-SQL] {select_sql}')
+            storedProc = '''EXEC sp_RPT_GetDeviceInfo @serialNum  = ?'''
+            params = (pcb_sn)
+            print(f'[SELECT-SQL] {storedProc} {pcb_sn}')
             response_data = {
                 **response_data,
-                "select_query": select_sql,
+                "select_query": storedProc,
             }
             conn.autocommit = False
-            results = cursor.execute(select_sql).fetchall()
+            results = cursor.execute(storedProc, params).fetchall()
             print(f'[SELECT-SQL-RESULTS] {results}')
 
             if len(results) == 1:
-                row = results[0]
-                response_data = {
-                    **response_data,
-                    "data": {
-                        "metadata": {
-                            "stb_num": row.stb_num,
-                            "pcb_num": row.pcb_num,
-                            "cdsn_iuc": row.cdsn_iuc,
-                            "prod_desc": row.prod_desc,
-                            "current_status": row.id_status,
-                            "status_desc": row.status_desc,
-                            "carton_num": row.carton_num,
-                            "pallet_num": row.pallet_num,
-                            "prod_id": row.prod_id,
-                            "id_status": row.id_status,
-                        }
-                    },
-                }
-                if results[0].id_status in allowed_status:
+                # device_info = []
+                for row in results:
+                    print(row)
                     response_data = {
                         **response_data,
-                        "message": f'''{pcb_sn} is in {allowed_status} status''',
-                        "status": CONST_SUCCESS,
+                        "data": {
+                            "metadata": {
+                                "stb_num": row[1],
+                                "pcb_num": row[0],
+                                "cdsn_iuc": row[7] or row[8],
+                                "prod_desc": row[14],
+                                "current_status": row[2],
+                                "status_desc": row[13],
+                                "carton_num": row[4],
+                                "pallet_num": row[5],
+                                # "prod_id": row.prod_id,
+                                "id_status": row[2],
+                            }
+                        },
                     }
+                if results[0][1]:
+                    if results[0][2] in allowed_status:
+                        response_data = {
+                            **response_data,
+                            "message": f'''{pcb_sn} is in {allowed_status} status''',
+                            "status": CONST_SUCCESS,
+                        }
+                    else:
+                        response_data = {
+                            **response_data,
+                            "message": f'''{pcb_sn} is not in {allowed_status} allowed status''',
+                            "status": CONST_FAILURE,
+                        }
                 else:
                     response_data = {
                         **response_data,
-                        "message": f'''{pcb_sn} is not in {allowed_status} allowed status''',
+                        "message": f'''{pcb_sn} device not found''',
                         "status": CONST_FAILURE,
                     }
             else:
@@ -1441,13 +1438,119 @@ def get_printer_list():
 
 
 @eel.expose
-def send_fraction_print(printer_name="", pallet_num="", stb_num_list=[]):
+def send_fraction_print(printer_name="", pallet_num="", stb_num_list=[], weight=0):
     print(
-        f'[SEND-FRACTION-PRINT] printer: {printer_name} pallet: {pallet_num} stbs: {stb_num_list}')
-    response_data = {"function_name": inspect.currentframe().f_code.co_name, "data": {"metadata": {
-        "pallet_num": pallet_num
-    }}, "message": "Fraction Pallet Created", "status": CONST_SUCCESS}
-    return response_data
+        f'[SEND-FRACTION-PRINT] printer: {printer_name} pallet: {pallet_num} stbs: {stb_num_list} weight:{weight}')
+    global serverinstance
+
+    state_common = {}
+
+    ZEBRA.setqueue(printer_name)
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": f'Default Message: pcb_sn: [{pallet_num}]',
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        # cursor = serverinstance.cursor
+        # conn = serverinstance.conn
+        try:
+            # main sp to create fraction pallet and update events
+            device = create_fraction_carton(pallet_num, stb_num_list, weight)
+            print(device)
+            if device["status"] == CONST_SUCCESS:
+                # TODO: Handle StoredProcedure's failure codes also
+                state_common = {
+                    **state_common,
+                    **device["data"]["metadata"]
+                }
+                logprint('>>> yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
+                return response_data
+                # PRINT THE VALUES
+                # =============== PRINT =====================
+                varDict = {
+                    # 'STB_NUM': state_common["device_info"]["STB_Num"],
+                    # 'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
+                }
+                # TODO: 1. Printer Name, 2. Get Real Template From Database
+                logprint('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
+                logprint('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                if printer_resp["status"] == CONST_FAILURE:
+                    logprint("Printing Failed")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": state_common,
+                        },
+                        "message": printer_resp["message"],
+                        "status": CONST_FAILURE,
+                    }
+                else:
+                    print("Printing Successful")
+                    # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
+                    mech_status = update_mechanical(state_common["device_info"]["Pcb_Num"], '', '', '', production_line, user_desc, '', False, '')
+                    logprint(mech_status)
+                    mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
+                    if mech_message.startswith(CONST_SUCCESS):
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": f'''{mech_message}''',
+                            "status": CONST_SUCCESS,
+                        }
+                    else:
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": f'''ERROR, {mech_message}''',
+                            "status": CONST_FAILURE,
+                        }
+            else:
+                print(device["message"])
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {},
+                    },
+                    "message": f'''ERROR,PCB: [{pallet_num}] {device["message"]}''',
+                    "status": CONST_FAILURE,
+                }
+        except Exception as e:
+            print(
+                f'[ERROR: Exception - {str(e)}, will skip this invalid cell value')
+            raise e
+        else:
+            pass
+            # cursor.commit()
+        finally:
+            # conn.autocommit = True
+            print(response_data)
+            # if len(results) == 0:
+            #     # raise ValueError("record not found")
+            #     response_data = {
+            #         **response_data,
+            #         "data": {
+            #             "metadata": results,
+            #         },
+            #         "message": "No Products Found with PCB/SN",
+            #         "status": CONST_FAILURE,
+            #     }
+            return response_data
 
 
 @eel.expose
@@ -2403,16 +2506,11 @@ def get_device_info(pcb_sn):
                     "status": CONST_FAILURE,
                 }
 
-        except pyodbc.DatabaseError as e:
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
             print(
-                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+                f'[ERROR: pyodbc.ProgrammingError - {str(e)}, will skip this invalid cell value')
             cursor.rollback()
             raise e
-        except pyodbc.ProgrammingError as pe:
-            cursor.rollback()
-            print(
-                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-            raise pe
         except KeyError as ke:
             print(
                 f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
@@ -2432,6 +2530,106 @@ def get_device_info(pcb_sn):
                     "message": "device not found",
                     "status": CONST_FAILURE,
                 }
+            return response_data
+
+@eel.expose
+def create_fraction_carton(pallet_num, stb_list='', weight=0):
+    print(f'[CREATE-FRACTION-CARTON] requested {pallet_num} {stb_list} {weight}')
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            storedProc = '''EXEC spLocal_UPDCreateFractionCarton @pallet_num  = ?, @stbList = ?, @weight = ?'''
+            params = (pallet_num, ' '.join(stb_list), str(weight))
+            print(f'[SELECT-SQL]  {storedProc} {params}')
+            response_data = {
+                **response_data,
+                "select_query": storedProc,
+                "query_params": params
+            }
+            conn.autocommit = False
+            results = cursor.execute(storedProc, params).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) > 0:
+                device_info = []
+                for row in results:
+                    print(row)
+                    device_info.append({
+                        "stb_num": row[0],
+                        "pcb_num": row[1],
+                        "cdsn_iuc": row[2],
+                        "carton_num": row[3],
+                        "pallet_num": row[4],
+                        "id_status": row[5],
+                        "DATE": row[6],
+                        "weight": row[7]
+                    })
+
+                print("#######################################")
+                if (len(results) == len(stb_list)):
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "device_info": device_info
+                            },
+                        },
+                        "message": "Events successfully updated",
+                        "status": CONST_SUCCESS,
+                    }
+                else:
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "device_info": device_info
+                            },
+                        },
+                        "message": "Not all device info exits in database",
+                        "status": CONST_FAILURE,
+                    }
+            else:
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "device_info": {}
+                        },
+                    },
+                    "message": "None of the device info exits in database",
+                    "status": CONST_FAILURE,
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'>> [ERROR: pyodbc.ProgrammingError - {str(e)}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
             return response_data
 
 

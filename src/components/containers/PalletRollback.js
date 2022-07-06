@@ -192,15 +192,6 @@ function PalletRollback({ eel, params, setParams }) {
 
     const handle_rollback_pallet = () => {
         console.log(state);
-        // if (validateInputParams()) {
-        //     const stb_list = state.data.map((item) => item.stb_num);
-        //     console.log(`list of stbs: ${stb_list}`);
-        //     eel.send_fraction_print(
-        //         state.selectedPrinter,
-        //         state.last_pallet,
-        //         stb_list
-        //     );
-        // }
         const pallet_num = state.pallet_num.trim();
         // alert(`___${pcb_sn}___`);
         const stb_num_list = state.data.map((item) => item.pcb_sn)

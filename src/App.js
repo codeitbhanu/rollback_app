@@ -93,6 +93,25 @@ function App() {
     //     </svg>
     // );
     ////////////////////////////////////////////////////////////////////////////
+    const defaultMenu = "fraction_pallet";
+    const defaultTitle = "Fraction Pallet";
+    const defaultIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="#8AE9FF"
+            viewBox="0 0 24 24"
+            stroke="#343434"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="{2}"
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+            />
+        </svg>
+    );
+    ///////////////////////////////////////////////////////////
     // const defaultMenu = "streama_mechanical";
     // const defaultTitle = "Streama Mechanical";
     // const defaultIcon = (
@@ -112,24 +131,24 @@ function App() {
     //     </svg>
     // );
     /////////
-    const defaultMenu = "streama_repair_login";
-    const defaultTitle = "Streama Repair Login";
-    const defaultIcon = (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokewidth="{2}"
-        >
-            <path
-                strokelinecap="round"
-                strokelinejoin="round"
-                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-            />
-        </svg>
-    );
+    // const defaultMenu = "streama_repair_login";
+    // const defaultTitle = "Streama Repair Login";
+    // const defaultIcon = (
+    //     <svg
+    //         xmlns="http://www.w3.org/2000/svg"
+    //         classname="h-6 w-6"
+    //         fill="none"
+    //         viewBox="0 0 24 24"
+    //         stroke="currentColor"
+    //         strokewidth="{2}"
+    //     >
+    //         <path
+    //             strokelinecap="round"
+    //             strokelinejoin="round"
+    //             d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+    //         />
+    //     </svg>
+    // );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
@@ -260,7 +279,7 @@ function App() {
                     config_data={config_data}
                 />
             )}
-            {menuState.selectedMenu === "streama_validate_tests" && (
+            {menuState.selectedMenu === "streama_validate_pallet" && (
                 <StreamaValidateTestsContainer
                     eel={eel}
                     params={appState}

@@ -268,6 +268,27 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             </div>
             
             <ul className="py-3 menu bg-base-100">
+                <li
+                    className={
+                        menuState.selectedMenu === "streama_validate_pallet"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_validate_pallet",
+                                "Streama Validate Pallet",
+                                iconStramaValidateTests,
+                                StreamaValidateTestsContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconStramaValidateTests}</div>
+                        Streama Validate Pallet
+                    </a>
+                </li>
                 {/* <li
                     className={
                         menuState.selectedMenu === "streama_mechanical"
@@ -289,27 +310,6 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                             {iconStreamaMechanical}
                         </div>
                         Streama Mechanical
-                    </a>
-                </li>
-                <li
-                    className={
-                        menuState.selectedMenu === "streama_validate_tests"
-                            ? "bordered"
-                            : ""
-                    }
-                >
-                    <a
-                        onClick={() =>
-                            onSelectMenu(
-                                "streama_validate_tests",
-                                "Streama Validate Pallet",
-                                iconStramaValidateTests,
-                                StreamaValidateTestsContainer
-                            )
-                        }
-                    >
-                        <div className="w-5 h-5 mr-2">{iconStramaValidateTests}</div>
-                        Streama Validate Pallet
                     </a>
                 </li>
                 <li
@@ -355,7 +355,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconMesStatusSync}</div>
                         Streama Synchronize Results
                     </a>
-                </li> */}
+                </li>
                 <li
                     className={
                         menuState.selectedMenu === "streama_repair_login"
@@ -398,7 +398,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Streama Repair Logout
                     </a>
                 </li>
-                {/* <li
+                <li
                     className={
                         menuState.selectedMenu === "mes_status_sync"
                             ? "bordered"
@@ -418,7 +418,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconTpvPrepStation}</div>
                         TV Prep Assembly
                     </a>
-                </li>
+                </li>   */}
                 <li
                     className={
                         menuState.selectedMenu === "unit_rollback"
@@ -503,7 +503,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Items
                     </a>
                 </li>
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
@@ -546,7 +546,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Pallet Rollback
 
                     </a>
-                </li> 
+                </li> */}
                 <li
                     className={
                         menuState.selectedMenu === "fraction_pallet" ?
@@ -566,7 +566,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         <div className="w-5 h-5 mr-2">{iconFractionPallet}</div>
                         Fraction Pallet
                     </a>
-                </li> */}
+                </li> 
             </ul>
         </div>
     );
