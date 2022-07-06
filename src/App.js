@@ -14,6 +14,7 @@ import StreamaSynchronizeResultsContainer from "./components/containers/StreamaS
 import StreamaMechanicalContainer from "./components/containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./components/containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./components/containers/StreamaValidateTests";
+import StreamaReworkRollbackContainer from "./components/containers/StreamaReworkRollback";
 import StreamaRepairLoginContainer from "./components/containers/StreamaRepairLogin";
 import StreamaRepairLogoutContainer from "./components/containers/StreamaRepairLogout";
 import TPVPrepStationContainer from "./components/containers/TPVPrepStation";
@@ -93,21 +94,20 @@ function App() {
     //     </svg>
     // );
     ////////////////////////////////////////////////////////////////////////////
-    const defaultMenu = "fraction_pallet";
-    const defaultTitle = "Fraction Pallet";
+    const defaultMenu = "streama_rework_rollback";
+    const defaultTitle = "Streama Rework Rollback";
     const defaultIcon = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="w-6 h-6"
-            fill="#8AE9FF"
-            viewBox="0 0 24 24"
-            stroke="#343434"
+            classname="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
         >
+            <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
             <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="{2}"
-                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                fillrule="evenodd"
+                d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                cliprule="evenodd"
             />
         </svg>
     );
@@ -305,6 +305,14 @@ function App() {
             )}
             {menuState.selectedMenu === "tpv_prep_station" && (
                 <TPVPrepStationContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "streama_rework_rollback" && (
+                <StreamaReworkRollbackContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

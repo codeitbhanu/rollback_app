@@ -592,8 +592,8 @@ def roll_back_insert_tracking(conn, cursor, pcb_sn, prod_id, target_status_id, r
         print(f'[INSERT-SQL] {insert_sql}')
         # return
         conn.autocommit = False
-        insert_count = cursor.execute(insert_sql)
-        print(f'insert_count: {insert_count}')
+        cursor.execute(insert_sql)
+        print(f'insert_count: {cursor.rowcount}')
     except pyodbc.DatabaseError as e:
         print(
             f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
@@ -3836,6 +3836,95 @@ def get_product_info(pcb_sn):
                 }
             return response_data
 
+@eel.expose
+def get_product_info_ott(pcb_sn):
+    print('[GET-PRODUCT-INFO] requested ', pcb_sn)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''
+                SELECT pe.prod_id, p.prod_desc, pe.id_status, pe.stb_num
+                FROM stb_production.dbo.production_event pe
+                    INNER JOIN product p ON p.prod_id = pe.prod_id 
+                    INNER JOIN [NEWDB].[dbo].[SNRecord] dsd ON dsd.SN = pe.stb_num
+                WHERE pe.stb_num = \'{pcb_sn}\' OR dsd.Field2 = \'{pcb_sn}\''''
+            # select_sql = f'''SELECT pe.prod_id, p.prod_desc
+            #                 FROM stb_production.dbo.production_event pe
+            #                 INNER JOIN stb_production.dbo.product p ON p.prod_id = pe.prod_id
+            #                 WHERE pcb_num  = \'{pcb_sn}\' OR stb_num = \'{pcb_sn}\''''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                prod_list = []
+                for row in results:
+                    print(row)
+                    prod_list.append({"prod_id": row[0], "prod_desc": row[1], "id_status": row[2]})
+
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "prod_id": row[0],
+                            "prod_desc": row[1],
+                            "id_status": row[2],
+                            "stb_num": row[3]
+                        },
+                    },
+                    "message": "Product Info Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "No Products Found with PCB/SN",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
 
 @eel.expose
 def get_pcb_report(pcb_sn):
@@ -6057,6 +6146,125 @@ def get_device_repair_info(pcb_sn):
                     "status": CONST_FAILURE,
                 }
             return response_data
+
+@eel.expose
+def streama_rework_rollback(pcb_sn='', id_user=''):
+    print(
+        f'''[APP] requested rollback \npcb_num:{pcb_sn} by: {id_user}''')
+    global serverinstance
+    # rollback_status = CONST_FAILURE
+    # response_data = None
+    current_time = get_current_time()
+    help_message = ''
+    response_data = {
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+
+        prod_id = INVALID_PRODUCT_ID
+        prod_desc = INVALID_PRODUCT_DESC
+        id_status = -1
+        stb_num = ''
+        try:
+            resp = get_product_info_ott(pcb_sn)
+            if (resp['status'] == CONST_SUCCESS):
+                metadata = resp['data']['metadata']
+                print(f'metadata: {metadata}')
+                if ('prod_id' in metadata and 'prod_desc' in metadata and 'id_status' in metadata and 'stb_num' in metadata):
+                    prod_id = metadata['prod_id']
+                    id_status = metadata['id_status']
+                    stb_num = metadata['stb_num']
+                    # print(f'prod_id: {prod_id} prod_desc: {prod_desc}')
+                else:
+                    raise ValueError('Product Information Not Found for given PCB / Serial')
+        except Exception as e:
+            print('----15')
+            help_message = f'''EXCEPTION {pcb_sn} Message: {type(e).__name__ + ': '+ str(e)}'''
+            response_data = {
+                **response_data,
+                "data": {
+                    "metadata": {
+                        "stb_num": stb_num or pcb_sn,
+                        "prod_id": prod_id,
+                        "prod_desc": prod_desc
+                    },
+                },
+                "message": help_message
+            }
+            return response_data
+        try:
+            print(f'>>>>>>>>> STATUS >>>>>>>> {id_status}')
+            if id_status == 40:
+                # HANDLE INSTANT ROLLBACK
+                # SET NOCOUNT ON; 
+                update_sql = f'''UPDATE pe
+                    SET id_status = 18, [timestamp] = N\'{current_time}\', carton_num = NULL, pallet_num = NULL, weight = NULL, id_customer_order_details = NULL, id_customer_order = NULL
+                    FROM stb_production.dbo.production_event pe
+                    INNER JOIN [NEWDB].[dbo].[SNRecord] dsd ON dsd.SN = pe.stb_num
+                    WHERE stb_num =N\'{stb_num}\' and id_status = {40} and prod_id IN (104,115);'''
+                #  SET NOCOUNT OFF;
+                print(f'[UPDATE-SQL] {update_sql}')
+                conn.autocommit = False
+                cursor.execute(update_sql)
+                conn.autocommit = True
+                print(f'[UPDATED ROW COUNT] {cursor.rowcount}')
+                help_message = f'''{stb_num} Sucessfully Updated '''
+
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "stb_num": stb_num,
+                            "update_query": update_sql,
+                            "update_count": cursor.rowcount
+                        },
+                    },
+                    "message": help_message,
+                    "status": CONST_SUCCESS
+                }
+            else:
+                # ELSE
+                help_message = f'''{CONST_FAILURE} {stb_num} not allowed for rework'''
+                response_data = {
+                    **response_data,
+                    "message": help_message
+                }
+        except Exception as e:
+            conn.autocommit = True
+            help_message = f'''EXCEPTION {pcb_sn} rollback not done. Message: {type(e).__name__ + ': '+ str(e)}'''
+            response_data = {
+                **response_data,
+                "message": help_message
+            }
+        
+        try:
+            prod_id = prod_id
+            timestamp = current_time
+            target_status = 18
+            roll_back_insert_tracking(serverinstance.conn, serverinstance.cursor, pcb_sn, prod_id, target_status, "Streama Rework Rollback", id_user, timestamp)
+        except Exception as e:
+            help_message = f'''EXCEPTION {pcb_sn} rollback not done to {target_status} Message: {type(e).__name__ + ': '+ str(e)}'''
+            response_data = {
+                **response_data,
+                "message": help_message
+            }
+
+    print(f'''HELP> {help_message}''')
+
+    return response_data
+    # return {"data": 'hello', 'repsonse': 'world'}
 
 
 if __name__ == '__main__':

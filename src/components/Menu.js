@@ -9,6 +9,7 @@ import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeR
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
+import StreamaReworkRollbackContainer from "./containers/StreamaReworkRollback";
 import StreamaRepairLoginContainer from "./containers/StreamaRepairLogin";
 import StreamaRepairLogoutContainer from "./containers/StreamaRepairLogout";
 import TPVPrepStationContainer from "./containers/TPVPrepStation";
@@ -239,6 +240,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             />
         </svg>
     );
+
+    const iconStreamaReworkRollback = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+        >
+            <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+            <path
+                fillrule="evenodd"
+                d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                cliprule="evenodd"
+            />
+        </svg>
+    );
     return (
         <div className="absolute z-50 min-h-screen overflow-hidden rounded-none shadow-lg artboard bg-base-200 w-96">
             <div className="flex justify-between p-4 border-b-2 border-gray-300">
@@ -287,6 +304,29 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconStramaValidateTests}</div>
                         Streama Validate Pallet
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "streama_rework_rollback"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "streama_rework_rollback",
+                                "Streama Rework Rollback",
+                                iconStreamaReworkRollback,
+                                StreamaReworkRollbackContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">
+                            {iconStreamaReworkRollback}
+                        </div>
+                        Streama Rework Rollback
                     </a>
                 </li>
                 {/* <li
