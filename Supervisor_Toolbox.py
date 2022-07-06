@@ -1,6 +1,7 @@
 """Main Python application file for the EEL-CRA demo."""
 
 # imports
+import os
 import platform
 import sys
 import inspect
@@ -9,6 +10,7 @@ import pyodbc
 import datetime
 import random
 import socket
+import fileinput
 from time import sleep
 # from util_order_items import order_items
 
@@ -16,15 +18,18 @@ from time import sleep
 import re
 from zebra import Zebra
 
+
 def get_linenumber():
     cf = inspect.currentframe()
     return cf.f_back.f_lineno
+
 
 def logprint(text=None):
     cf = inspect.currentframe()
     function_name = cf.f_code.co_name
     line_no = cf.f_back.f_lineno
     print(f'{function_name}:{line_no} {text}')
+
 
 ZEBRA = Zebra()
 
@@ -1474,52 +1479,69 @@ def send_fraction_print(printer_name="", pallet_num="", stb_num_list=[], weight=
                     **state_common,
                     **device["data"]["metadata"]
                 }
-                logprint('>>> yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
-                return response_data
-                # PRINT THE VALUES
-                # =============== PRINT =====================
-                varDict = {
-                    # 'STB_NUM': state_common["device_info"]["STB_Num"],
-                    # 'ETHERNET_MAC': state_common["device_info"]["Custom_String_1"]
-                }
-                # TODO: 1. Printer Name, 2. Get Real Template From Database
-                logprint('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                printer_resp = printer_wrapper(varDict, 'streama_mechanical_template.txt')
-                logprint('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
-                if printer_resp["status"] == CONST_FAILURE:
-                    logprint("Printing Failed")
+                row_index = 0
+                prod_id = 0
+                carton_dict = {}
+                if len(device["data"]["metadata"]["device_info"]) > 0:
+                    carton_dict['DECODER_IUC_LIST'] = ''
+                    carton_dict['DECODER_MAC_LIST'] = ''
+                    print(f'>>>>>>>>>>>>>> [device_info]\n {device["data"]["metadata"]["device_info"]}')
+                    print(len(device["data"]["metadata"]["device_info"]))
+                    for row in device["data"]["metadata"]["device_info"]:
+                        row_index = row_index + 1
+                        prod_id = int(row["prod_id"]) if prod_id == 0 else prod_id
+                        # print(f'{str(ctn_index).zfill(3)} # {row_index} # [GOT] {row}')
+                        carton_dict['PROD_ID'] = row["prod_id"]
+                        carton_dict['PROD_CODE'] = row["prod_id"]
+                        carton_dict['CARTON'] = row["carton_num"]
+                        carton_dict['PALLET'] = row["pallet_num"]
+                        carton_dict['MANF_DATE'] = row["DATE"]
+                        #
+                        carton_dict[f'STB{row_index}_BC'] = row["stb_num"]
+                        carton_dict[f'STB_{row_index}'] = row["stb_num"]
+                        carton_dict[f'STB{row_index}_TX'] = ''.join(list(row["stb_num"])[:10]) + 'X' + list(row["stb_num"])[-1]
+                        carton_dict[f'SC{row_index}'] = row["cdsn_iuc"]
+                        carton_dict[f'ETH_MAC_{row_index}'] = row["cdsn_iuc"]
+                        carton_dict['DECODER_IUC_LIST'] = carton_dict['DECODER_IUC_LIST'] + f'{row["stb_num"]},{row["cdsn_iuc"]}\\0D\\0A'
+                        carton_dict['DECODER_MAC_LIST'] = carton_dict['DECODER_MAC_LIST'] + f'{row["stb_num"]},{row["cdsn_iuc"]}\\0D\\0A'
+                logprint(f'>>> yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n {carton_dict}')
+                
+                zpl_code_ret = get_fraction_zpl_code(prod_id, 27, row_index)
+                if zpl_code_ret["status"] == CONST_SUCCESS:
+                    # TODO: 1. Printer Name, 2. Get Real Template From Database
+                    zpl_code = zpl_code_ret["data"]["metadata"]["zpl_code"]
+                    logprint('>>> ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                    printer_resp = printer_wrapper(carton_dict, zpl_code)
+                    logprint('<<< ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp')
+                    if printer_resp["status"] == CONST_FAILURE:
+                        logprint("Printing Failed")
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": printer_resp["message"],
+                            "status": CONST_FAILURE,
+                        }
+                    else:
+                        print("Printing Successful")
+                        response_data = {
+                            **response_data,
+                            "data": {
+                                "metadata": state_common,
+                            },
+                            "message": f'''Fraction Pallet Successfully Printed, Carton: {carton_dict['CARTON']}''',
+                            "status": CONST_SUCCESS,
+                        }
+                else:
                     response_data = {
                         **response_data,
                         "data": {
-                            "metadata": state_common,
+                            "metadata": {},
                         },
-                        "message": printer_resp["message"],
+                        "message": f'''ERROR: {zpl_code_ret["message"]}''',
                         "status": CONST_FAILURE,
                     }
-                else:
-                    print("Printing Successful")
-                    # print(f'[UPDATE-MECHANICAL] requested {pcb_sn} {fPanel} {PSU} {RS232} {prodLine} {userDesc} {material} {genericVariant} {prodDesc}')
-                    mech_status = update_mechanical(state_common["device_info"]["Pcb_Num"], '', '', '', production_line, user_desc, '', False, '')
-                    logprint(mech_status)
-                    mech_message = mech_status["data"]["metadata"]["ErrorMessage"]
-                    if mech_message.startswith(CONST_SUCCESS):
-                        response_data = {
-                            **response_data,
-                            "data": {
-                                "metadata": state_common,
-                            },
-                            "message": f'''{mech_message}''',
-                            "status": CONST_SUCCESS,
-                        }
-                    else:
-                        response_data = {
-                            **response_data,
-                            "data": {
-                                "metadata": state_common,
-                            },
-                            "message": f'''ERROR, {mech_message}''',
-                            "status": CONST_FAILURE,
-                        }
             else:
                 print(device["message"])
                 response_data = {
@@ -2543,6 +2565,7 @@ def create_fraction_carton(pallet_num, stb_list='', weight=0):
             "metadata": {
                 "current_status": INSTANT_STATUS_ID,
                 "target_status": INSTANT_STATUS_ID,
+                "device_info": []
             },
         },
         "message": "Default Message",
@@ -2572,14 +2595,16 @@ def create_fraction_carton(pallet_num, stb_list='', weight=0):
                 for row in results:
                     print(row)
                     device_info.append({
-                        "stb_num": row[0],
-                        "pcb_num": row[1],
-                        "cdsn_iuc": row[2],
-                        "carton_num": row[3],
-                        "pallet_num": row[4],
-                        "id_status": row[5],
-                        "DATE": row[6],
-                        "weight": row[7]
+                        "prod_id": row[0],
+                        "prod_code": row[1],
+                        "stb_num": row[2],
+                        "pcb_num": row[3],
+                        "cdsn_iuc": row[4],
+                        "carton_num": row[5],
+                        "pallet_num": row[6],
+                        "id_status": row[7],
+                        "DATE": row[8],
+                        "weight": row[9]
                     })
 
                 print("#######################################")
@@ -3568,7 +3593,82 @@ def streama_validate_mes_tests(pallet_num):
             return response_data
 
 
-def printer_wrapper(v, template_file):
+def get_fraction_zpl_code(prod_id=0, id_config_param=27, unit_count=0):
+    print('[GET-FRACTION-ZPL-CODE] requested ', prod_id, id_config_param)
+    global serverinstance
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "current_status": INSTANT_STATUS_ID,
+                "target_status": INSTANT_STATUS_ID,
+            },
+        },
+        "message": "Default Message",
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": None}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        try:
+            select_sql = f'''SELECT zpl_code
+                            FROM fraction_label_design
+                            WHERE prod_id={prod_id} AND id_config_param={id_config_param} AND unit_count={unit_count};
+                            '''
+            print(f'[SELECT-SQL] {select_sql}')
+            response_data = {
+                **response_data,
+                "select_query": select_sql,
+            }
+            conn.autocommit = False
+            results = cursor.execute(select_sql).fetchall()
+            print(f'[SELECT-SQL-RESULTS] {results}')
+
+            if len(results) == 1:
+                print("#######################################")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": {
+                            "zpl_code": results[0][0]
+                        },
+                    },
+                    "message": "zpl_code Retrieved",
+                    "status": CONST_SUCCESS,
+                }
+
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            raise ke
+        else:
+            cursor.commit()
+        finally:
+            conn.autocommit = True
+            print(response_data)
+            if len(results) == 0:
+                # raise ValueError("record not found")
+                response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": "Missing fraction template for prod_id={prod_id} AND id_config_param={id_config_param} AND unit_count={unit_count}",
+                    "status": CONST_FAILURE,
+                }
+            return response_data
+
+
+def printer_wrapper(v, template_file=''):
     print(f'printer_wrapper requested {v} {template_file}')
     response_data = {
         "function_name": inspect.currentframe().f_code.co_name,
@@ -3582,16 +3682,40 @@ def printer_wrapper(v, template_file):
         "status": CONST_FAILURE
     }
     try:
-        with open('./' + template_file, 'r') as fh:
-            t = replace_prn_variables(
-                ''.join(c for c in fh.read() if ord(c) < 128), v)
-            # print t
-            send_prn(t)
-            response_data = {
-                **response_data,
-                "message": "Print was successful",
-                "status": CONST_SUCCESS
-            }
+        if template_file.endswith('.txt') or template_file.endswith('.prn'):
+            with open('./' + template_file, 'r') as fh:
+                t = replace_prn_variables(
+                    ''.join(c for c in fh.read() if ord(c) < 128), v)
+                # print t
+                send_prn(t)
+                response_data = {
+                    **response_data,
+                    "message": "Print was successful",
+                    "status": CONST_SUCCESS
+                }
+        else:
+            try:
+                temp = open("./temp.prn", "w")
+                temp.write(template_file)
+                temp.close()
+                t = ''
+                for line in fileinput.input("./temp.prn", inplace=False):
+                    line = line.rstrip()
+                    if not line:
+                        continue
+                    for f_key, f_value in v.items():
+                        if f_key in line:
+                            line = line.replace(f'<{f_key}>', f_value)
+                    t = t + line
+
+                send_prn(t)
+                response_data = {
+                    **response_data,
+                    "message": "Print was successful",
+                    "status": CONST_SUCCESS
+                }
+            finally:
+                os.remove("./temp.prn")
     except MissingVariableException as e:
         print(f'Some variables specified in the PRN text are not supplied in the {template_file} file.')
         print(f'These variables are not supplied: {e[0].sort()}')
@@ -3686,16 +3810,11 @@ def get_product_info(pcb_sn):
                     "status": CONST_SUCCESS,
                 }
 
-        except pyodbc.DatabaseError as e:
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
             print(
                 f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
             cursor.rollback()
             raise e
-        except pyodbc.ProgrammingError as pe:
-            cursor.rollback()
-            print(
-                f'[ERROR: pyodbc.ProgrammingError - {pe.args}, will skip this invalid cell value')
-            raise pe
         except KeyError as ke:
             print(
                 f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')

@@ -69,6 +69,8 @@ function FractionPallet({ eel, params, setParams }) {
         common_prod_desc: -1,
         last_pallet: "",
         last_carton: "",
+        status: CONST_SUCCESS,
+        message: "",
         // message: `Click button to choose a random file from the user's system`,
         // path: defPath,
     });
@@ -85,6 +87,8 @@ function FractionPallet({ eel, params, setParams }) {
             // quantity_group: [],
             last_pallet: "",
             last_carton: "",
+            // status: CONST_SUCCESS,
+            // message: "",
         });
         refBarcodeScan.current.focus();
     };
@@ -132,9 +136,9 @@ function FractionPallet({ eel, params, setParams }) {
         }
     };
 
-    const update_fraction_buttons = (active = 2, max = 8) => {
+    const update_fraction_buttons = (active = 2, max = 18) => {
         const button_group = [];
-        for (let i = 1; i <= max; i++) {
+        for (let i = 2; i <= max; i = i + 2) {
             button_group.push(
                 <input
                     type="radio"
@@ -183,7 +187,7 @@ function FractionPallet({ eel, params, setParams }) {
         // Are Status Valid for All STBs
     };
 
-    const sendPrint = () => {
+    const handlePrint = () => {
         console.log(state);
         if (validateInputParams()) {
             const stb_list = state.data.map((item) => item.stb_num);
@@ -193,7 +197,36 @@ function FractionPallet({ eel, params, setParams }) {
                 state.last_pallet,
                 stb_list,
                 state.fraction_weight
-            );
+            )((response) => {
+                console.log(`[PY]: ${JSON.stringify(response, null, 2)}`);
+                try {
+                    const function_name = response.function_name;
+                    const status = response.status;
+                    const message = response.message;
+                    const metadata = response.data.metadata;
+                    // let prod_id = metadata.prod_id;
+                    console.log(
+                        `${function_name} message got: ${JSON.stringify(
+                            message
+                        )} metadata: ${metadata}`
+                    );
+
+                    setState((prevState) => ({
+                        ...prevState,
+                        status: status,
+                        message: message,
+                        data: [],
+                        fraction_weight: 0.0,
+                        validation_fraction_weight: false,
+                        last_pallet: ""
+                    }))
+                    refWeight.current.value = 0.0
+                } catch (error) {
+                    setTimeout(() => {
+                        alert(`PARSE ${error}`);
+                    }, 200);
+                }
+            });
         }
     };
 
@@ -519,7 +552,7 @@ function FractionPallet({ eel, params, setParams }) {
     return (
         <div className="absolute flex flex-col w-full mt-4 border-0 border-gray-600 h-1/2">
             <div className="flex border-0 border-green-400 border-dashed">
-                <div className="flex w-1/5 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
+                <div className="flex w-1/4 ml-8 border-0 border-blue-700 border-double rounded-t-lg form-control">
                     <div className="">
                         {/* <nav className="flex flex-col sm:flex-row">
                             <button
@@ -660,7 +693,7 @@ function FractionPallet({ eel, params, setParams }) {
                                 ref={refWeight}
                                 type="text"
                                 placeholder="eg. 9.12"
-                                className="flex-shrink input input-bordered input-md"
+                                className="flex-1 input input-bordered input-md"
                                 onChange={onChangeWeight}
                             />
                             {/* <span className="">kgs</span> */}
@@ -685,7 +718,7 @@ function FractionPallet({ eel, params, setParams }) {
                         />
                     </div>
                     <div className="flex flex-col mt-4">
-                        <button className="btn btn-lg" onClick={sendPrint}>
+                        <button className="btn btn-lg" onClick={handlePrint}>
                             <div className="w-8 h-8 mr-2">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -704,6 +737,15 @@ function FractionPallet({ eel, params, setParams }) {
                             </div>
                             Print
                         </button>{" "}
+                    </div>
+                    <div className="bottom-0 flex flex-1 pt-0 border-0 border-red-500">
+                        <div className="shadow stats mt-4 w-full rounded-none">
+                            <div className="stat flex-wrap">
+                                <div className={`text-left text-xl text-red-500 flex-wrap ${state.status === CONST_SUCCESS ? "text-green-500" : "text-red-500"}`}>
+                                    {state.message}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="bottom-0 flex flex-1 px-4 pt-0 border-0 border-red-500">
