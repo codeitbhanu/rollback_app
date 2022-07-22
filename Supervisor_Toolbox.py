@@ -5625,7 +5625,7 @@ def mes_update_WIP(pcb_sn, gsn=''):
 
 
 @eel.expose
-def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', range_qty = 0, full_len_sn_range=''):
+def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', range_qty=0, full_len_sn_range=''):
     """Returns connection status if connected, else connects to the production server"""
     print(f'[ADD-NEW-ORDER-RANGES] {prod_id} {prod_desc} {ord_num} {ord_start} {ord_end} {range_qty} {full_len_sn_range}')
     global serverinstance
@@ -5658,7 +5658,7 @@ def add_new_order_ranges(prod_id, prod_desc, ord_num, ord_start, ord_end='', ran
             select_sql = f'''
                         SELECT id_serial_number_range
                         FROM stb_production.dbo.serial_number_range
-                        WHERE ord_num=N\'{ord_num}\' AND ord_start=N\'{ord_start}\' AND ord_end=N\'{ord_end}\'
+                        WHERE ord_num=N\'{ord_num}\' or ord_start=N\'{ord_start}\' or ord_end=N\'{ord_end}\'
             '''
             print(f'[SELECT-SQL] {select_sql}')
             response_data = {
@@ -6236,7 +6236,7 @@ def streama_rework_rollback(pcb_sn='', id_user=''):
                 }
             else:
                 # ELSE
-                help_message = f'''{CONST_FAILURE} {stb_num} not allowed for rework'''
+                help_message = f'''{CONST_FAILURE} {stb_num} not allowed for rework, current status: {status_desc_for_id_status[id_status]}'''
                 response_data = {
                     **response_data,
                     "message": help_message

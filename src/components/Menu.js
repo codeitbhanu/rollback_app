@@ -4,6 +4,7 @@ import FractionPalletContainer from "./containers/FractionPallet";
 import FrequentParamContainer from "./containers/FrequentParam";
 import PcbReportContainer from "./containers/PcbReport";
 import OrderItemsContainer from "./containers/OrderItems";
+import DsdJobSetupContainer from "./containers/DsdJobSetup";
 import OrderSerialConfigContainer from "./containers/OrderSerialConfig";
 import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeResults";
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
@@ -108,6 +109,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
             <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
         </svg>
     );
+    const iconDsdJobSetup = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="{2}"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+            />
+        </svg>
+    );
     const iconOrderSerialConfig = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -158,11 +175,11 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconStreamaMesUpdate = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokewidth="{2}"
+            strokeWidth="{2}"
         >
             <path
                 strokeLinecap="round"
@@ -211,15 +228,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconStreamaRepairLogin = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokewidth="{2}"
+            strokeWidth="{2}"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
             />
         </svg>
@@ -227,15 +244,15 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconStreamaRepairLogout = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-6 w-6"
+            className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokewidth="{2}"
+            strokeWidth="{2}"
         >
             <path
-                strokelinecap="round"
-                strokelinejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
             />
         </svg>
@@ -244,7 +261,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
     const iconStreamaReworkRollback = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            classname="h-5 w-5"
+            className="h-5 w-5"
             viewBox="0 0 20 20"
             fill="currentColor"
         >
@@ -541,6 +558,29 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                     >
                         <div className="w-5 h-5 mr-2">{iconOrderItems}</div>
                         Order Items
+                    </a>
+                </li>
+                <li
+                    className={
+                        menuState.selectedMenu === "order_serial_config"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "dsd_job_setup",
+                                "DSD Job Setup",
+                                iconDsdJobSetup,
+                                DsdJobSetupContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">
+                            {iconDsdJobSetup}
+                        </div>
+                        DSD Job Setup
                     </a>
                 </li>
                 {/* <li
