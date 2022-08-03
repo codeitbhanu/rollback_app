@@ -15,6 +15,7 @@ import StreamaSynchronizeResultsContainer from "./components/containers/StreamaS
 import StreamaMechanicalContainer from "./components/containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./components/containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./components/containers/StreamaValidateTests";
+import PalletCheckDuplicatesContainer from "./components/containers/PalletCheckDuplicates";
 import StreamaReworkRollbackContainer from "./components/containers/StreamaReworkRollback";
 import StreamaRepairLoginContainer from "./components/containers/StreamaRepairLogin";
 import StreamaRepairLogoutContainer from "./components/containers/StreamaRepairLogout";
@@ -113,24 +114,24 @@ function App() {
     //     </svg>
     // );
     ////////////////////////////////////////////////////////////////////////////
-    const defaultMenu = "dsd_job_setup";
-    const defaultTitle = "DSD Job Setup";
-    const defaultIcon = (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="{2}"
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-            />
-        </svg>
-    );
+    // const defaultMenu = "dsd_job_setup";
+    // const defaultTitle = "DSD Job Setup";
+    // const defaultIcon = (
+    //     <svg
+    //         xmlns="http://www.w3.org/2000/svg"
+    //         className="h-6 w-6"
+    //         fill="none"
+    //         viewBox="0 0 24 24"
+    //         stroke="currentColor"
+    //         strokeWidth="{2}"
+    //     >
+    //         <path
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+    //         />
+    //     </svg>
+    // );
     ///////////////////////////////////////////////////////////
     // const defaultMenu = "streama_mechanical";
     // const defaultTitle = "Streama Mechanical";
@@ -169,6 +170,25 @@ function App() {
     //         />
     //     </svg>
     // );
+    /////////
+    const defaultMenu = "pallet_check_duplicates";
+    const defaultTitle = "Check Duplicates";
+    const defaultIcon = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokewidth="{2}"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+        </svg>
+    );
 
     const [menuState, setMenuState] = useState({
         toggleMenu: false,
@@ -302,6 +322,14 @@ function App() {
             )}
             {menuState.selectedMenu === "streama_validate_pallet" && (
                 <StreamaValidateTestsContainer
+                    eel={eel}
+                    params={appState}
+                    setParams={setAppState}
+                    config_data={config_data}
+                />
+            )}
+            {menuState.selectedMenu === "pallet_check_duplicates" && (
+                <PalletCheckDuplicatesContainer
                     eel={eel}
                     params={appState}
                     setParams={setAppState}

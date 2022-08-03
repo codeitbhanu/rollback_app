@@ -10,6 +10,7 @@ import StreamaSynchronizeResultsContainer from "./containers/StreamaSynchronizeR
 import StreamaMechanicalContainer from "./containers/StreamaMechanical";
 import StreamaMesUpdateContainer from "./containers/StreamaMesUpdate";
 import StreamaValidateTestsContainer from "./containers/StreamaValidateTests";
+import PalletCheckDuplicatesContainer from "./containers/PalletCheckDuplicates";
 import StreamaReworkRollbackContainer from "./containers/StreamaReworkRollback";
 import StreamaRepairLoginContainer from "./containers/StreamaRepairLogin";
 import StreamaRepairLogoutContainer from "./containers/StreamaRepairLogout";
@@ -206,6 +207,22 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+        </svg>
+    );
+    const iconPalletCheckDuplicates = (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            classname="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokewidth="{2}"
+        >
+            <path
+                strokelinecap="round"
+                strokelinejoin="round"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
             />
         </svg>
     );
@@ -478,6 +495,27 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                 </li>   */}
                 <li
                     className={
+                        menuState.selectedMenu === "pallet_check_duplicates"
+                            ? "bordered"
+                            : ""
+                    }
+                >
+                    <a
+                        onClick={() =>
+                            onSelectMenu(
+                                "pallet_check_duplicates",
+                                "Check Duplicates",
+                                iconPalletCheckDuplicates,
+                                PalletCheckDuplicatesContainer
+                            )
+                        }
+                    >
+                        <div className="w-5 h-5 mr-2">{iconPalletCheckDuplicates}</div>
+                        Check Duplicates
+                    </a>
+                </li>
+                <li
+                    className={
                         menuState.selectedMenu === "unit_rollback"
                             ? "bordered"
                             : ""
@@ -560,7 +598,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         Order Items
                     </a>
                 </li>
-                <li
+                {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"
                             ? "bordered"
@@ -582,7 +620,7 @@ function Menu({ hideMenu, menuState, setMenuState, onSelectMenu }) {
                         </div>
                         DSD Job Setup
                     </a>
-                </li>
+                </li> */}
                 {/* <li
                     className={
                         menuState.selectedMenu === "order_serial_config"

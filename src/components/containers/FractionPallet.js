@@ -216,6 +216,7 @@ function FractionPallet({ eel, params, setParams }) {
                         status: status,
                         message: message,
                         data: [],
+                        valid_scanned: 0,
                         fraction_weight: 0.0,
                         validation_fraction_weight: false,
                         last_pallet: ""

@@ -107,6 +107,10 @@ def send_prn(prn_text):
     Silently escape errors
     '''
     try:
+        print(f'___________________________________')
+        print(''.join(c for c in prn_text if ord(c) < 128))
+        print(f'***********************************')
+        
         ZEBRA.output(''.join(c for c in prn_text if ord(c) < 128))
     except Exception:
         return None
@@ -3590,6 +3594,206 @@ def streama_validate_mes_tests(pallet_num):
             #         "message": "No Products Found with PCB/SN",
             #         "status": CONST_FAILURE,
             #     }
+            return response_data
+
+
+@eel.expose
+def pallet_check_duplicates(pallet_num="", inv_num=""):
+    print(f'[PALLET-CHECK-DUPLICATES] requested pallet_num: {pallet_num} inv_num:{inv_num}')
+    global serverinstance
+
+    # ZEBRA.setqueue(printer_name)
+
+    response_data = {
+        "function_name": inspect.currentframe().f_code.co_name,
+        "data": {
+            "metadata": {
+                "pallet_num": pallet_num
+            },
+        },
+        "message": f'Default Message: pallet_num: [{pallet_num}]',
+        "status": CONST_FAILURE
+    }
+
+    if not serverinstance:
+        return {"data": {"metadata": {}}, "message": CONST_FAILURE + 'Server not connected', "status": CONST_FAILURE}
+    else:
+        cursor = serverinstance.cursor
+        conn = serverinstance.conn
+        results = []
+        set_inv = set()
+        set_pallet = set()
+        stb_list = []
+                    
+        try:
+            if pallet_num:
+                print("Finding by pallet " + pallet_num)
+                select_sql = f'''SELECT stb_num, carton_num, pallet_num, [timestamp], cod.inv_num
+                                FROM production_event_details ped
+                                INNER JOIN customer_order_details cod ON cod.id_customer_order_details = ped.id_customer_order_details
+                                WHERE id_status = 35 and stb_num IN (SELECT stb_num
+                                FROM stb_production.dbo.production_event_details 
+                                WHERE id_status = 35 and stb_num IN (SELECT stb_num FROM production_event WHERE  pallet_num = \'{pallet_num}\')
+                                GROUP BY stb_num
+                                HAVING COUNT(*) >= 1)
+                                ORDER BY inv_num, pallet_num, carton_num, stb_num'''
+                print(f'[SELECT-SQL] {select_sql}')
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                }
+                conn.autocommit = False
+                results = cursor.execute(select_sql).fetchall()
+                # print(f'[SELECT-SQL-RESULTS] {results}')
+
+                if len(results) > 0:
+                    index = 0
+                    for row in results:
+                        # print(row)
+                        if row[2] == pallet_num: 
+                            continue
+                        index = index + 1
+                        if row[4] != set_inv:
+                            set_inv.add(row[4])
+                        if row[2] != set_pallet:
+                            set_pallet.add(row[2])
+                        stb_list.append({
+                            "index": index,
+                            "stb_num": row[0],
+                            "carton_num": row[1],
+                            "pallet_num": row[2],
+                            "timestamp": str(row[3]).split('.')[0],
+                            "inv_num": row[4],
+                        })
+
+                    print("#######################################")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "stb_list": stb_list,
+                                "unique_inv": len(set_inv),
+                                "unique_pallet": len(set_pallet)
+                            },
+                        },
+                        "message": "Stb List Retreived for Pallet Num: " + pallet_num,
+                        "status": CONST_FAILURE,
+                    }
+                else:
+                    # raise ValueError("record not found")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "stb_list": stb_list,
+                                "unique_inv": len(set_inv),
+                                "unique_pallet": len(set_pallet)
+                            },
+                        },
+                        "message": "No duplicates found",
+                        "status": CONST_SUCCESS,
+                    }
+            else:
+                # BY Invoice
+                print("Finding by invoice " + inv_num)
+                # SELECT stb_num, carton_num, pallet_num, [timestamp]
+                select_sql = f'''SELECT stb_num, carton_num, pallet_num, ped.[timestamp], (SELECT inv_num FROM customer_order_details WHERE id_customer_order = co.id_customer_order ) as inv_num from production_event_details ped
+                                INNER JOIN customer_order co ON co.id_customer_order = ped.id_customer_order 
+                                WHERE ped.id_status = 35 AND stb_num IN (
+                                SELECT stb_num FROM production_event WHERE id_customer_order = (SELECT id_customer_order FROM customer_order_details cod WHERE cod.inv_num = \'{inv_num}\'))
+                                AND co.id_customer_order <> (SELECT id_customer_order FROM customer_order_details cod WHERE cod.inv_num  = \'{inv_num}\')
+                                ORDER BY inv_num, pallet_num, carton_num, stb_num'''
+                print(f'[SELECT-SQL] {select_sql}')
+                response_data = {
+                    **response_data,
+                    "select_query": select_sql,
+                }
+                conn.autocommit = False
+                results = cursor.execute(select_sql).fetchall()
+                # print(f'[SELECT-SQL-RESULTS] {results}')
+
+                if len(results) > 0:
+                    index = 0
+                    for row in results:
+                        # print(row)
+                        if row[2] == pallet_num: 
+                            continue
+                        index = index + 1
+                        if row[4] != set_inv:
+                            set_inv.add(row[4])
+                        if row[2] != set_pallet:
+                            set_pallet.add(row[2])
+                        stb_list.append({
+                            "index": index,
+                            "stb_num": row[0],
+                            "carton_num": row[1],
+                            "pallet_num": row[2],
+                            "timestamp": str(row[3]).split('.')[0],
+                            "inv_num": row[4],
+                        })
+
+                    print("#######################################")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "stb_list": stb_list,
+                                "unique_inv": len(set_inv),
+                                "unique_pallet": len(set_pallet)
+                            },
+                        },
+                        "message": "Stb List Retreived for Pallet Num: " + pallet_num,
+                        "status": CONST_FAILURE,
+                    }
+                else:
+                    # raise ValueError("record not found")
+                    response_data = {
+                        **response_data,
+                        "data": {
+                            "metadata": {
+                                "stb_list": stb_list,
+                                "unique_inv": len(set_inv),
+                                "unique_pallet": len(set_pallet)
+                            },
+                        },
+                        "message": "No duplicates found",
+                        "status": CONST_SUCCESS,
+                    }
+        except (pyodbc.DatabaseError, pyodbc.ProgrammingError) as e:
+            print(
+                f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value')
+            cursor.rollback()
+            response_data = {
+                    **response_data,
+                    "data": {
+                        "metadata": results,
+                    },
+                    "message": f'[ERROR: pyodbc.ProgrammingError - {e.args}, will skip this invalid cell value',
+                    "status": CONST_FAILURE,
+                }
+            raise e
+        except KeyError as ke:
+            print(
+                f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value')
+            response_data = {
+                **response_data,
+                "data": {
+                    "metadata": results,
+                },
+                "message": f'[ERROR: KeyError - {ke.args}, will skip this invalid cell value',
+                "status": CONST_FAILURE,
+            }
+            raise ke
+        except Exception as e:
+            print(
+                f'[ERROR: Exception - {str(e)}, will skip this invalid cell value')
+            raise e
+        else:
+            pass
+            # cursor.commit()
+        finally:
+            conn.autocommit = True
+            # print(response_data)
             return response_data
 
 
